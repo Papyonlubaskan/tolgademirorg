@@ -1,42 +1,81 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
-  <!-- Teal Background -->
+  <!-- Teal Background (#008080) -->
   <rect width="512" height="512" fill="#008080"/>
   
-  <!-- Open Book - Orange -->
+  <!-- Open Book - Orange (#FF8C00) -->
   <g transform="translate(256, 220)">
-    <!-- Left Page -->
+    <!-- Left Page Curve -->
     <path d="M -80 -50 Q -85 -25 -90 0 Q -85 25 -80 50 L -15 50 L -15 -50 Z" 
-          fill="none" stroke="#FF8C00" stroke-width="6" stroke-linejoin="round"/>
+          fill="none" 
+          stroke="#FF8C00" 
+          stroke-width="6" 
+          stroke-linejoin="round"/>
     
-    <!-- Right Page -->
+    <!-- Right Page Curve -->
     <path d="M 80 -50 Q 85 -25 90 0 Q 85 25 80 50 L 15 50 L 15 -50 Z" 
-          fill="none" stroke="#FF8C00" stroke-width="6" stroke-linejoin="round"/>
+          fill="none" 
+          stroke="#FF8C00" 
+          stroke-width="6" 
+          stroke-linejoin="round"/>
     
-    <!-- Book Spine - Pink/Red -->
+    <!-- Book Spine - Pink/Red (#E91E63) -->
     <path d="M -15 -50 Q 0 -45 15 -50 L 15 50 Q 0 45 -15 50 Z" 
-          fill="none" stroke="#E91E63" stroke-width="4" stroke-linejoin="round"/>
+          fill="none" 
+          stroke="#E91E63" 
+          stroke-width="4" 
+          stroke-linejoin="round"/>
     
     <!-- Quill Pen - Orange -->
     <g transform="translate(0, -15)">
-      <!-- Shaft -->
-      <line x1="0" y1="30" x2="0" y2="-70" stroke="#FF8C00" stroke-width="5" stroke-linecap="round"/>
+      <!-- Quill Shaft -->
+      <line x1="0" y1="30" x2="0" y2="-70" 
+            stroke="#FF8C00" 
+            stroke-width="5" 
+            stroke-linecap="round"/>
       
-      <!-- Feathers Left -->
-      <line x1="0" y1="-60" x2="-12" y2="-45" stroke="#FF8C00" stroke-width="3" stroke-linecap="round"/>
-      <line x1="0" y1="-50" x2="-10" y2="-38" stroke="#FF8C00" stroke-width="3" stroke-linecap="round"/>
-      <line x1="0" y1="-40" x2="-8" y2="-30" stroke="#FF8C00" stroke-width="2.5" stroke-linecap="round"/>
+      <!-- Quill Feathers (Left) -->
+      <line x1="0" y1="-60" x2="-12" y2="-45" 
+            stroke="#FF8C00" 
+            stroke-width="3" 
+            stroke-linecap="round"/>
+      <line x1="0" y1="-50" x2="-10" y2="-38" 
+            stroke="#FF8C00" 
+            stroke-width="3" 
+            stroke-linecap="round"/>
+      <line x1="0" y1="-40" x2="-8" y2="-30" 
+            stroke="#FF8C00" 
+            stroke-width="2.5" 
+            stroke-linecap="round"/>
       
-      <!-- Feathers Right -->
-      <line x1="0" y1="-60" x2="12" y2="-45" stroke="#FF8C00" stroke-width="3" stroke-linecap="round"/>
-      <line x1="0" y1="-50" x2="10" y2="-38" stroke="#FF8C00" stroke-width="3" stroke-linecap="round"/>
-      <line x1="0" y1="-40" x2="8" y2="-30" stroke="#FF8C00" stroke-width="2.5" stroke-linecap="round"/>
+      <!-- Quill Feathers (Right) -->
+      <line x1="0" y1="-60" x2="12" y2="-45" 
+            stroke="#FF8C00" 
+            stroke-width="3" 
+            stroke-linecap="round"/>
+      <line x1="0" y1="-50" x2="10" y2="-38" 
+            stroke="#FF8C00" 
+            stroke-width="3" 
+            stroke-linecap="round"/>
+      <line x1="0" y1="-40" x2="8" y2="-30" 
+            stroke="#FF8C00" 
+            stroke-width="2.5" 
+            stroke-linecap="round"/>
       
-      <!-- Tip -->
-      <polygon points="0,-70 -4,-75 0,-82 4,-75" fill="#FF8C00"/>
+      <!-- Quill Tip (Pointed) -->
+      <polygon points="0,-70 -4,-75 0,-82 4,-75" 
+               fill="#FF8C00"/>
     </g>
   </g>
   
-  <!-- Text: tolgademir.org -->
-  <text x="256" y="380" font-family="Arial, sans-serif" font-size="42" font-weight="400" fill="white" text-anchor="middle">tolgademir.org</text>
+  <!-- Text: tolgademir.org - White -->
+  <text x="256" y="380" 
+        font-family="Arial, Helvetica, sans-serif" 
+        font-size="42" 
+        font-weight="400"
+        fill="#FFFFFF" 
+        text-anchor="middle"
+        letter-spacing="0.5">
+    tolgademir.org
+  </text>
 </svg>

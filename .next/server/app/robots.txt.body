@@ -1,0 +1,25 @@
+User-Agent: *
+Allow: /
+Disallow: /yonetim/
+Disallow: /api/
+Disallow: /_next/
+Disallow: /admin/
+Disallow: /backups/
+
+User-Agent: Googlebot
+Allow: /
+Allow: /kitaplar/
+Allow: /hakkimda
+Allow: /iletisim
+Disallow: /yonetim/
+Disallow: /admin/
+
+User-Agent: Bingbot
+Allow: /
+Disallow: /yonetim/
+Disallow: /admin/
+Crawl-delay: 1
+
+Host: https://tolgademir.org
+Sitemap: https://tolgademir.org/sitemap.xml
+Sitemap: https://tolgademir.org/public/sitemap.xml

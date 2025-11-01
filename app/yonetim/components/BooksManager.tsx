@@ -1,4 +1,4 @@
-
+﻿
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -696,8 +696,8 @@ export default function BooksManager() {
                 onChange={(url) => setFormData({ ...formData, cover_image: url })}
               />
 
-              {/* Publish date & status */}
-              <div className="grid grid-cols-2 gap-4">
+              {/* Publish date, category & status */}
+              <div className="grid grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-800 dark:text-gray-100 mb-2">Yayın Tarihi</label>
                   <input
@@ -706,6 +706,40 @@ export default function BooksManager() {
                     onChange={e => setFormData({ ...formData, publish_date: e.target.value })}
                     className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-800 dark:text-gray-100 mb-2">Kategori</label>
+                  <select
+                    value={formData.category || 'Roman'}
+                    onChange={e => setFormData({ ...formData, category: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent pr-8 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  >
+                    <option value="Genel">Genel</option>
+                    <option value="Roman">Roman</option>
+                    <option value="Hikaye">Hikaye</option>
+                    <option value="Deneme">Deneme</option>
+                    <option value="Şiir">Şiir</option>
+                    <option value="Öykü">Öykü</option>
+                    <option value="Makale">Makale</option>
+                    <option value="Eleştiri">Eleştiri</option>
+                    <option value="Senaryo">Senaryo</option>
+                    <option value="Arkası Yarın">Arkası Yarın</option>
+                    <option value="Dizi">Dizi</option>
+                    <option value="Animasyon">Animasyon</option>
+                    <option value="Komedi">Komedi</option>
+                    <option value="Trajedi">Trajedi</option>
+                    <option value="Trajikomik">Trajikomik</option>
+                    <option value="Kısa Film">Kısa Film</option>
+                    <option value="Kukla Tiyatroları">Kukla Tiyatroları</option>
+                    <option value="Oyun Metinleri">Oyun Metinleri</option>
+                    <option value="Skeçler">Skeçler</option>
+                    <option value="Dram">Dram</option>
+                    <option value="Drama">Drama</option>
+                    <option value="Tanıtım Filmi & Reklam">Tanıtım Filmi & Reklam</option>
+                    <option value="Tez">Tez</option>
+                    <option value="Mektup">Mektup</option>
+                  </select>
                 </div>
 
                 <div>

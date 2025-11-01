@@ -17,7 +17,7 @@ interface HeroData {
 
 export default function Hero() {
   const [heroData, setHeroData] = useState<HeroData>({
-    hero_background: 'https://readdy.ai/api/search-image?query=A%20serene%20and%20elegant%20writing%20space%20with%20warm%20natural%20lighting%2C%20featuring%20a%20beautiful%20wooden%20desk%20with%20vintage%20books%2C%20delicate%20flowers%20in%20soft%20pastel%20colors%2C%20and%20a%20cozy%20reading%20corner%20with%20cream%20and%20beige%20tones%2C%20creating%20an%20inspiring%20atmosphere%20for%20a%20female%20author%2C%20minimalist%20and%20sophisticated%20interior%20design&width=1200&height=800&seq=hero-bg&orientation=landscape',
+    hero_background: '/hero-background.jpg',
     hero_image: '/hero-profile.jpg',
     hero_title: 'Tolga Demir',
     hero_subtitle: 'Yazar & Hikaye Anlatıcı',
