@@ -1,0 +1,90 @@
+﻿{
+  "name": "Tolga Demir - Yazar Web Sitesi",
+  "short_name": "Tolga Demir",
+  "description": "Tolga Demir'nın resmi web sitesi. Kitaplar, bölümler ve yazar hakkında bilgiler.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#ea580c",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "lang": "tr",
+  "dir": "ltr",
+  "categories": ["books", "literature", "education"],
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/favicon.ico",
+      "sizes": "32x32",
+      "type": "image/x-icon",
+      "purpose": "any"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshots/desktop.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Ana sayfa masaüstü görünümü"
+    },
+    {
+      "src": "/screenshots/mobile.png",
+      "sizes": "375x667",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Ana sayfa mobil görünümü"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Kitaplar",
+      "short_name": "Kitaplar",
+      "description": "Tüm kitapları görüntüle",
+      "url": "/kitaplar",
+      "icons": [
+        {
+          "src": "/icons/books-96x96.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "Hakkımda",
+      "short_name": "Hakkımda",
+      "description": "Yazar hakkında bilgi",
+      "url": "/hakkimda",
+      "icons": [
+        {
+          "src": "/icons/about-96x96.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "İletişim",
+      "short_name": "İletişim",
+      "description": "İletişim bilgileri",
+      "url": "/iletisim",
+      "icons": [
+        {
+          "src": "/icons/contact-96x96.png",
+          "sizes": "96x96"
+        }
+      ]
+    }
+  ],
+  "related_applications": [],
+  "prefer_related_applications": false,
+  "edge_side_panel": {
+    "preferred_width": 400
+  },
+  "launch_handler": {
+    "client_mode": "navigate-existing"
+  }
+}

@@ -1,0 +1,4928 @@
+﻿-- Eksik veritabanÄ± tablolarÄ±nÄ± oluÅŸtur
+
+-- 1. Book views tablosu (kitap gÃ¶rÃ¼ntÃ¼lenme sayÄ±larÄ±)
+CREATE TABLE IF NOT EXISTS book_views (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    book_id INT NOT NULL,
+    ip_address VARCHAR(45) NOT NULL,
+    viewed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    UNIQUE KEY unique_book_ip (book_id, ip_address),
+    FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE,
+    INDEX idx_book_views_book_id (book_id),
+    INDEX idx_book_views_viewed_at (viewed_at)
+);
+
+-- 2. Site settings tablosu (site ayarlarÄ±)
+CREATE TABLE IF NOT EXISTS site_settings (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    setting_key VARCHAR(100) NOT NULL UNIQUE,
+    setting_value TEXT,
+    setting_type ENUM('string', 'number', 'boolean', 'json') DEFAULT 'string',
+    description TEXT,
+    is_public BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    
+    INDEX idx_site_settings_key (setting_key),
+    INDEX idx_site_settings_public (is_public)
+);
+
+-- 3. Admin users tablosu (admin kullanÄ±cÄ±larÄ±)
+CREATE TABLE IF NOT EXISTS admins (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(50) NOT NULL UNIQUE,
+    email VARCHAR(100) NOT NULL UNIQUE,
+    password_hash VARCHAR(255) NOT NULL,
+    name VARCHAR(100),
+    two_factor_secret VARCHAR(32),
+    two_factor_enabled BOOLEAN DEFAULT FALSE,
+    is_active BOOLEAN DEFAULT TRUE,
+    last_login_at TIMESTAMP NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    
+    INDEX idx_admins_username (username),
+    INDEX idx_admins_email (email),
+    INDEX idx_admins_active (is_active)
+);
+
+-- 4. Security logs tablosu (gÃ¼venlik loglarÄ±)
+CREATE TABLE IF NOT EXISTS security_logs (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    type VARCHAR(50) NOT NULL,
+    message TEXT NOT NULL,
+    ip_address VARCHAR(45),
+    user_agent TEXT,
+    user_id VARCHAR(255),
+    severity ENUM('low', 'medium', 'high', 'critical') DEFAULT 'low',
+    metadata JSON,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    INDEX idx_security_logs_type (type),
+    INDEX idx_security_logs_ip (ip_address),
+    INDEX idx_security_logs_severity (severity),
+    INDEX idx_security_logs_created_at (created_at)
+);
+
+-- 5. Admin notifications tablosu (admin bildirimleri)
+CREATE TABLE IF NOT EXISTS admin_notifications (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    type VARCHAR(50) NOT NULL,
+    title VARCHAR(200) NOT NULL,
+    message TEXT NOT NULL,
+    data JSON,
+    is_read BOOLEAN DEFAULT FALSE,
+    priority ENUM('low', 'normal', 'high', 'urgent') DEFAULT 'normal',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    read_at TIMESTAMP NULL,
+    
+    INDEX idx_admin_notifications_type (type),
+    INDEX idx_admin_notifications_read (is_read),
+    INDEX idx_admin_notifications_priority (priority),
+    INDEX idx_admin_notifications_created_at (created_at)
+);
+
+-- 6. Backup records tablosu (yedekleme kayÄ±tlarÄ±)
+CREATE TABLE IF NOT EXISTS backup_records (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(200) NOT NULL,
+    type ENUM('full', 'incremental', 'differential') DEFAULT 'full',
+    file_path VARCHAR(500),
+    file_size BIGINT,
+    status ENUM('pending', 'in_progress', 'completed', 'failed') DEFAULT 'pending',
+    created_by VARCHAR(100),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    completed_at TIMESTAMP NULL,
+    
+    INDEX idx_backup_records_type (type),
+    INDEX idx_backup_records_status (status),
+    INDEX idx_backup_records_created_at (created_at)
+);
+
+-- 7. Media files tablosu (medya dosyalarÄ±)
+CREATE TABLE IF NOT EXISTS media_files (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    file_name VARCHAR(255) NOT NULL,
+    file_path VARCHAR(500) NOT NULL,
+    file_type VARCHAR(50),
+    file_size BIGINT,
+    mime_type VARCHAR(100),
+    alt_text TEXT,
+    description TEXT,
+    uploaded_by VARCHAR(100),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    INDEX idx_media_files_type (file_type),
+    INDEX idx_media_files_uploaded_by (uploaded_by),
+    INDEX idx_media_files_created_at (created_at)
+);
+
+-- 8. Cache entries tablosu (cache kayÄ±tlarÄ±)
+CREATE TABLE IF NOT EXISTS cache_entries (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    cache_key VARCHAR(255) NOT NULL UNIQUE,
+    cache_value LONGTEXT,
+    expires_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    
+    INDEX idx_cache_entries_key (cache_key),
+    INDEX idx_cache_entries_expires (expires_at)
+);
+
+-- 9. Performance metrics tablosu (performans metrikleri)
+CREATE TABLE IF NOT EXISTS performance_metrics (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    metric_name VARCHAR(100) NOT NULL,
+    metric_value DECIMAL(10,4),
+    metric_unit VARCHAR(20),
+    metadata JSON,
+    recorded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    INDEX idx_performance_metrics_name (metric_name),
+    INDEX idx_performance_metrics_recorded_at (recorded_at)
+);
+
+-- 10. SEO data tablosu (SEO verileri)
+CREATE TABLE IF NOT EXISTS seo_data (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    page_type ENUM('book', 'chapter', 'page', 'home') NOT NULL,
+    page_id INT,
+    page_slug VARCHAR(255),
+    title VARCHAR(200),
+    description TEXT,
+    keywords TEXT,
+    canonical_url VARCHAR(500),
+    og_title VARCHAR(200),
+    og_description TEXT,
+    og_image VARCHAR(500),
+    twitter_card VARCHAR(50),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    
+    INDEX idx_seo_data_page_type (page_type),
+    INDEX idx_seo_data_page_id (page_id),
+    INDEX idx_seo_data_slug (page_slug)
+);
+
+> CREATE TABLE `books` (
+    `id` int NOT NULL AUTO_INCREMENT,
+    `title` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+    `slug` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+    `description` text COLLATE utf8mb4_unicode_ci,
+    `content` longtext COLLATE utf8mb4_unicode_ci,
+    `cover_image` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+    `author` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+    `category` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+    `status` enum('draft','published') COLLATE utf8mb4_unicode_ci DEFAULT 'published',
+    `publish_date` date DEFAULT NULL,
+    `views` int DEFAULT '0',
+    `amazon_link` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+    `dr_link` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+    `idefix_link` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+    `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `slug` (`slug`),
+    KEY `idx_status` (`status`),
+    KEY `idx_books_slug` (`slug`),
+    KEY `idx_books_status` (`status`),
+    KEY `idx_books_category` (`category`)
+  ) ENGINE=InnoDB AUTO_INCREMENT=45 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  /*!40101 SET character_set_client = @saved_cs_client */;
+  
+  --
+  -- Dumping data for table `books`
+  --
+  
+  LOCK TABLES `books` WRITE;
+> CREATE TABLE `chapters` (
+    `id` int NOT NULL AUTO_INCREMENT,
+    `book_id` int NOT NULL,
+    `title` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+    `slug` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+    `content` longtext COLLATE utf8mb4_unicode_ci,
+    `order_number` int DEFAULT '1',
+    `status` enum('draft','published') COLLATE utf8mb4_unicode_ci DEFAULT 'published',
+    `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    KEY `idx_book_id` (`book_id`),
+    KEY `idx_order` (`order_number`),
+    KEY `idx_slug` (`slug`),
+    KEY `idx_chapters_book_id` (`book_id`),
+    KEY `idx_chapters_slug` (`slug`),
+    KEY `idx_chapters_status` (`status`),
+    KEY `idx_chapters_order_number` (`order_number`),
+    KEY `idx_chapters_created_at` (`created_at`),
+    KEY `idx_chapters_book_order` (`book_id`,`order_number`),
+    KEY `idx_chapters_book_status` (`book_id`,`status`),
+    CONSTRAINT `chapters_ibfk_1` FOREIGN KEY (`book_id`) REFERENCES `books` (`id`) ON DELETE CASCADE
+  ) ENGINE=InnoDB AUTO_INCREMENT=61 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  /*!40101 SET character_set_client = @saved_cs_client */;
+  
+  --
+  -- Dumping data for table `chapters`
+  --
+  
+  LOCK TABLES `chapters` WRITE;
+  /*!40000 ALTER TABLE `chapters` DISABLE KEYS */;
+> CREATE TABLE `comments` (
+    `id` int NOT NULL AUTO_INCREMENT,
+    `book_id` int DEFAULT NULL,
+    `chapter_id` int DEFAULT NULL,
+    `user_name` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+    `user_email` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+    `user_id` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+    `user_ip` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+    `user_fingerprint` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+    `content` text COLLATE utf8mb4_unicode_ci NOT NULL,
+    `line_number` int DEFAULT NULL,
+    `status` enum('pending','approved','rejected') COLLATE utf8mb4_unicode_ci DEFAULT 'approved',
+    `is_hidden` tinyint(1) DEFAULT '0',
+    `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `admin_reply` text COLLATE utf8mb4_unicode_ci,
+    `admin_reply_by` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+    `admin_reply_at` timestamp NULL DEFAULT NULL,
+    `parent_id` int DEFAULT NULL,
+    PRIMARY KEY (`id`),
+    KEY `idx_book_id` (`book_id`),
+    KEY `idx_chapter_id` (`chapter_id`),
+    KEY `idx_status` (`status`),
+    KEY `idx_user_id` (`user_id`),
+    KEY `idx_comments_chapter_line` (`chapter_id`,`line_number`),
+    KEY `idx_admin_reply` (`admin_reply_at`),
+    KEY `idx_comments_parent_id` (`parent_id`),
+    KEY `idx_comments_book_id` (`book_id`),
+    KEY `idx_comments_chapter_id` (`chapter_id`),
+    KEY `idx_comments_status` (`status`),
+    KEY `idx_comments_created_at` (`created_at`),
+> CREATE TABLE `contact_messages` (
+    `id` int NOT NULL AUTO_INCREMENT,
+    `name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+    `email` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+    `subject` varchar(500) COLLATE utf8mb4_unicode_ci NOT NULL,
+    `message` text COLLATE utf8mb4_unicode_ci NOT NULL,
+    `reply_message` text COLLATE utf8mb4_unicode_ci,
+    `replied_at` timestamp NULL DEFAULT NULL,
+    `status` enum('unread','read','replied') COLLATE utf8mb4_unicode_ci DEFAULT 'unread',
+    `priority` enum('low','normal','high') COLLATE utf8mb4_unicode_ci DEFAULT 'normal',
+    `user_ip` varchar(45) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+    `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    KEY `idx_status` (`status`),
+    KEY `idx_created_at` (`created_at`),
+    KEY `idx_email` (`email`)
+  ) ENGINE=InnoDB AUTO_INCREMENT=16 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  /*!40101 SET character_set_client = @saved_cs_client */;
+  
+  --
+  -- Dumping data for table `contact_messages`
+  --
+  
+  LOCK TABLES `contact_messages` WRITE;
+  /*!40000 ALTER TABLE `contact_messages` DISABLE KEYS */;
+  INSERT INTO `contact_messages` VALUES (9,'Sema Emek','sema.emek321@gmail.com','DiÄŸer','Medusa\'nÄ±n Ã–lÃ¼ KumlarÄ± 3
+ kitabÄ±nÄ± almÄ±ÅŸtÄ±m ve hatalÄ± BasÄ±m Ã§Ä±ktÄ±. 15 gÃ¼n geÃ§tiÄŸi iÃ§in aldÄ±ÄŸÄ±m site iade iÅŸlemi gerÃ§ekleÅŸtir
+miyor. (Tamadres\'den aldÄ±m) YayÄ±nevine de aldÄ±ÄŸÄ±m siteye de yazdÄ±m, yayÄ±nevi (yani Ephesus) aldÄ±ÄŸÄ±m siteye, 
+aldÄ±ÄŸÄ±m site olan Tamadres ise YayÄ±nevine yazmamÄ± sÃ¶yledi. Herkes birbirine topu atÄ±yor. LÃ¼tfen en azÄ±ndan siz
+ ilgilenin.',NULL,NULL,'unread','normal','88.243.139.132','2025-10-08 08:06:11','2025-10-08 08:06:11'),(10,'Elanur Tuna
+y','ipektunay232@gmail.com','Genel Sorular','Maral abla kitaplarÄ±n gÃ¶rÃ¼nmÃ¼yor sitede',NULL,NULL,'unread','normal','
+176.216.80.36','2025-10-08 09:45:47','2025-10-08 09:45:47'),(11,'neva yilmaz','ipekneva@outlook.com','Genel Sorular','s
+ey acaba diger basili kitaplarida siteye ekleme sansiniz var mi? ben kitaplari alamiyorum ama cok okumak istiyorum?',NU
+LL,NULL,'unread','normal','83.86.227.216','2025-10-08 09:49:55','2025-10-08 09:49:55'),(13,'FatmagÃ¼l AvcÄ±','fatmagula
+64@gmail.com','DiÄŸer','Selam Maral abla. NasÄ±lsÄ±n,  umarÄ±m iyisindir. Benim senden bir imza isteÄŸim vardÄ±. Uzun z
+amandÄ±r kitaplarÄ±nÄ± okuyorum, seni mÃ¼mkÃ¼n olduÄŸunca takip ediyorum. Her imza takvimine bakÄ±yorum. Karaman\'da ya
+ÅŸÄ±yorum ama buraya galiba hiÃ§ gelmedin. GerÃ§i benim uzun sÃ¼re dediÄŸim yaklaÅŸÄ±k olarak Ã¼Ã§ yÄ±l. Seni ablam gib
+i gÃ¶rÃ¼yorum ve bir kere sarÄ±lmak istiyorum. Senin elinde deÄŸil biliyorum ama yayÄ±n eviyle konuÅŸsan? LÃ¼tfen bu Al
+az ve Gurur delisi (ne kadar alakasÄ±z olduÄŸunu biliyorum ama) okurunu kÄ±rma.â¤ï¸â¤',NULL,NULL,'unread','normal','
+176.90.158.156','2025-10-12 08:50:02','2025-10-12 08:50:02'),(14,'Duygu KÄ±lÄ±Ã§','duygukilci58@gmail.com','Genel Sorul
+ar','Sevgili yazarÄ±m Ã¶ncelikle merhaba seni kutluyor ve baÅŸarÄ±larÄ±nÄ±n devamÄ±nÄ± diliyorum sana bir sorum var. Ac
+aba Vanessa\'nÄ±n kitabÄ± ne zaman Ã§Ä±kacak? BirazcÄ±kta Vanessa Green okumak istiyoruz biraz bilgilendirme yapabilir 
+misin?',NULL,NULL,'unread','normal','46.1.27.32','2025-10-12 09:13:50','2025-10-12 09:13:50'),(15,'Elif','elifturkoglu2
+10@gmail.com','Genel Sorular','Bence bu sefer site oldu gibii skjdjdjf artÄ±k olsun yaa 777',NULL,NULL,'unread','normal
+','88.234.245.105','2025-10-12 09:28:33','2025-10-12 09:28:33');
+  /*!40000 ALTER TABLE `contact_messages` ENABLE KEYS */;
+  UNLOCK TABLES;
+  
+  --
+> CREATE TABLE `likes` (
+    `id` int NOT NULL AUTO_INCREMENT,
+    `book_id` int DEFAULT NULL,
+    `chapter_id` int DEFAULT NULL,
+    `line_number` int DEFAULT NULL,
+    `user_ip` varchar(45) COLLATE utf8mb4_unicode_ci NOT NULL,
+    `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    KEY `idx_book_id` (`book_id`),
+    KEY `idx_chapter_id` (`chapter_id`),
+    KEY `idx_likes_chapter_line` (`chapter_id`,`line_number`),
+    KEY `idx_likes_book_id` (`book_id`),
+    KEY `idx_likes_chapter_id` (`chapter_id`),
+    CONSTRAINT `likes_ibfk_1` FOREIGN KEY (`book_id`) REFERENCES `books` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `likes_ibfk_2` FOREIGN KEY (`chapter_id`) REFERENCES `chapters` (`id`) ON DELETE CASCADE
+  ) ENGINE=InnoDB AUTO_INCREMENT=10408 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  /*!40101 SET character_set_client = @saved_cs_client */;
+  
+  --
+  -- Dumping data for table `likes`
+  --
+  
+  LOCK TABLES `likes` WRITE;
+  /*!40000 ALTER TABLE `likes` DISABLE KEYS */;
+  INSERT INTO `likes` VALUES (12,2,NULL,NULL,'::ffff:127.0.0.1','2025-09-30 07:46:59'),(267,2,NULL,NULL,'test_ip_175954
+2909232','2025-10-04 01:55:09'),(293,38,NULL,NULL,'78.185.22.113','2025-10-06 16:53:49'),(295,38,NULL,NULL,'78.179.198.
+227','2025-10-06 16:58:12'),(296,2,NULL,NULL,'88.241.78.6','2025-10-06 17:03:57'),(297,38,NULL,NULL,'88.241.78.6','2025
+-10-06 17:04:07'),(302,38,NULL,NULL,'91.93.34.129','2025-10-06 17:18:13'),(304,38,NULL,NULL,'46.155.232.251','2025-10-0
+7 06:49:41'),(305,38,NULL,NULL,'62.217.151.79','2025-10-07 06:55:50'),(307,NULL,16,NULL,'46.155.232.251','2025-10-07 07
+:25:44'),(308,38,NULL,NULL,'88.230.128.16','2025-10-07 08:43:53'),(309,38,NULL,NULL,'78.190.15.10','2025-10-07 08:53:01
+'),(310,38,NULL,NULL,'176.216.190.195','2025-10-07 09:25:55'),(311,2,NULL,NULL,'176.216.190.195','2025-10-07 09:25:56')
+,(312,NULL,16,NULL,'176.216.190.195','2025-10-07 09:26:41'),(315,NULL,19,NULL,'176.216.190.195','2025-10-07 09:26:47'),
+(316,NULL,18,NULL,'176.216.190.195','2025-10-07 09:26:47'),(318,NULL,20,NULL,'176.216.190.195','2025-10-07 09:26:52'),(
+319,NULL,20,NULL,'176.216.190.195','2025-10-07 09:26:52'),(321,38,NULL,NULL,'88.231.179.220','2025-10-07 09:41:23'),(32
+3,2,NULL,NULL,'88.231.179.220','2025-10-07 09:44:18'),(324,38,NULL,NULL,'46.154.167.84','2025-10-07 09:47:09'),(325,2,N
+ULL,NULL,'46.154.167.84','2025-10-07 09:48:48'),(327,2,NULL,NULL,'88.236.74.61','2025-10-07 10:05:18'),(328,NULL,21,NUL
+L,'176.216.193.118','2025-10-07 10:07:09'),(329,38,NULL,NULL,'31.155.225.87','2025-10-07 10:15:39'),(331,38,NULL,NULL,'
+176.88.72.219','2025-10-07 10:33:18'),(332,NULL,20,NULL,'176.88.72.219','2025-10-07 12:19:42'),(334,38,NULL,NULL,'85.10
+6.150.146','2025-10-07 12:43:02'),(335,38,NULL,NULL,'212.253.204.135','2025-10-07 13:11:07'),(336,2,NULL,NULL,'212.253.
+204.135','2025-10-07 13:11:08'),(337,NULL,22,NULL,'212.253.204.135','2025-10-07 13:11:17'),(338,NULL,21,NULL,'212.253.2
+04.135','2025-10-07 13:11:20'),(340,NULL,19,NULL,'212.253.204.135','2025-10-07 13:11:21'),(341,NULL,20,NULL,'212.253.20
+4.135','2025-10-07 13:11:22'),(342,NULL,18,NULL,'212.253.204.135','2025-10-07 13:11:23'),(343,NULL,16,NULL,'212.253.204
+.135','2025-10-07 13:11:23'),(344,NULL,22,NULL,'85.106.150.146','2025-10-07 13:11:45'),(345,38,NULL,NULL,'176.238.156.1
+95','2025-10-07 13:11:55'),(346,NULL,22,NULL,'195.142.182.153','2025-10-07 13:16:23'),(347,NULL,22,NULL,'78.172.213.161
+','2025-10-07 13:28:22'),(348,38,NULL,NULL,'88.234.87.73','2025-10-07 13:29:06'),(349,2,NULL,NULL,'88.234.87.73','2025-
+10-07 13:29:07'),(351,38,NULL,NULL,'149.140.105.203','2025-10-07 13:35:13'),(352,2,NULL,NULL,'149.140.105.203','2025-10
+-07 13:35:28'),(353,38,NULL,NULL,'94.122.137.204','2025-10-07 13:36:09'),(354,2,NULL,NULL,'31.155.225.87','2025-10-07 1
+3:36:21'),(355,38,NULL,NULL,'78.174.68.136','2025-10-07 13:42:39'),(356,2,NULL,NULL,'185.69.186.21','2025-10-07 13:45:5
+8'),(357,38,NULL,NULL,'37.155.49.201','2025-10-07 13:52:44'),(358,NULL,16,NULL,'37.155.49.201','2025-10-07 13:53:06'),(
+359,NULL,18,NULL,'37.155.49.201','2025-10-07 14:14:14'),(360,NULL,16,NULL,'95.70.205.11','2025-10-07 14:14:28'),(361,NU
+LL,16,NULL,'95.70.205.11','2025-10-07 14:14:29'),(362,NULL,19,NULL,'95.70.205.11','2025-10-07 14:14:34'),(363,NULL,18,N
+ULL,'95.70.205.11','2025-10-07 14:14:35'),(365,NULL,21,NULL,'95.70.205.11','2025-10-07 14:14:37'),(366,NULL,22,NULL,'95
+.70.205.11','2025-10-07 14:14:39'),(367,NULL,23,NULL,'95.70.205.11','2025-10-07 14:14:39'),(368,NULL,24,NULL,'95.70.205
+.11','2025-10-07 14:14:42'),(369,NULL,25,NULL,'95.70.205.11','2025-10-07 14:14:45'),(370,NULL,20,NULL,'95.70.205.11','2
+025-10-07 14:16:47'),(371,NULL,25,NULL,'88.231.179.220','2025-10-07 14:23:11'),(372,NULL,23,NULL,'88.231.179.220','2025
+-10-07 14:23:13'),(373,NULL,22,NULL,'88.231.179.220','2025-10-07 14:23:14'),(374,NULL,21,NULL,'88.231.179.220','2025-10
+-07 14:23:14'),(375,NULL,20,NULL,'88.231.179.220','2025-10-07 14:23:16'),(376,NULL,19,NULL,'88.231.179.220','2025-10-07
+ 14:23:16'),(377,NULL,18,NULL,'88.231.179.220','2025-10-07 14:23:17'),(378,NULL,16,NULL,'88.231.179.220','2025-10-07 14
+:23:18'),(379,NULL,17,NULL,'88.231.179.220','2025-10-07 14:23:35'),(381,38,NULL,NULL,'78.177.166.226','2025-10-07 14:35
+:58'),(382,38,NULL,NULL,'78.177.166.226','2025-10-07 14:35:59'),(383,NULL,26,43,'78.177.166.226','2025-10-07 14:36:10')
+,(384,NULL,26,45,'78.177.166.226','2025-10-07 14:36:12'),(385,NULL,26,687,'78.177.166.226','2025-10-07 14:36:24'),(386,
+NULL,26,685,'78.177.166.226','2025-10-07 14:36:25'),(387,NULL,26,683,'78.177.166.226','2025-10-07 14:36:27'),(388,NULL,
+22,627,'78.173.20.14','2025-10-07 14:41:10'),(389,NULL,22,629,'78.173.20.14','2025-10-07 14:41:11'),(390,NULL,22,631,'7
+8.173.20.14','2025-10-07 14:41:13'),(391,NULL,22,633,'78.173.20.14','2025-10-07 14:41:13'),(392,NULL,22,635,'78.173.20.
+14','2025-10-07 14:41:14'),(394,NULL,22,639,'78.173.20.14','2025-10-07 14:41:21'),(395,NULL,22,637,'78.173.20.14','2025
+-10-07 14:41:22'),(396,NULL,22,641,'78.173.20.14','2025-10-07 14:41:25'),(397,NULL,22,643,'78.173.20.14','2025-10-07 14
+:41:29'),(398,NULL,22,645,'78.173.20.14','2025-10-07 14:41:42'),(399,NULL,22,647,'78.173.20.14','2025-10-07 14:41:47'),
+(400,NULL,22,649,'78.173.20.14','2025-10-07 14:41:50'),(401,NULL,22,651,'78.173.20.14','2025-10-07 14:41:52'),(402,NULL
+,22,653,'78.173.20.14','2025-10-07 14:41:58'),(403,NULL,22,655,'78.173.20.14','2025-10-07 14:42:00'),(404,NULL,22,657,'
+78.173.20.14','2025-10-07 14:42:02'),(405,NULL,22,659,'78.173.20.14','2025-10-07 14:42:16'),(407,NULL,22,661,'78.173.20
+.14','2025-10-07 14:42:19'),(408,NULL,22,663,'78.173.20.14','2025-10-07 14:42:21'),(410,NULL,22,665,'78.173.20.14','202
+5-10-07 14:42:32'),(411,NULL,22,667,'78.173.20.14','2025-10-07 14:42:35'),(412,NULL,22,669,'78.173.20.14','2025-10-07 1
+4:42:39'),(413,NULL,22,671,'78.173.20.14','2025-10-07 14:42:44'),(414,NULL,22,673,'78.173.20.14','2025-10-07 14:42:52')
+,(415,NULL,22,675,'78.173.20.14','2025-10-07 14:42:56'),(416,NULL,22,677,'78.173.20.14','2025-10-07 14:43:01'),(417,NUL
+L,26,NULL,'95.70.205.11','2025-10-07 14:43:01'),(418,NULL,22,681,'78.173.20.14','2025-10-07 14:43:11'),(419,38,NULL,NUL
+L,'84.44.85.163','2025-10-07 14:43:16'),(420,2,NULL,NULL,'84.44.85.163','2025-10-07 14:43:17'),(421,NULL,22,683,'78.173
+.20.14','2025-10-07 14:43:23'),(423,NULL,22,685,'78.173.20.14','2025-10-07 14:43:33'),(424,NULL,22,687,'78.173.20.14','
+2025-10-07 14:43:42'),(425,NULL,22,689,'78.173.20.14','2025-10-07 14:43:47'),(426,NULL,22,691,'78.173.20.14','2025-10-0
+7 14:43:51'),(427,NULL,22,693,'78.173.20.14','2025-10-07 14:43:56'),(428,NULL,22,695,'78.173.20.14','2025-10-07 14:43:5
+9'),(429,NULL,22,697,'78.173.20.14','2025-10-07 14:44:04'),(430,NULL,22,699,'78.173.20.14','2025-10-07 14:44:07'),(431,
+NULL,22,701,'78.173.20.14','2025-10-07 14:44:09'),(432,NULL,22,703,'78.173.20.14','2025-10-07 14:44:15'),(434,NULL,22,7
+05,'78.173.20.14','2025-10-07 14:44:19'),(435,NULL,22,709,'78.173.20.14','2025-10-07 14:44:25'),(436,NULL,22,711,'78.17
+3.20.14','2025-10-07 14:44:28'),(437,NULL,22,713,'78.173.20.14','2025-10-07 14:44:31'),(438,NULL,22,715,'78.173.20.14',
+'2025-10-07 14:44:35'),(439,NULL,22,717,'78.173.20.14','2025-10-07 14:44:39'),(440,NULL,22,719,'78.173.20.14','2025-10-
+07 14:44:43'),(441,NULL,22,721,'78.173.20.14','2025-10-07 14:44:46'),(442,NULL,22,723,'78.173.20.14','2025-10-07 14:44:
+48'),(443,NULL,22,725,'78.173.20.14','2025-10-07 14:44:50'),(444,NULL,22,727,'78.173.20.14','2025-10-07 14:44:54'),(445
+,NULL,22,729,'78.173.20.14','2025-10-07 14:45:03'),(446,NULL,22,731,'78.173.20.14','2025-10-07 14:45:13'),(447,NULL,22,
+733,'78.173.20.14','2025-10-07 14:45:19'),(448,NULL,22,NULL,'78.173.20.14','2025-10-07 14:46:12'),(449,NULL,16,NULL,'78
+.173.20.14','2025-10-07 14:46:30'),(451,NULL,18,NULL,'78.173.20.14','2025-10-07 14:46:34'),(452,NULL,19,NULL,'78.173.20
+.14','2025-10-07 14:46:35'),(453,NULL,20,NULL,'78.173.20.14','2025-10-07 14:46:36'),(454,NULL,21,NULL,'78.173.20.14','2
+025-10-07 14:46:37'),(455,NULL,23,NULL,'78.173.20.14','2025-10-07 14:46:38'),(456,NULL,24,NULL,'78.173.20.14','2025-10-
+07 14:46:39'),(457,NULL,26,NULL,'78.173.20.14','2025-10-07 14:46:40'),(458,NULL,25,NULL,'78.173.20.14','2025-10-07 14:4
+6:42'),(459,38,NULL,NULL,'95.70.205.11','2025-10-07 14:51:51'),(460,NULL,26,NULL,'176.88.131.9','2025-10-07 14:52:56'),
+(462,NULL,26,NULL,'88.241.78.6','2025-10-07 15:02:29'),(464,NULL,17,NULL,'78.172.119.117','2025-10-07 15:21:04'),(467,N
+ULL,27,NULL,'95.70.205.11','2025-10-07 15:32:53'),(469,38,NULL,NULL,'5.229.48.223','2025-10-07 15:35:30'),(470,NULL,21,
+NULL,'95.14.125.45','2025-10-07 15:42:05'),(472,NULL,26,437,'188.3.119.152','2025-10-07 15:50:39'),(473,NULL,18,NULL,'9
+4.54.112.175','2025-10-07 16:02:31'),(480,38,NULL,NULL,'78.186.233.146','2025-10-07 16:07:20'),(481,38,NULL,NULL,'78.18
+6.233.146','2025-10-07 16:07:20'),(483,2,NULL,NULL,'78.186.233.146','2025-10-07 16:12:07'),(484,38,NULL,NULL,'46.1.148.
+171','2025-10-07 16:12:24'),(485,2,NULL,NULL,'46.1.148.171','2025-10-07 16:12:26'),(486,NULL,27,NULL,'78.186.233.146','
+2025-10-07 16:12:51'),(488,NULL,24,NULL,'78.180.1.35','2025-10-07 16:31:12'),(489,2,NULL,NULL,'78.177.166.226','2025-10
+-07 16:35:15'),(490,NULL,28,NULL,'78.177.166.226','2025-10-07 16:35:25'),(491,NULL,29,NULL,'78.177.166.226','2025-10-07
+ 16:35:26'),(493,NULL,27,NULL,'78.177.166.226','2025-10-07 16:35:29'),(494,NULL,26,NULL,'78.177.166.226','2025-10-07 16
+:35:31'),(495,NULL,25,NULL,'78.177.166.226','2025-10-07 16:35:32'),(496,NULL,24,NULL,'78.177.166.226','2025-10-07 16:35
+:33'),(497,NULL,23,NULL,'78.177.166.226','2025-10-07 16:35:34'),(498,NULL,22,NULL,'78.177.166.226','2025-10-07 16:35:35
+'),(499,NULL,21,NULL,'78.177.166.226','2025-10-07 16:35:36'),(500,NULL,20,NULL,'78.177.166.226','2025-10-07 16:35:37'),
+(501,NULL,19,NULL,'78.177.166.226','2025-10-07 16:35:39'),(502,NULL,18,NULL,'78.177.166.226','2025-10-07 16:35:40'),(50
+3,NULL,16,NULL,'78.177.166.226','2025-10-07 16:35:41'),(504,NULL,16,NULL,'88.233.184.12','2025-10-07 16:36:07'),(505,NU
+LL,18,NULL,'88.233.184.12','2025-10-07 16:36:09'),(506,NULL,19,NULL,'88.233.184.12','2025-10-07 16:36:10'),(507,NULL,20
+,NULL,'88.233.184.12','2025-10-07 16:36:11'),(508,NULL,21,NULL,'88.233.184.12','2025-10-07 16:36:13'),(509,NULL,22,NULL
+,'88.233.184.12','2025-10-07 16:36:14'),(510,NULL,23,NULL,'88.233.184.12','2025-10-07 16:36:14'),(511,NULL,24,NULL,'88.
+233.184.12','2025-10-07 16:36:16'),(512,NULL,25,NULL,'88.233.184.12','2025-10-07 16:36:17'),(513,NULL,26,NULL,'88.233.1
+84.12','2025-10-07 16:36:18'),(514,NULL,27,NULL,'88.233.184.12','2025-10-07 16:36:20'),(515,NULL,28,NULL,'88.233.184.12
+','2025-10-07 16:36:22'),(516,NULL,29,NULL,'88.233.184.12','2025-10-07 16:36:24'),(517,38,NULL,NULL,'176.33.98.43','202
+5-10-07 16:40:03'),(518,38,NULL,NULL,'85.98.49.144','2025-10-07 16:40:44'),(519,2,NULL,NULL,'85.98.49.144','2025-10-07 
+16:40:48'),(520,NULL,30,NULL,'31.155.131.130','2025-10-07 16:42:47'),(521,2,NULL,NULL,'31.155.131.130','2025-10-07 16:4
+5:41'),(522,38,NULL,NULL,'31.155.131.130','2025-10-07 16:45:58'),(523,NULL,31,NULL,'185.169.182.5','2025-10-07 16:52:36
+'),(524,38,NULL,NULL,'78.172.184.124','2025-10-07 17:01:03'),(525,NULL,19,NULL,'94.54.112.175','2025-10-07 17:02:00'),(
+526,NULL,20,NULL,'94.54.112.175','2025-10-07 17:02:00'),(527,NULL,21,NULL,'94.54.112.175','2025-10-07 17:02:03'),(528,N
+ULL,28,NULL,'78.186.233.146','2025-10-07 17:03:04'),(529,NULL,26,NULL,'78.186.233.146','2025-10-07 17:03:05'),(530,NULL
+,16,NULL,'78.186.233.146','2025-10-07 17:03:07'),(531,NULL,29,NULL,'78.186.233.146','2025-10-07 17:03:09'),(532,NULL,30
+,NULL,'78.186.233.146','2025-10-07 17:03:10'),(533,NULL,31,NULL,'78.186.233.146','2025-10-07 17:03:11'),(534,NULL,32,NU
+LL,'78.186.233.146','2025-10-07 17:03:12'),(535,NULL,33,NULL,'78.186.233.146','2025-10-07 17:03:15'),(536,NULL,25,NULL,
+'78.186.233.146','2025-10-07 17:03:17'),(537,NULL,28,NULL,'95.70.205.11','2025-10-07 17:06:45'),(538,NULL,29,NULL,'95.7
+0.205.11','2025-10-07 17:06:46'),(539,NULL,30,NULL,'95.70.205.11','2025-10-07 17:06:47'),(540,NULL,31,NULL,'95.70.205.1
+1','2025-10-07 17:06:47'),(541,NULL,32,NULL,'95.70.205.11','2025-10-07 17:06:48'),(542,NULL,33,NULL,'95.70.205.11','202
+5-10-07 17:06:48'),(543,2,NULL,NULL,'5.176.113.240','2025-10-07 17:07:46'),(545,38,NULL,NULL,'31.155.132.145','2025-10-
+07 17:14:39'),(546,2,NULL,NULL,'31.155.132.145','2025-10-07 17:14:41'),(547,NULL,17,NULL,'78.172.184.124','2025-10-07 1
+7:25:27'),(548,NULL,18,NULL,'78.186.233.146','2025-10-07 17:31:05'),(549,NULL,19,NULL,'78.186.233.146','2025-10-07 17:3
+1:06'),(550,NULL,20,NULL,'78.186.233.146','2025-10-07 17:31:16'),(551,NULL,21,NULL,'78.186.233.146','2025-10-07 17:31:1
+7'),(552,NULL,22,NULL,'78.186.233.146','2025-10-07 17:31:18'),(553,NULL,23,NULL,'78.186.233.146','2025-10-07 17:31:19')
+,(554,NULL,24,NULL,'78.186.233.146','2025-10-07 17:31:20'),(557,NULL,22,NULL,'94.54.112.175','2025-10-07 17:40:08'),(55
+8,2,NULL,NULL,'78.172.184.124','2025-10-07 17:43:28'),(559,38,NULL,NULL,'88.229.69.123','2025-10-07 17:47:41'),(560,NUL
+L,21,NULL,'85.153.226.116','2025-10-07 17:53:36'),(561,NULL,22,NULL,'85.153.226.116','2025-10-07 17:59:25'),(562,38,NUL
+L,NULL,'85.106.151.134','2025-10-07 18:02:51'),(563,NULL,23,NULL,'94.54.112.175','2025-10-07 18:06:35'),(564,38,NULL,NU
+LL,'95.10.228.154','2025-10-07 18:20:51'),(565,2,NULL,NULL,'95.10.228.154','2025-10-07 18:20:53'),(566,38,NULL,NULL,'88
+.242.171.22','2025-10-07 18:23:02'),(568,38,NULL,NULL,'85.103.110.109','2025-10-07 18:27:31'),(569,NULL,19,NULL,'185.25
+2.114.39','2025-10-07 18:27:48'),(572,NULL,33,NULL,'176.55.221.72','2025-10-07 18:39:00'),(573,NULL,23,NULL,'85.153.226
+.116','2025-10-07 18:43:04'),(575,NULL,33,NULL,'78.184.78.170','2025-10-07 18:54:42'),(576,38,NULL,NULL,'5.47.167.89','
+2025-10-07 18:57:42'),(577,2,NULL,NULL,'31.145.217.168','2025-10-07 18:59:12'),(578,38,NULL,NULL,'31.145.217.168','2025
+-10-07 19:00:13'),(582,38,NULL,NULL,'213.153.220.91','2025-10-07 19:19:07'),(583,2,NULL,NULL,'213.153.220.91','2025-10-
+07 19:19:10'),(584,NULL,25,NULL,'213.153.220.91','2025-10-07 19:23:36'),(585,38,NULL,NULL,'88.238.40.98','2025-10-07 19
+:26:02'),(586,38,NULL,NULL,'188.132.247.151','2025-10-07 19:26:06'),(587,2,NULL,NULL,'88.238.40.98','2025-10-07 19:26:2
+2'),(588,38,NULL,NULL,'46.2.49.255','2025-10-07 19:26:24'),(589,38,NULL,NULL,'51.15.90.80','2025-10-07 19:27:45'),(590,
+NULL,16,NULL,'46.154.141.32','2025-10-07 19:28:35'),(591,NULL,29,NULL,'213.153.220.91','2025-10-07 19:29:24'),(592,NULL
+,30,NULL,'213.153.220.91','2025-10-07 19:29:27'),(593,NULL,31,NULL,'213.153.220.91','2025-10-07 19:29:28'),(594,NULL,32
+,NULL,'213.153.220.91','2025-10-07 19:29:30'),(595,NULL,33,NULL,'213.153.220.91','2025-10-07 19:29:31'),(596,NULL,28,NU
+LL,'213.153.220.91','2025-10-07 19:29:34'),(597,NULL,27,NULL,'213.153.220.91','2025-10-07 19:29:35'),(598,NULL,26,NULL,
+'213.153.220.91','2025-10-07 19:29:36'),(599,NULL,16,NULL,'213.153.220.91','2025-10-07 19:29:40'),(600,NULL,24,NULL,'21
+3.153.220.91','2025-10-07 19:29:41'),(601,NULL,23,NULL,'213.153.220.91','2025-10-07 19:29:43'),(602,NULL,22,NULL,'213.1
+53.220.91','2025-10-07 19:29:44'),(603,NULL,21,NULL,'213.153.220.91','2025-10-07 19:29:45'),(604,NULL,18,NULL,'213.153.
+220.91','2025-10-07 19:29:53'),(605,NULL,19,NULL,'213.153.220.91','2025-10-07 19:29:55'),(608,38,NULL,NULL,'78.177.172.
+10','2025-10-07 19:44:51'),(609,38,NULL,NULL,'78.190.27.182','2025-10-07 20:08:52'),(610,38,NULL,NULL,'88.236.174.218',
+'2025-10-07 20:10:20'),(611,38,NULL,NULL,'46.154.114.190','2025-10-07 20:10:53'),(612,2,NULL,NULL,'46.154.114.190','202
+5-10-07 20:10:55'),(613,2,NULL,NULL,'88.236.174.218','2025-10-07 20:14:08'),(614,38,NULL,NULL,'78.173.18.211','2025-10-
+07 20:14:58'),(615,38,NULL,NULL,'141.94.68.100','2025-10-07 20:17:22'),(617,NULL,29,NULL,'141.94.68.100','2025-10-07 20
+:18:09'),(618,NULL,31,NULL,'78.173.12.170','2025-10-07 20:21:53'),(633,38,NULL,NULL,'188.3.162.207','2025-10-07 20:22:2
+7'),(634,38,NULL,NULL,'188.3.162.207','2025-10-07 20:22:27'),(637,2,NULL,NULL,'188.3.162.207','2025-10-07 20:23:54'),(6
+38,NULL,18,NULL,'94.54.228.39','2025-10-07 20:25:53'),(639,NULL,25,NULL,'213.153.220.91','2025-10-07 20:27:00'),(640,NU
+LL,25,NULL,'213.153.220.91','2025-10-07 20:27:00'),(641,NULL,25,NULL,'213.153.220.91','2025-10-07 20:27:00'),(642,NULL,
+25,NULL,'213.153.220.91','2025-10-07 20:27:00'),(643,NULL,25,NULL,'213.153.220.91','2025-10-07 20:27:00'),(644,NULL,25,
+NULL,'213.153.220.91','2025-10-07 20:27:00'),(647,NULL,16,NULL,'85.106.132.2','2025-10-07 21:18:50'),(648,NULL,33,NULL,
+'78.172.213.161','2025-10-07 21:21:41'),(649,38,NULL,NULL,'5.27.44.43','2025-10-07 22:13:38'),(651,38,NULL,NULL,'23.162
+.152.214','2025-10-07 22:23:47'),(652,2,NULL,NULL,'23.162.152.214','2025-10-07 22:23:55'),(653,38,NULL,NULL,'85.99.203.
+132','2025-10-07 22:36:03'),(654,NULL,19,497,'5.27.44.43','2025-10-07 22:54:18'),(655,NULL,19,499,'5.27.44.43','2025-10
+-07 22:54:19'),(656,NULL,19,501,'5.27.44.43','2025-10-07 22:54:20'),(657,NULL,19,503,'5.27.44.43','2025-10-07 22:54:27'
+),(658,NULL,19,505,'5.27.44.43','2025-10-07 22:54:28'),(661,38,NULL,NULL,'176.232.237.172','2025-10-07 23:46:55'),(662,
+2,NULL,NULL,'176.232.237.172','2025-10-07 23:47:22'),(664,NULL,20,660,'5.27.44.43','2025-10-08 00:10:48'),(665,2,NULL,N
+ULL,'95.5.101.181','2025-10-08 00:11:19'),(666,NULL,34,NULL,'46.196.152.210','2025-10-08 01:54:54'),(667,NULL,38,NULL,'
+85.110.121.192','2025-10-08 02:12:00'),(668,NULL,37,NULL,'85.110.121.192','2025-10-08 02:12:03'),(669,NULL,36,NULL,'85.
+110.121.192','2025-10-08 02:12:05'),(670,NULL,35,NULL,'85.110.121.192','2025-10-08 02:12:08'),(671,NULL,34,NULL,'85.110
+.121.192','2025-10-08 02:12:10'),(672,NULL,17,NULL,'85.110.121.192','2025-10-08 02:12:13'),(673,38,NULL,NULL,'85.110.12
+1.192','2025-10-08 02:12:32'),(681,NULL,23,NULL,'5.176.132.185','2025-10-08 03:08:51'),(682,38,NULL,NULL,'46.2.128.183'
+,'2025-10-08 03:36:38'),(683,38,NULL,NULL,'88.233.85.41','2025-10-08 03:51:28'),(684,2,NULL,NULL,'88.233.85.41','2025-1
+0-08 03:51:30'),(686,NULL,38,NULL,'46.196.152.210','2025-10-08 04:05:58'),(688,38,NULL,NULL,'78.177.180.134','2025-10-0
+8 04:44:09'),(689,38,NULL,NULL,'95.2.11.127','2025-10-08 04:59:07'),(690,2,NULL,NULL,'95.2.11.127','2025-10-08 05:00:35
+'),(691,NULL,27,NULL,'78.173.20.14','2025-10-08 05:52:11'),(692,NULL,28,NULL,'78.173.20.14','2025-10-08 05:52:15'),(693
+,NULL,29,NULL,'78.173.20.14','2025-10-08 05:52:16'),(694,NULL,30,NULL,'78.173.20.14','2025-10-08 05:52:17'),(695,NULL,3
+1,NULL,'78.173.20.14','2025-10-08 05:52:19'),(696,NULL,32,NULL,'78.173.20.14','2025-10-08 05:52:20'),(697,NULL,33,NULL,
+'78.173.20.14','2025-10-08 05:52:22'),(698,NULL,34,NULL,'78.173.20.14','2025-10-08 05:52:52'),(699,NULL,17,NULL,'78.173
+.20.14','2025-10-08 05:52:55'),(700,NULL,35,NULL,'78.173.20.14','2025-10-08 05:52:57'),(701,NULL,36,NULL,'78.173.20.14'
+,'2025-10-08 05:52:58'),(702,NULL,37,NULL,'78.173.20.14','2025-10-08 05:52:59'),(704,NULL,49,NULL,'176.216.220.145','20
+25-10-08 07:15:51'),(705,38,NULL,NULL,'176.219.0.254','2025-10-08 07:23:11'),(706,2,NULL,NULL,'176.219.0.254','2025-10-
+08 07:23:15'),(707,38,NULL,NULL,'85.97.11.161','2025-10-08 08:27:36'),(708,38,NULL,NULL,'149.140.195.146','2025-10-08 0
+8:30:07'),(709,2,NULL,NULL,'149.140.195.146','2025-10-08 08:30:09'),(710,38,NULL,NULL,'78.186.12.37','2025-10-08 08:41:
+17'),(714,38,NULL,NULL,'5.47.25.66','2025-10-08 09:03:36'),(715,NULL,42,NULL,'5.47.25.66','2025-10-08 09:06:04'),(717,3
+8,NULL,NULL,'5.24.19.8','2025-10-08 09:25:40'),(718,38,NULL,NULL,'159.146.76.210','2025-10-08 09:32:45'),(719,2,NULL,NU
+LL,'159.146.76.210','2025-10-08 09:32:47'),(720,38,NULL,NULL,'31.142.134.91','2025-10-08 09:32:49'),(721,2,NULL,NULL,'3
+1.142.134.91','2025-10-08 09:32:51'),(722,38,NULL,NULL,'37.155.166.8','2025-10-08 09:32:54'),(723,38,NULL,NULL,'77.133.
+250.207','2025-10-08 09:32:54'),(724,38,NULL,NULL,'85.98.22.48','2025-10-08 09:32:54'),(725,38,NULL,NULL,'149.140.23.10
+4','2025-10-08 09:32:54'),(726,38,NULL,NULL,'46.106.27.212','2025-10-08 09:32:54'),(727,2,NULL,NULL,'88.242.204.228','2
+025-10-08 09:32:55'),(728,2,NULL,NULL,'37.155.166.8','2025-10-08 09:32:56'),(729,2,NULL,NULL,'46.106.27.212','2025-10-0
+8 09:32:56'),(730,2,NULL,NULL,'176.219.123.141','2025-10-08 09:32:57'),(731,38,NULL,NULL,'78.190.131.16','2025-10-08 09
+:32:57'),(733,38,NULL,NULL,'95.13.30.220','2025-10-08 09:32:58'),(735,38,NULL,NULL,'176.219.35.189','2025-10-08 09:32:5
+9'),(736,2,NULL,NULL,'176.219.35.189','2025-10-08 09:33:02'),(737,38,NULL,NULL,'88.228.65.27','2025-10-08 09:33:04'),(7
+38,38,NULL,NULL,'178.246.149.252','2025-10-08 09:33:04'),(739,38,NULL,NULL,'46.155.202.252','2025-10-08 09:33:04'),(740
+,38,NULL,NULL,'88.255.43.106','2025-10-08 09:33:05'),(741,NULL,16,NULL,'217.64.113.230','2025-10-08 09:33:06'),(742,38,
+NULL,NULL,'5.176.103.178','2025-10-08 09:33:06'),(743,2,NULL,NULL,'176.238.224.102','2025-10-08 09:33:07'),(744,38,NULL
+,NULL,'81.213.192.206','2025-10-08 09:33:07'),(745,2,NULL,NULL,'88.228.65.27','2025-10-08 09:33:07'),(746,2,NULL,NULL,'
+159.146.104.32','2025-10-08 09:33:08'),(748,38,NULL,NULL,'176.238.224.102','2025-10-08 09:33:09'),(750,2,NULL,NULL,'5.1
+76.103.178','2025-10-08 09:33:10'),(751,38,NULL,NULL,'159.146.104.32','2025-10-08 09:33:10'),(752,38,NULL,NULL,'176.88.
+130.107','2025-10-08 09:33:10'),(753,38,NULL,NULL,'46.155.205.252','2025-10-08 09:33:10'),(754,2,NULL,NULL,'81.213.192.
+206','2025-10-08 09:33:12'),(755,38,NULL,NULL,'164.90.200.28','2025-10-08 09:33:12'),(756,2,NULL,NULL,'164.90.200.28','
+2025-10-08 09:33:13'),(757,38,NULL,NULL,'178.240.73.8','2025-10-08 09:33:14'),(758,2,NULL,NULL,'176.88.130.107','2025-1
+0-08 09:33:14'),(759,38,NULL,NULL,'62.167.160.27','2025-10-08 09:33:14'),(760,2,NULL,NULL,'46.106.143.48','2025-10-08 0
+9:33:14'),(761,NULL,49,NULL,'37.154.162.64','2025-10-08 09:33:14'),(762,38,NULL,NULL,'178.240.73.8','2025-10-08 09:33:1
+5'),(763,2,NULL,NULL,'85.97.40.96','2025-10-08 09:33:15'),(764,38,NULL,NULL,'46.106.143.48','2025-10-08 09:33:16'),(765
+,38,NULL,NULL,'149.62.205.127','2025-10-08 09:33:17'),(766,38,NULL,NULL,'46.154.146.224','2025-10-08 09:33:18'),(767,38
+,NULL,NULL,'88.234.217.133','2025-10-08 09:33:19'),(768,38,NULL,NULL,'62.217.129.231','2025-10-08 09:33:19'),(769,2,NUL
+L,NULL,'149.62.205.127','2025-10-08 09:33:20'),(770,2,NULL,NULL,'46.154.146.224','2025-10-08 09:33:20'),(771,NULL,58,NU
+LL,'77.133.250.207','2025-10-08 09:33:22'),(772,38,NULL,NULL,'31.223.8.52','2025-10-08 09:33:22'),(773,38,NULL,NULL,'46
+.155.69.127','2025-10-08 09:33:22'),(774,38,NULL,NULL,'62.217.150.46','2025-10-08 09:33:24'),(775,2,NULL,NULL,'31.223.8
+.52','2025-10-08 09:33:24'),(776,2,NULL,NULL,'77.67.225.4','2025-10-08 09:33:25'),(777,38,NULL,NULL,'78.173.116.253','2
+025-10-08 09:33:25'),(778,38,NULL,NULL,'82.194.22.171','2025-10-08 09:33:25'),(779,38,NULL,NULL,'81.214.117.170','2025-
+10-08 09:33:26'),(780,38,NULL,NULL,'77.67.225.4','2025-10-08 09:33:27'),(781,38,NULL,NULL,'78.176.36.166','2025-10-08 0
+9:33:27'),(782,38,NULL,NULL,'178.240.37.33','2025-10-08 09:33:29'),(783,2,NULL,NULL,'62.217.150.46','2025-10-08 09:33:2
+9'),(784,38,NULL,NULL,'88.254.2.58','2025-10-08 09:33:29'),(785,2,NULL,NULL,'82.194.22.171','2025-10-08 09:33:31'),(786
+,2,NULL,NULL,'78.173.116.253','2025-10-08 09:33:32'),(787,38,NULL,NULL,'37.61.116.255','2025-10-08 09:33:32'),(788,NULL
+,16,NULL,'159.146.76.210','2025-10-08 09:33:33'),(789,38,NULL,NULL,'185.51.113.182','2025-10-08 09:33:33'),(791,NULL,18
+,NULL,'159.146.76.210','2025-10-08 09:33:34'),(792,38,NULL,NULL,'5.176.122.214','2025-10-08 09:33:35'),(793,38,NULL,NUL
+L,'5.47.179.217','2025-10-08 09:33:35'),(794,2,NULL,NULL,'5.47.179.217','2025-10-08 09:33:35'),(795,NULL,19,NULL,'159.1
+46.76.210','2025-10-08 09:33:35'),(796,NULL,20,NULL,'159.146.76.210','2025-10-08 09:33:37'),(797,NULL,57,NULL,'176.219.
+19.102','2025-10-08 09:33:39'),(798,38,NULL,NULL,'31.143.0.90','2025-10-08 09:33:39'),(799,38,NULL,NULL,'88.239.101.217
+','2025-10-08 09:33:39'),(800,NULL,21,NULL,'159.146.76.210','2025-10-08 09:33:39'),(801,NULL,58,NULL,'176.219.19.102','
+2025-10-08 09:33:40'),(802,38,NULL,NULL,'78.163.104.187','2025-10-08 09:33:40'),(803,NULL,21,NULL,'159.146.76.210','202
+5-10-08 09:33:40'),(804,NULL,56,NULL,'176.219.19.102','2025-10-08 09:33:40'),(805,38,NULL,NULL,'212.253.209.84','2025-1
+0-08 09:33:41'),(806,2,NULL,NULL,'5.176.122.214','2025-10-08 09:33:42'),(807,NULL,55,NULL,'176.219.19.102','2025-10-08 
+09:33:42'),(808,NULL,54,NULL,'176.219.19.102','2025-10-08 09:33:43'),(809,NULL,23,NULL,'159.146.76.210','2025-10-08 09:
+33:43'),(810,NULL,22,NULL,'159.146.76.210','2025-10-08 09:33:45'),(811,2,NULL,NULL,'78.180.27.27','2025-10-08 09:33:45'
+),(812,38,NULL,NULL,'78.163.177.75','2025-10-08 09:33:46'),(813,38,NULL,NULL,'78.190.31.211','2025-10-08 09:33:46'),(81
+4,NULL,22,NULL,'159.146.76.210','2025-10-08 09:33:46'),(815,38,NULL,NULL,'176.219.10.180','2025-10-08 09:33:46'),(816,3
+8,NULL,NULL,'88.243.64.30','2025-10-08 09:33:47'),(817,NULL,22,NULL,'159.146.76.210','2025-10-08 09:33:47'),(818,NULL,2
+5,NULL,'159.146.76.210','2025-10-08 09:33:48'),(819,38,NULL,NULL,'5.229.104.124','2025-10-08 09:33:48'),(821,NULL,52,NU
+LL,'176.219.19.102','2025-10-08 09:33:49'),(822,2,NULL,NULL,'88.243.64.30','2025-10-08 09:33:49'),(823,NULL,53,NULL,'17
+6.219.19.102','2025-10-08 09:33:49'),(824,38,NULL,NULL,'176.89.90.102','2025-10-08 09:33:49'),(825,NULL,24,NULL,'159.14
+6.76.210','2025-10-08 09:33:50'),(826,NULL,53,NULL,'176.219.19.102','2025-10-08 09:33:50'),(827,NULL,53,NULL,'176.219.1
+9.102','2025-10-08 09:33:51'),(828,2,NULL,NULL,'78.163.177.75','2025-10-08 09:33:51'),(829,NULL,52,NULL,'176.219.19.102
+','2025-10-08 09:33:52'),(830,NULL,24,NULL,'159.146.76.210','2025-10-08 09:33:52'),(831,2,NULL,NULL,'5.229.104.124','20
+25-10-08 09:33:52'),(833,NULL,51,NULL,'176.219.19.102','2025-10-08 09:33:53'),(834,NULL,27,NULL,'159.146.76.210','2025-
+10-08 09:33:54'),(835,NULL,28,NULL,'159.146.76.210','2025-10-08 09:33:55'),(836,NULL,50,NULL,'176.219.19.102','2025-10-
+08 09:33:55'),(837,NULL,29,NULL,'159.146.76.210','2025-10-08 09:33:56'),(838,NULL,49,NULL,'176.219.19.102','2025-10-08 
+09:33:56'),(839,38,NULL,NULL,'31.143.177.17','2025-10-08 09:33:56'),(840,NULL,58,NULL,'5.177.143.184','2025-10-08 09:33
+:57'),(841,NULL,48,NULL,'176.219.19.102','2025-10-08 09:33:58'),(842,NULL,31,NULL,'159.146.76.210','2025-10-08 09:33:58
+'),(843,NULL,16,NULL,'88.238.9.67','2025-10-08 09:33:58'),(844,NULL,32,NULL,'159.146.76.210','2025-10-08 09:33:58'),(84
+5,NULL,47,NULL,'176.219.19.102','2025-10-08 09:33:58'),(846,NULL,58,NULL,'31.223.8.52','2025-10-08 09:33:59'),(847,NULL
+,30,NULL,'159.146.76.210','2025-10-08 09:34:00'),(848,2,NULL,NULL,'31.143.177.17','2025-10-08 09:34:00'),(849,38,NULL,N
+ULL,'176.240.224.246','2025-10-08 09:34:01'),(850,NULL,45,NULL,'176.219.19.102','2025-10-08 09:34:01'),(851,NULL,33,NUL
+L,'159.146.76.210','2025-10-08 09:34:01'),(852,NULL,44,NULL,'176.219.19.102','2025-10-08 09:34:02'),(853,NULL,40,NULL,'
+159.146.76.210','2025-10-08 09:34:02'),(854,NULL,30,NULL,'159.146.76.210','2025-10-08 09:34:02'),(855,NULL,46,NULL,'176
+.219.19.102','2025-10-08 09:34:02'),(856,NULL,41,NULL,'159.146.76.210','2025-10-08 09:34:02'),(857,2,NULL,NULL,'185.77.
+3.98','2025-10-08 09:34:04'),(858,2,NULL,NULL,'37.155.168.69','2025-10-08 09:34:04'),(859,NULL,42,NULL,'159.146.76.210'
+,'2025-10-08 09:34:04'),(860,NULL,43,NULL,'159.146.76.210','2025-10-08 09:34:04'),(861,NULL,42,NULL,'176.219.19.102','2
+025-10-08 09:34:05'),(862,NULL,41,NULL,'176.219.19.102','2025-10-08 09:34:05'),(863,NULL,43,NULL,'176.219.19.102','2025
+-10-08 09:34:05'),(864,38,NULL,NULL,'37.155.168.69','2025-10-08 09:34:06'),(865,NULL,45,NULL,'159.146.76.210','2025-10-
+08 09:34:06'),(868,NULL,44,NULL,'159.146.76.210','2025-10-08 09:34:07'),(869,NULL,46,NULL,'159.146.76.210','2025-10-08 
+09:34:08'),(870,NULL,33,NULL,'176.219.19.102','2025-10-08 09:34:08'),(871,NULL,32,NULL,'176.219.19.102','2025-10-08 09:
+34:09'),(872,NULL,57,NULL,'176.89.90.102','2025-10-08 09:34:09'),(873,NULL,50,NULL,'159.146.76.210','2025-10-08 09:34:1
+0'),(874,NULL,48,NULL,'159.146.76.210','2025-10-08 09:34:10'),(875,NULL,31,NULL,'176.219.19.102','2025-10-08 09:34:10')
+,(876,NULL,30,NULL,'176.219.19.102','2025-10-08 09:34:11'),(877,NULL,47,NULL,'159.146.76.210','2025-10-08 09:34:11'),(8
+78,NULL,49,NULL,'159.146.76.210','2025-10-08 09:34:12'),(879,NULL,49,NULL,'159.146.76.210','2025-10-08 09:34:12'),(880,
+NULL,29,NULL,'176.219.19.102','2025-10-08 09:34:12'),(881,NULL,48,NULL,'159.146.76.210','2025-10-08 09:34:13'),(882,NUL
+L,18,NULL,'88.238.9.67','2025-10-08 09:34:13'),(883,NULL,50,NULL,'159.146.76.210','2025-10-08 09:34:14'),(885,NULL,46,N
+ULL,'159.146.76.210','2025-10-08 09:34:15'),(887,38,NULL,NULL,'45.11.200.155','2025-10-08 09:34:16'),(888,NULL,40,NULL,
+'176.219.19.102','2025-10-08 09:34:16'),(889,NULL,27,NULL,'176.219.19.102','2025-10-08 09:34:16'),(890,NULL,25,NULL,'17
+6.219.19.102','2025-10-08 09:34:17'),(891,NULL,58,5,'178.170.184.48','2025-10-08 09:34:17'),(892,38,NULL,NULL,'95.7.251
+.53','2025-10-08 09:34:17'),(893,NULL,26,NULL,'176.219.19.102','2025-10-08 09:34:18'),(894,NULL,52,NULL,'159.146.76.210
+','2025-10-08 09:34:18'),(895,NULL,24,NULL,'176.219.19.102','2025-10-08 09:34:18'),(896,NULL,51,NULL,'159.146.76.210','
+2025-10-08 09:34:18'),(897,NULL,23,NULL,'176.219.19.102','2025-10-08 09:34:18'),(898,NULL,22,NULL,'176.219.19.102','202
+5-10-08 09:34:20'),(899,NULL,28,NULL,'176.219.19.102','2025-10-08 09:34:22'),(900,NULL,44,NULL,'5.176.87.30','2025-10-0
+8 09:34:23'),(901,NULL,19,NULL,'176.219.19.102','2025-10-08 09:34:23'),(902,NULL,58,NULL,'159.146.76.210','2025-10-08 0
+9:34:23'),(903,NULL,18,NULL,'176.219.19.102','2025-10-08 09:34:23'),(904,NULL,20,NULL,'176.219.19.102','2025-10-08 09:3
+4:24'),(905,NULL,16,NULL,'176.219.19.102','2025-10-08 09:34:25'),(907,38,NULL,NULL,'185.91.208.75','2025-10-08 09:34:26
+'),(908,NULL,21,NULL,'176.219.19.102','2025-10-08 09:34:26'),(909,NULL,56,NULL,'159.146.76.210','2025-10-08 09:34:27'),
+(911,NULL,55,NULL,'159.146.76.210','2025-10-08 09:34:27'),(912,NULL,57,NULL,'159.146.76.210','2025-10-08 09:34:28'),(91
+3,NULL,19,NULL,'88.238.9.67','2025-10-08 09:34:28'),(914,2,NULL,NULL,'46.155.91.73','2025-10-08 09:34:28'),(915,NULL,18
+,NULL,'78.176.101.195','2025-10-08 09:34:29'),(916,NULL,54,NULL,'159.146.76.210','2025-10-08 09:34:30'),(917,NULL,16,NU
+LL,'88.239.101.217','2025-10-08 09:34:30'),(918,NULL,53,NULL,'159.146.76.210','2025-10-08 09:34:30'),(919,NULL,19,NULL,
+'78.176.101.195','2025-10-08 09:34:31'),(921,38,NULL,NULL,'5.47.177.221','2025-10-08 09:34:32'),(922,NULL,20,NULL,'78.1
+76.101.195','2025-10-08 09:34:32'),(923,NULL,57,NULL,'159.146.76.210','2025-10-08 09:34:33'),(925,NULL,18,NULL,'88.239.
+101.217','2025-10-08 09:34:34'),(926,NULL,18,NULL,'159.146.76.210','2025-10-08 09:34:34'),(927,38,NULL,NULL,'176.219.11
+.158','2025-10-08 09:34:35'),(928,NULL,22,NULL,'78.176.101.195','2025-10-08 09:34:35'),(929,NULL,21,NULL,'78.176.101.19
+5','2025-10-08 09:34:36'),(930,NULL,21,NULL,'159.146.76.210','2025-10-08 09:34:36'),(931,NULL,22,NULL,'159.146.76.210',
+'2025-10-08 09:34:36'),(932,2,NULL,NULL,'5.47.177.221','2025-10-08 09:34:37'),(933,NULL,23,NULL,'78.176.101.195','2025-
+10-08 09:34:37'),(934,38,NULL,NULL,'45.159.31.14','2025-10-08 09:34:37'),(935,NULL,20,NULL,'88.239.101.217','2025-10-08
+ 09:34:38'),(936,38,NULL,NULL,'176.89.106.164','2025-10-08 09:34:38'),(937,NULL,21,NULL,'88.239.101.217','2025-10-08 09
+:34:38'),(938,NULL,19,NULL,'88.239.101.217','2025-10-08 09:34:38'),(939,NULL,24,NULL,'78.176.101.195','2025-10-08 09:34
+:38'),(940,NULL,58,NULL,'82.222.126.108','2025-10-08 09:34:39'),(941,NULL,22,NULL,'159.146.76.210','2025-10-08 09:34:39
+'),(942,NULL,25,NULL,'78.176.101.195','2025-10-08 09:34:40'),(943,NULL,22,NULL,'88.239.101.217','2025-10-08 09:34:40'),
+(944,NULL,23,NULL,'159.146.76.210','2025-10-08 09:34:40'),(945,NULL,23,NULL,'88.239.101.217','2025-10-08 09:34:40'),(94
+6,NULL,23,NULL,'159.146.76.210','2025-10-08 09:34:40'),(947,38,NULL,NULL,'5.176.52.211','2025-10-08 09:34:41'),(948,NUL
+L,26,NULL,'78.176.101.195','2025-10-08 09:34:41'),(949,NULL,58,NULL,'5.27.206.2','2025-10-08 09:34:41'),(950,NULL,24,NU
+LL,'159.146.76.210','2025-10-08 09:34:41'),(951,NULL,16,NULL,'176.88.36.240','2025-10-08 09:34:42'),(952,2,NULL,NULL,'4
+6.221.132.19','2025-10-08 09:34:42'),(953,NULL,25,NULL,'88.239.101.217','2025-10-08 09:34:42'),(954,38,NULL,NULL,'46.15
+5.237.14','2025-10-08 09:34:42'),(955,NULL,25,NULL,'159.146.76.210','2025-10-08 09:34:43'),(956,NULL,27,NULL,'78.176.10
+1.195','2025-10-08 09:34:43'),(957,38,NULL,NULL,'46.221.132.19','2025-10-08 09:34:44'),(958,NULL,18,NULL,'176.88.36.240
+','2025-10-08 09:34:44'),(961,38,NULL,NULL,'176.219.42.159','2025-10-08 09:34:44'),(962,NULL,58,9,'176.219.19.102','202
+5-10-08 09:34:45'),(963,NULL,19,NULL,'176.88.36.240','2025-10-08 09:34:45'),(964,NULL,20,NULL,'88.238.9.67','2025-10-08
+ 09:34:45'),(965,NULL,20,NULL,'176.88.36.240','2025-10-08 09:34:46'),(966,NULL,58,11,'176.219.19.102','2025-10-08 09:34
+:46'),(967,NULL,26,NULL,'88.239.101.217','2025-10-08 09:34:46'),(968,NULL,37,NULL,'46.155.91.73','2025-10-08 09:34:47')
+,(970,NULL,28,NULL,'78.176.101.195','2025-10-08 09:34:47'),(971,NULL,27,NULL,'88.239.101.217','2025-10-08 09:34:47'),(9
+72,2,NULL,NULL,'152.228.134.45','2025-10-08 09:34:47'),(973,NULL,24,NULL,'88.239.101.217','2025-10-08 09:34:47'),(974,N
+ULL,36,NULL,'46.155.91.73','2025-10-08 09:34:47'),(975,2,NULL,NULL,'213.238.187.77','2025-10-08 09:34:47'),(976,NULL,29
+,NULL,'78.176.101.195','2025-10-08 09:34:47'),(977,NULL,21,NULL,'176.88.36.240','2025-10-08 09:34:48'),(978,NULL,21,NUL
+L,'78.176.101.195','2025-10-08 09:34:48'),(979,NULL,35,NULL,'46.155.91.73','2025-10-08 09:34:49'),(980,NULL,26,NULL,'15
+9.146.76.210','2025-10-08 09:34:49'),(981,NULL,28,NULL,'88.239.101.217','2025-10-08 09:34:49'),(982,NULL,34,NULL,'46.15
+5.91.73','2025-10-08 09:34:49'),(983,NULL,30,NULL,'78.176.101.195','2025-10-08 09:34:49'),(984,NULL,58,NULL,'46.2.9.49'
+,'2025-10-08 09:34:49'),(985,NULL,17,NULL,'46.155.91.73','2025-10-08 09:34:50'),(986,NULL,29,NULL,'88.239.101.217','202
+5-10-08 09:34:50'),(987,38,NULL,NULL,'188.125.165.54','2025-10-08 09:34:50'),(988,NULL,27,NULL,'159.146.76.210','2025-1
+0-08 09:34:50'),(989,NULL,31,NULL,'78.176.101.195','2025-10-08 09:34:50'),(990,38,NULL,NULL,'5.25.157.19','2025-10-08 0
+9:34:51'),(991,NULL,32,NULL,'78.176.101.195','2025-10-08 09:34:51'),(992,NULL,30,NULL,'88.239.101.217','2025-10-08 09:3
+4:51'),(993,NULL,35,NULL,'46.155.91.73','2025-10-08 09:34:52'),(994,NULL,33,NULL,'78.176.101.195','2025-10-08 09:34:52'
+),(995,NULL,36,NULL,'46.155.91.73','2025-10-08 09:34:52'),(996,38,NULL,NULL,'46.154.92.99','2025-10-08 09:34:53'),(997,
+NULL,40,NULL,'78.176.101.195','2025-10-08 09:34:53'),(998,2,NULL,NULL,'46.154.92.99','2025-10-08 09:34:53'),(999,38,NUL
+L,NULL,'212.156.86.38','2025-10-08 09:34:53'),(1000,NULL,37,NULL,'46.155.91.73','2025-10-08 09:34:54'),(1001,NULL,22,NU
+LL,'176.88.36.240','2025-10-08 09:34:54'),(1002,NULL,41,NULL,'78.176.101.195','2025-10-08 09:34:54'),(1003,NULL,38,NULL
+,'46.155.91.73','2025-10-08 09:34:54'),(1004,NULL,32,NULL,'88.239.101.217','2025-10-08 09:34:54'),(1005,NULL,33,NULL,'8
+8.239.101.217','2025-10-08 09:34:55'),(1006,NULL,28,NULL,'159.146.76.210','2025-10-08 09:34:55'),(1007,NULL,31,NULL,'88
+.239.101.217','2025-10-08 09:34:55'),(1008,NULL,58,NULL,'78.182.132.121','2025-10-08 09:34:55'),(1009,NULL,23,NULL,'176
+.88.36.240','2025-10-08 09:34:55'),(1010,NULL,29,NULL,'159.146.76.210','2025-10-08 09:34:55'),(1011,NULL,40,NULL,'88.23
+9.101.217','2025-10-08 09:34:56'),(1012,NULL,58,NULL,'88.255.43.106','2025-10-08 09:34:56'),(1013,2,NULL,NULL,'68.168.3
+1.130','2025-10-08 09:34:57'),(1014,NULL,41,NULL,'88.239.101.217','2025-10-08 09:34:57'),(1015,NULL,24,NULL,'176.88.36.
+240','2025-10-08 09:34:58'),(1016,NULL,58,7,'176.219.19.102','2025-10-08 09:34:58'),(1017,NULL,44,NULL,'78.176.101.195'
+,'2025-10-08 09:34:58'),(1018,NULL,16,NULL,'46.155.237.14','2025-10-08 09:34:58'),(1019,NULL,42,NULL,'78.176.101.195','
+2025-10-08 09:34:58'),(1020,2,NULL,NULL,'188.125.165.54','2025-10-08 09:34:58'),(1021,NULL,57,NULL,'88.255.43.106','202
+5-10-08 09:34:58'),(1022,38,NULL,NULL,'78.188.50.43','2025-10-08 09:34:58'),(1023,NULL,42,NULL,'88.239.101.217','2025-1
+0-08 09:34:59'),(1024,NULL,43,NULL,'78.176.101.195','2025-10-08 09:34:59'),(1025,NULL,56,NULL,'88.255.43.106','2025-10-
+08 09:34:59'),(1026,NULL,25,NULL,'176.88.36.240','2025-10-08 09:34:59'),(1027,NULL,45,NULL,'159.146.76.210','2025-10-08
+ 09:34:59'),(1028,NULL,55,NULL,'88.255.43.106','2025-10-08 09:35:00'),(1029,NULL,21,NULL,'88.238.9.67','2025-10-08 09:3
+5:00'),(1030,NULL,45,NULL,'78.176.101.195','2025-10-08 09:35:01'),(1031,38,NULL,NULL,'68.168.31.130','2025-10-08 09:35:
+01'),(1032,NULL,54,NULL,'88.255.43.106','2025-10-08 09:35:01'),(1033,NULL,45,NULL,'88.239.101.217','2025-10-08 09:35:01
+'),(1034,NULL,26,NULL,'176.88.36.240','2025-10-08 09:35:02'),(1036,38,NULL,NULL,'46.155.91.73','2025-10-08 09:35:02'),(
+1037,NULL,53,NULL,'88.255.43.106','2025-10-08 09:35:03'),(1038,NULL,43,NULL,'159.146.76.210','2025-10-08 09:35:03'),(10
+39,NULL,44,NULL,'88.239.101.217','2025-10-08 09:35:03'),(1040,NULL,46,NULL,'78.176.101.195','2025-10-08 09:35:03'),(104
+1,NULL,58,3,'176.219.19.102','2025-10-08 09:35:03'),(1042,NULL,42,NULL,'159.146.76.210','2025-10-08 09:35:04'),(1043,NU
+LL,52,NULL,'88.255.43.106','2025-10-08 09:35:04'),(1044,NULL,44,NULL,'159.146.76.210','2025-10-08 09:35:04'),(1045,NULL
+,47,NULL,'78.176.101.195','2025-10-08 09:35:05'),(1046,NULL,58,1,'176.219.19.102','2025-10-08 09:35:05'),(1047,38,NULL,
+NULL,'46.101.97.181','2025-10-08 09:35:05'),(1048,NULL,57,NULL,'5.47.74.73','2025-10-08 09:35:06'),(1049,NULL,51,NULL,'
+88.255.43.106','2025-10-08 09:35:06'),(1050,NULL,25,NULL,'31.143.207.149','2025-10-08 09:35:06'),(1051,38,NULL,NULL,'21
+3.238.187.77','2025-10-08 09:35:06'),(1052,NULL,48,NULL,'78.176.101.195','2025-10-08 09:35:06'),(1053,2,NULL,NULL,'178.
+170.184.48','2025-10-08 09:35:06'),(1054,2,NULL,NULL,'78.190.31.211','2025-10-08 09:35:06'),(1055,2,NULL,NULL,'78.172.2
+.131','2025-10-08 09:35:06'),(1056,38,NULL,NULL,'152.228.134.45','2025-10-08 09:35:06'),(1057,NULL,47,NULL,'88.239.101.
+217','2025-10-08 09:35:07'),(1058,NULL,49,NULL,'78.176.101.195','2025-10-08 09:35:07'),(1059,NULL,43,NULL,'88.239.101.2
+17','2025-10-08 09:35:07'),(1060,NULL,50,NULL,'88.255.43.106','2025-10-08 09:35:07'),(1061,NULL,50,NULL,'78.176.101.195
+','2025-10-08 09:35:07'),(1062,NULL,44,NULL,'159.146.76.210','2025-10-08 09:35:07'),(1063,NULL,18,NULL,'31.143.207.149'
+,'2025-10-08 09:35:08'),(1064,NULL,58,5,'176.219.19.102','2025-10-08 09:35:08'),(1065,NULL,51,NULL,'78.176.101.195','20
+25-10-08 09:35:08'),(1066,38,NULL,NULL,'178.170.184.48','2025-10-08 09:35:08'),(1067,NULL,48,NULL,'88.255.43.106','2025
+-10-08 09:35:08'),(1068,NULL,22,NULL,'88.238.9.67','2025-10-08 09:35:09'),(1069,NULL,22,NULL,'46.155.91.73','2025-10-08
+ 09:35:09'),(1070,NULL,52,NULL,'78.176.101.195','2025-10-08 09:35:09'),(1071,NULL,47,NULL,'88.255.43.106','2025-10-08 0
+9:35:09'),(1072,NULL,21,NULL,'46.155.91.73','2025-10-08 09:35:09'),(1073,NULL,19,NULL,'31.143.207.149','2025-10-08 09:3
+5:09'),(1074,NULL,27,NULL,'176.88.36.240','2025-10-08 09:35:09'),(1075,NULL,46,NULL,'88.239.101.217','2025-10-08 09:35:
+09'),(1076,NULL,16,NULL,'31.143.207.149','2025-10-08 09:35:10'),(1077,NULL,49,NULL,'88.255.43.106','2025-10-08 09:35:10
+'),(1078,2,NULL,NULL,'89.0.76.103','2025-10-08 09:35:10'),(1079,NULL,41,NULL,'159.146.76.210','2025-10-08 09:35:10'),(1
+080,NULL,48,NULL,'88.239.101.217','2025-10-08 09:35:10'),(1081,NULL,58,NULL,'88.230.79.3','2025-10-08 09:35:10'),(1082,
+NULL,54,NULL,'78.176.101.195','2025-10-08 09:35:10'),(1083,38,NULL,NULL,'78.172.2.131','2025-10-08 09:35:10'),(1084,NUL
+L,28,NULL,'176.88.36.240','2025-10-08 09:35:11'),(1085,2,NULL,NULL,'89.0.76.103','2025-10-08 09:35:11'),(1086,NULL,23,N
+ULL,'46.155.91.73','2025-10-08 09:35:11'),(1087,NULL,45,NULL,'88.255.43.106','2025-10-08 09:35:12'),(1088,NULL,55,NULL,
+'78.176.101.195','2025-10-08 09:35:12'),(1089,NULL,40,NULL,'159.146.76.210','2025-10-08 09:35:12'),(1090,NULL,58,NULL,'
+95.5.191.74','2025-10-08 09:35:12'),(1091,NULL,53,NULL,'78.176.101.195','2025-10-08 09:35:12'),(1092,NULL,29,NULL,'176.
+88.36.240','2025-10-08 09:35:12'),(1094,NULL,56,NULL,'78.176.101.195','2025-10-08 09:35:13'),(1095,NULL,22,NULL,'46.155
+.91.73','2025-10-08 09:35:13'),(1096,NULL,20,NULL,'31.143.207.149','2025-10-08 09:35:13'),(1097,NULL,16,NULL,'46.155.91
+.73','2025-10-08 09:35:13'),(1098,38,NULL,NULL,'82.218.171.66','2025-10-08 09:35:13'),(1099,NULL,30,NULL,'176.88.36.240
+','2025-10-08 09:35:13'),(1101,NULL,58,NULL,'78.176.101.195','2025-10-08 09:35:14'),(1102,NULL,22,NULL,'31.143.207.149'
+,'2025-10-08 09:35:15'),(1103,NULL,31,NULL,'176.88.36.240','2025-10-08 09:35:15'),(1104,NULL,46,NULL,'88.255.43.106','2
+025-10-08 09:35:15'),(1105,NULL,57,NULL,'78.176.101.195','2025-10-08 09:35:15'),(1106,38,NULL,NULL,'92.45.57.142','2025
+-10-08 09:35:15'),(1107,NULL,19,NULL,'46.155.91.73','2025-10-08 09:35:15'),(1108,NULL,17,NULL,'89.0.76.103','2025-10-08
+ 09:35:16'),(1109,NULL,33,NULL,'159.146.76.210','2025-10-08 09:35:16'),(1110,NULL,32,NULL,'159.146.76.210','2025-10-08 
+09:35:16'),(1111,NULL,32,NULL,'176.88.36.240','2025-10-08 09:35:16'),(1112,NULL,18,NULL,'46.155.91.73','2025-10-08 09:3
+5:16'),(1113,NULL,18,NULL,'46.155.91.73','2025-10-08 09:35:17'),(1114,NULL,43,NULL,'88.255.43.106','2025-10-08 09:35:17
+'),(1115,NULL,23,NULL,'31.143.207.149','2025-10-08 09:35:17'),(1116,NULL,44,NULL,'88.255.43.106','2025-10-08 09:35:17')
+,(1117,NULL,31,NULL,'159.146.76.210','2025-10-08 09:35:17'),(1118,38,NULL,NULL,'46.155.94.224','2025-10-08 09:35:18'),(
+1119,NULL,23,NULL,'31.143.207.149','2025-10-08 09:35:18'),(1120,NULL,33,NULL,'176.88.36.240','2025-10-08 09:35:18'),(11
+21,38,NULL,NULL,'46.155.94.224','2025-10-08 09:35:18'),(1122,NULL,20,NULL,'46.155.91.73','2025-10-08 09:35:18'),(1123,N
+ULL,24,NULL,'31.143.207.149','2025-10-08 09:35:18'),(1124,38,NULL,NULL,'149.140.29.142','2025-10-08 09:35:18'),(1125,2,
+NULL,NULL,'92.45.57.142','2025-10-08 09:35:19'),(1126,NULL,40,NULL,'176.88.36.240','2025-10-08 09:35:19'),(1127,NULL,25
+,NULL,'31.143.207.149','2025-10-08 09:35:20'),(1128,NULL,41,NULL,'176.88.36.240','2025-10-08 09:35:20'),(1129,NULL,42,N
+ULL,'88.255.43.106','2025-10-08 09:35:20'),(1130,NULL,24,NULL,'46.155.91.73','2025-10-08 09:35:20'),(1131,NULL,30,NULL,
+'159.146.76.210','2025-10-08 09:35:20'),(1132,NULL,25,NULL,'46.155.91.73','2025-10-08 09:35:21'),(1133,38,NULL,NULL,'14
+9.140.53.216','2025-10-08 09:35:21'),(1134,NULL,26,NULL,'31.143.207.149','2025-10-08 09:35:22'),(1136,NULL,42,NULL,'176
+.88.36.240','2025-10-08 09:35:22'),(1137,NULL,58,NULL,'188.57.39.222','2025-10-08 09:35:22'),(1138,2,NULL,NULL,'149.140
+.53.216','2025-10-08 09:35:23'),(1139,NULL,43,NULL,'176.88.36.240','2025-10-08 09:35:24'),(1140,NULL,44,NULL,'176.88.36
+.240','2025-10-08 09:35:26'),(1141,2,NULL,NULL,'176.89.106.164','2025-10-08 09:35:28'),(1142,38,NULL,NULL,'188.57.26.13
+2','2025-10-08 09:35:28'),(1143,NULL,45,NULL,'176.88.36.240','2025-10-08 09:35:28'),(1144,NULL,27,NULL,'31.143.207.149'
+,'2025-10-08 09:35:29'),(1145,38,NULL,NULL,'37.130.98.219','2025-10-08 09:35:29'),(1146,NULL,27,NULL,'46.155.91.73','20
+25-10-08 09:35:29'),(1147,38,NULL,NULL,'37.130.98.219','2025-10-08 09:35:29'),(1148,NULL,46,NULL,'176.88.36.240','2025-
+10-08 09:35:30'),(1149,NULL,16,NULL,'212.253.209.84','2025-10-08 09:35:30'),(1150,38,NULL,NULL,'167.99.140.130','2025-1
+0-08 09:35:30'),(1151,2,NULL,NULL,'176.55.133.194','2025-10-08 09:35:31'),(1152,NULL,28,NULL,'31.143.207.149','2025-10-
+08 09:35:31'),(1153,NULL,38,NULL,'159.146.76.210','2025-10-08 09:35:32'),(1154,NULL,28,NULL,'31.143.207.149','2025-10-0
+8 09:35:32'),(1155,NULL,47,NULL,'176.88.36.240','2025-10-08 09:35:32'),(1156,NULL,28,NULL,'46.155.91.73','2025-10-08 09
+:35:32'),(1157,NULL,29,NULL,'46.155.91.73','2025-10-08 09:35:32'),(1158,NULL,28,NULL,'46.155.91.73','2025-10-08 09:35:3
+2'),(1159,NULL,29,NULL,'31.143.207.149','2025-10-08 09:35:32'),(1160,38,NULL,NULL,'46.154.209.136','2025-10-08 09:35:32
+'),(1161,NULL,37,NULL,'159.146.76.210','2025-10-08 09:35:33'),(1162,NULL,27,NULL,'46.155.91.73','2025-10-08 09:35:33'),
+(1163,38,NULL,NULL,'5.229.96.240','2025-10-08 09:35:33'),(1164,NULL,28,NULL,'46.155.91.73','2025-10-08 09:35:33'),(1165
+,NULL,48,NULL,'176.88.36.240','2025-10-08 09:35:33'),(1166,NULL,30,NULL,'31.143.207.149','2025-10-08 09:35:33'),(1167,2
+,NULL,NULL,'46.154.209.136','2025-10-08 09:35:34'),(1168,2,NULL,NULL,'167.99.140.130','2025-10-08 09:35:34'),(1169,NULL
+,49,NULL,'176.88.36.240','2025-10-08 09:35:34'),(1170,NULL,36,NULL,'159.146.76.210','2025-10-08 09:35:34'),(1171,38,NUL
+L,NULL,'176.55.133.194','2025-10-08 09:35:35'),(1172,NULL,16,NULL,'188.57.26.132','2025-10-08 09:35:35'),(1173,NULL,50,
+NULL,'176.88.36.240','2025-10-08 09:35:36'),(1174,NULL,35,NULL,'159.146.76.210','2025-10-08 09:35:36'),(1175,38,NULL,NU
+LL,'176.238.145.236','2025-10-08 09:35:36'),(1176,NULL,31,NULL,'31.143.207.149','2025-10-08 09:35:36'),(1177,NULL,34,NU
+LL,'159.146.76.210','2025-10-08 09:35:37'),(1178,NULL,23,NULL,'46.155.91.73','2025-10-08 09:35:37'),(1179,NULL,23,NULL,
+'46.155.91.73','2025-10-08 09:35:37'),(1180,NULL,19,NULL,'188.57.26.132','2025-10-08 09:35:37'),(1181,NULL,20,NULL,'188
+.57.26.132','2025-10-08 09:35:38'),(1182,NULL,24,NULL,'46.155.91.73','2025-10-08 09:35:38'),(1183,NULL,18,NULL,'188.57.
+26.132','2025-10-08 09:35:40'),(1184,NULL,32,NULL,'31.143.207.149','2025-10-08 09:35:40'),(1185,NULL,51,NULL,'176.88.36
+.240','2025-10-08 09:35:40'),(1186,NULL,25,NULL,'46.155.91.73','2025-10-08 09:35:40'),(1187,NULL,52,NULL,'176.88.36.240
+','2025-10-08 09:35:40'),(1188,NULL,57,NULL,'31.206.99.242','2025-10-08 09:35:41'),(1189,2,NULL,NULL,'176.238.145.236',
+'2025-10-08 09:35:41'),(1190,38,NULL,NULL,'78.180.27.27','2025-10-08 09:35:41'),(1191,NULL,21,NULL,'188.57.26.132','202
+5-10-08 09:35:41'),(1192,NULL,16,NULL,'78.190.144.210','2025-10-08 09:35:41'),(1193,38,NULL,NULL,'78.190.144.210','2025
+-10-08 09:35:42'),(1194,NULL,24,NULL,'46.155.91.73','2025-10-08 09:35:42'),(1195,NULL,53,NULL,'176.88.36.240','2025-10-
+08 09:35:42'),(1196,NULL,22,NULL,'188.57.26.132','2025-10-08 09:35:42'),(1197,NULL,33,NULL,'31.143.207.149','2025-10-08
+ 09:35:43'),(1198,NULL,58,NULL,'88.238.9.67','2025-10-08 09:35:43'),(1199,NULL,40,NULL,'31.143.207.149','2025-10-08 09:
+35:43'),(1200,NULL,23,NULL,'188.57.26.132','2025-10-08 09:35:43'),(1201,NULL,18,NULL,'78.190.144.210','2025-10-08 09:35
+:44'),(1203,NULL,24,NULL,'188.57.26.132','2025-10-08 09:35:44'),(1204,NULL,54,NULL,'176.88.36.240','2025-10-08 09:35:44
+'),(1205,NULL,41,NULL,'31.143.207.149','2025-10-08 09:35:44'),(1206,NULL,55,NULL,'176.88.36.240','2025-10-08 09:35:45')
+,(1207,NULL,18,NULL,'188.57.26.132','2025-10-08 09:35:46'),(1208,NULL,20,NULL,'78.190.144.210','2025-10-08 09:35:46'),(
+1209,NULL,26,NULL,'188.57.26.132','2025-10-08 09:35:46'),(1210,NULL,56,NULL,'176.88.36.240','2025-10-08 09:35:47'),(121
+1,NULL,43,NULL,'31.143.207.149','2025-10-08 09:35:47'),(1212,NULL,58,NULL,'31.206.99.242','2025-10-08 09:35:47'),(1213,
+NULL,19,NULL,'78.190.144.210','2025-10-08 09:35:47'),(1214,NULL,25,NULL,'188.57.26.132','2025-10-08 09:35:47'),(1215,38
+,NULL,NULL,'37.154.171.118','2025-10-08 09:35:48'),(1216,NULL,44,NULL,'31.143.207.149','2025-10-08 09:35:48'),(1217,NUL
+L,42,NULL,'31.143.207.149','2025-10-08 09:35:48'),(1218,38,NULL,NULL,'178.240.92.17','2025-10-08 09:35:48'),(1219,NULL,
+57,NULL,'176.88.36.240','2025-10-08 09:35:49'),(1220,38,NULL,NULL,'31.155.180.225','2025-10-08 09:35:50'),(1221,NULL,45
+,NULL,'31.143.207.149','2025-10-08 09:35:51'),(1222,NULL,58,NULL,'46.155.91.73','2025-10-08 09:35:51'),(1223,NULL,46,NU
+LL,'31.143.207.149','2025-10-08 09:35:51'),(1225,2,NULL,NULL,'31.155.180.225','2025-10-08 09:35:52'),(1226,NULL,47,NULL
+,'31.143.207.149','2025-10-08 09:35:52'),(1227,NULL,57,NULL,'88.254.2.58','2025-10-08 09:35:54'),(1228,NULL,48,NULL,'31
+.143.207.149','2025-10-08 09:35:56'),(1229,38,NULL,NULL,'77.244.116.53','2025-10-08 09:35:57'),(1230,NULL,49,NULL,'31.1
+43.207.149','2025-10-08 09:35:57'),(1231,2,NULL,NULL,'217.64.113.230','2025-10-08 09:35:57'),(1232,38,NULL,NULL,'78.166
+.131.67','2025-10-08 09:35:57'),(1233,NULL,50,NULL,'31.143.207.149','2025-10-08 09:35:58'),(1234,2,NULL,NULL,'77.244.11
+6.53','2025-10-08 09:35:59'),(1235,NULL,38,NULL,'188.253.221.197','2025-10-08 09:36:01'),(1236,2,NULL,NULL,'31.143.0.90
+','2025-10-08 09:36:01'),(1237,NULL,51,NULL,'31.143.207.149','2025-10-08 09:36:01'),(1238,NULL,16,NULL,'5.47.177.221','
+2025-10-08 09:36:01'),(1240,NULL,58,NULL,'178.246.232.15','2025-10-08 09:36:04'),(1241,NULL,19,NULL,'5.47.177.221','202
+5-10-08 09:36:04'),(1242,NULL,45,NULL,'88.254.2.58','2025-10-08 09:36:04'),(1243,NULL,20,NULL,'5.47.177.221','2025-10-0
+8 09:36:05'),(1244,NULL,53,NULL,'31.143.207.149','2025-10-08 09:36:05'),(1245,NULL,52,NULL,'31.143.207.149','2025-10-08
+ 09:36:05'),(1246,NULL,52,NULL,'31.143.207.149','2025-10-08 09:36:06'),(1247,NULL,21,NULL,'5.47.177.221','2025-10-08 09
+:36:06'),(1248,NULL,58,NULL,'149.140.29.142','2025-10-08 09:36:06'),(1249,NULL,42,NULL,'88.254.2.58','2025-10-08 09:36:
+06'),(1250,NULL,54,NULL,'31.143.207.149','2025-10-08 09:36:07'),(1251,NULL,41,NULL,'88.254.2.58','2025-10-08 09:36:08')
+,(1252,NULL,56,NULL,'31.143.207.149','2025-10-08 09:36:09'),(1253,38,NULL,NULL,'212.47.142.127','2025-10-08 09:36:09'),
+(1254,NULL,57,NULL,'31.143.207.149','2025-10-08 09:36:10'),(1257,2,NULL,NULL,'5.47.189.65','2025-10-08 09:36:12'),(1258
+,38,NULL,NULL,'5.47.189.65','2025-10-08 09:36:12'),(1259,NULL,23,NULL,'5.47.177.221','2025-10-08 09:36:12'),(1260,NULL,
+55,NULL,'31.143.207.149','2025-10-08 09:36:14'),(1261,NULL,55,NULL,'31.143.207.149','2025-10-08 09:36:14'),(1262,38,NUL
+L,NULL,'46.221.227.96','2025-10-08 09:36:14'),(1263,NULL,55,NULL,'31.143.207.149','2025-10-08 09:36:14'),(1264,2,NULL,N
+ULL,'151.250.223.59','2025-10-08 09:36:14'),(1265,NULL,22,NULL,'5.47.177.221','2025-10-08 09:36:15'),(1266,38,NULL,NULL
+,'151.250.223.59','2025-10-08 09:36:17'),(1267,2,NULL,NULL,'37.61.116.248','2025-10-08 09:36:19'),(1268,38,NULL,NULL,'1
+93.108.116.77','2025-10-08 09:36:19'),(1269,38,NULL,NULL,'37.61.116.248','2025-10-08 09:36:19'),(1270,NULL,16,NULL,'31.
+143.207.149','2025-10-08 09:36:21'),(1271,NULL,18,NULL,'31.143.207.149','2025-10-08 09:36:22'),(1272,NULL,19,NULL,'31.1
+43.207.149','2025-10-08 09:36:23'),(1273,NULL,58,NULL,'37.154.171.118','2025-10-08 09:36:24'),(1274,2,NULL,NULL,'193.10
+8.116.77','2025-10-08 09:36:24'),(1275,NULL,20,NULL,'31.143.207.149','2025-10-08 09:36:25'),(1277,NULL,17,NULL,'217.64.
+113.230','2025-10-08 09:36:29'),(1278,38,NULL,NULL,'88.246.194.249','2025-10-08 09:36:31'),(1279,NULL,34,NULL,'217.64.1
+13.230','2025-10-08 09:36:31'),(1280,38,NULL,NULL,'37.155.174.59','2025-10-08 09:36:31'),(1281,38,NULL,NULL,'31.143.207
+.149','2025-10-08 09:36:31'),(1283,NULL,58,NULL,'188.57.26.132','2025-10-08 09:36:32'),(1284,NULL,35,NULL,'217.64.113.2
+30','2025-10-08 09:36:32'),(1285,38,NULL,NULL,'88.226.90.148','2025-10-08 09:36:32'),(1286,NULL,36,NULL,'217.64.113.230
+','2025-10-08 09:36:33'),(1287,NULL,37,NULL,'217.64.113.230','2025-10-08 09:36:34'),(1288,NULL,56,NULL,'188.57.26.132',
+'2025-10-08 09:36:35'),(1289,2,NULL,NULL,'88.226.90.148','2025-10-08 09:36:35'),(1291,NULL,57,NULL,'188.57.26.132','202
+5-10-08 09:36:35'),(1293,38,NULL,NULL,'176.54.2.241','2025-10-08 09:36:36'),(1294,38,NULL,NULL,'188.253.208.242','2025-
+10-08 09:36:36'),(1295,NULL,55,NULL,'188.57.26.132','2025-10-08 09:36:37'),(1297,38,NULL,NULL,'176.54.187.14','2025-10-
+08 09:36:37'),(1298,NULL,58,NULL,'46.154.191.91','2025-10-08 09:36:38'),(1299,38,NULL,NULL,'95.2.9.62','2025-10-08 09:3
+6:38'),(1300,NULL,38,NULL,'217.64.113.230','2025-10-08 09:36:38'),(1301,2,NULL,NULL,'176.54.187.14','2025-10-08 09:36:3
+9'),(1302,NULL,57,NULL,'46.154.191.91','2025-10-08 09:36:39'),(1303,2,NULL,NULL,'95.2.9.62','2025-10-08 09:36:40'),(130
+4,2,NULL,NULL,'176.54.2.241','2025-10-08 09:36:40'),(1305,38,NULL,NULL,'176.41.181.149','2025-10-08 09:36:41'),(1307,NU
+LL,53,NULL,'188.57.26.132','2025-10-08 09:36:41'),(1308,NULL,38,NULL,'217.64.113.230','2025-10-08 09:36:42'),(1309,NULL
+,56,NULL,'46.154.191.91','2025-10-08 09:36:42'),(1310,2,NULL,NULL,'188.253.208.242','2025-10-08 09:36:43'),(1311,NULL,5
+5,NULL,'46.154.191.91','2025-10-08 09:36:44'),(1312,38,NULL,NULL,'46.106.93.10','2025-10-08 09:36:44'),(1313,NULL,54,NU
+LL,'46.154.191.91','2025-10-08 09:36:44'),(1314,NULL,53,NULL,'46.154.191.91','2025-10-08 09:36:45'),(1316,NULL,52,NULL,
+'188.57.26.132','2025-10-08 09:36:45'),(1317,2,NULL,NULL,'176.41.181.149','2025-10-08 09:36:45'),(1318,NULL,50,NULL,'18
+8.57.26.132','2025-10-08 09:36:47'),(1319,NULL,16,NULL,'5.47.177.221','2025-10-08 09:36:48'),(1320,2,NULL,NULL,'88.234.
+213.152','2025-10-08 09:36:49'),(1322,NULL,49,NULL,'188.57.26.132','2025-10-08 09:36:51'),(1323,2,NULL,NULL,'5.229.189.
+183','2025-10-08 09:36:52'),(1324,38,NULL,NULL,'88.245.196.191','2025-10-08 09:36:53'),(1326,38,NULL,NULL,'185.146.112.
+177','2025-10-08 09:36:55'),(1327,NULL,18,NULL,'5.47.177.221','2025-10-08 09:36:55'),(1328,2,NULL,NULL,'178.245.81.29',
+'2025-10-08 09:36:56'),(1329,38,NULL,NULL,'178.245.81.29','2025-10-08 09:36:57'),(1331,38,NULL,NULL,'149.34.192.97','20
+25-10-08 09:36:57'),(1332,NULL,47,NULL,'188.57.26.132','2025-10-08 09:36:59'),(1333,38,NULL,NULL,'81.8.67.122','2025-10
+-08 09:37:02'),(1334,38,NULL,NULL,'176.88.130.107','2025-10-08 09:37:03'),(1335,38,NULL,NULL,'95.56.255.122','2025-10-0
+8 09:37:04'),(1336,NULL,18,NULL,'5.44.34.206','2025-10-08 09:37:12'),(1337,2,NULL,NULL,'176.54.23.7','2025-10-08 09:37:
+13'),(1338,38,NULL,NULL,'176.54.23.7','2025-10-08 09:37:16'),(1339,NULL,58,NULL,'88.246.194.249','2025-10-08 09:37:16')
+,(1340,38,NULL,NULL,'5.229.189.183','2025-10-08 09:37:21'),(1341,NULL,26,NULL,'5.47.177.221','2025-10-08 09:37:25'),(13
+42,38,NULL,NULL,'37.61.117.108','2025-10-08 09:37:30'),(1343,NULL,23,NULL,'5.47.177.221','2025-10-08 09:37:31'),(1344,3
+8,NULL,NULL,'46.154.49.71','2025-10-08 09:37:31'),(1345,NULL,24,NULL,'5.47.177.221','2025-10-08 09:37:32'),(1346,38,NUL
+L,NULL,'57.129.76.233','2025-10-08 09:37:33'),(1347,NULL,27,NULL,'5.47.177.221','2025-10-08 09:37:34'),(1348,38,NULL,NU
+LL,'178.241.78.63','2025-10-08 09:37:36'),(1349,NULL,31,NULL,'5.47.177.221','2025-10-08 09:37:37'),(1350,2,NULL,NULL,'4
+6.154.49.71','2025-10-08 09:37:40'),(1351,NULL,32,NULL,'5.47.177.221','2025-10-08 09:37:40'),(1352,2,NULL,NULL,'188.119
+.48.13','2025-10-08 09:37:41'),(1353,NULL,41,NULL,'5.47.177.221','2025-10-08 09:37:41'),(1354,38,NULL,NULL,'88.238.12.7
+8','2025-10-08 09:37:41'),(1355,NULL,42,NULL,'5.47.177.221','2025-10-08 09:37:42'),(1356,NULL,43,NULL,'5.47.177.221','2
+025-10-08 09:37:43'),(1357,38,NULL,NULL,'31.155.131.129','2025-10-08 09:37:44'),(1358,NULL,16,NULL,'176.88.36.240','202
+5-10-08 09:37:47'),(1359,38,NULL,NULL,'88.236.99.151','2025-10-08 09:37:52'),(1360,2,NULL,NULL,'178.240.92.17','2025-10
+-08 09:37:52'),(1361,NULL,18,NULL,'176.88.36.240','2025-10-08 09:37:52'),(1362,NULL,19,NULL,'176.88.36.240','2025-10-08
+ 09:37:54'),(1363,38,NULL,NULL,'37.154.229.248','2025-10-08 09:37:58'),(1364,NULL,20,NULL,'176.88.36.240','2025-10-08 0
+9:38:00'),(1365,NULL,16,NULL,'37.155.43.159','2025-10-08 09:38:03'),(1366,NULL,18,NULL,'37.155.43.159','2025-10-08 09:3
+8:05'),(1367,38,NULL,NULL,'78.162.41.44','2025-10-08 09:38:07'),(1368,NULL,21,NULL,'176.88.36.240','2025-10-08 09:38:08
+'),(1369,38,NULL,NULL,'176.232.125.226','2025-10-08 09:38:09'),(1370,NULL,20,NULL,'37.155.43.159','2025-10-08 09:38:09'
+),(1371,38,NULL,NULL,'88.255.41.244','2025-10-08 09:38:09'),(1372,38,NULL,NULL,'57.129.83.90','2025-10-08 09:38:29'),(1
+373,38,NULL,NULL,'178.244.100.10','2025-10-08 09:38:30'),(1374,38,NULL,NULL,'5.177.204.15','2025-10-08 09:38:32'),(1375
+,38,NULL,NULL,'178.243.233.124','2025-10-08 09:38:45'),(1377,38,NULL,NULL,'78.163.159.93','2025-10-08 09:38:51'),(1379,
+NULL,41,NULL,'149.0.31.40','2025-10-08 09:39:10'),(1380,2,NULL,NULL,'95.70.254.35','2025-10-08 09:39:16'),(1381,38,NULL
+,NULL,'178.241.78.63','2025-10-08 09:39:31'),(1382,2,NULL,NULL,'176.88.76.187','2025-10-08 09:39:37'),(1383,38,NULL,NUL
+L,'178.233.248.1','2025-10-08 09:39:48'),(1384,38,NULL,NULL,'178.240.37.33','2025-10-08 09:40:17'),(1385,38,NULL,NULL,'
+178.244.56.64','2025-10-08 09:40:38'),(1386,38,NULL,NULL,'178.244.124.111','2025-10-08 09:40:41'),(1388,2,NULL,NULL,'85
+.106.196.218','2025-10-08 09:42:27'),(1389,38,NULL,NULL,'176.220.54.173','2025-10-08 09:42:30'),(1390,38,NULL,NULL,'176
+.89.203.227','2025-10-08 09:42:30'),(1391,38,NULL,NULL,'46.155.58.237','2025-10-08 09:42:31'),(1393,2,NULL,NULL,'176.22
+0.54.173','2025-10-08 09:42:35'),(1395,38,NULL,NULL,'88.246.194.121','2025-10-08 09:42:35'),(1396,38,NULL,NULL,'104.28.
+249.210','2025-10-08 09:42:36'),(1397,2,NULL,NULL,'104.28.249.210','2025-10-08 09:42:36'),(1399,38,NULL,NULL,'88.242.12
+9.148','2025-10-08 09:42:38'),(1400,38,NULL,NULL,'5.229.175.194','2025-10-08 09:42:38'),(1401,38,NULL,NULL,'78.177.168.
+127','2025-10-08 09:42:39'),(1402,38,NULL,NULL,'46.155.50.198','2025-10-08 09:42:41'),(1403,2,NULL,NULL,'88.242.129.148
+','2025-10-08 09:42:41'),(1404,38,NULL,NULL,'78.190.247.19','2025-10-08 09:42:42'),(1405,38,NULL,NULL,'78.180.7.177','2
+025-10-08 09:42:43'),(1406,38,NULL,NULL,'78.111.56.199','2025-10-08 09:42:45'),(1407,38,NULL,NULL,'5.46.192.18','2025-1
+0-08 09:42:48'),(1408,2,NULL,NULL,'78.180.7.177','2025-10-08 09:42:49'),(1409,38,NULL,NULL,'46.154.49.71','2025-10-08 0
+9:42:51'),(1410,2,NULL,NULL,'178.241.80.163','2025-10-08 09:42:51'),(1411,38,NULL,NULL,'5.177.203.109','2025-10-08 09:4
+2:54'),(1412,NULL,58,NULL,'176.219.0.6','2025-10-08 09:42:55'),(1413,2,NULL,NULL,'78.111.56.199','2025-10-08 09:42:57')
+,(1414,38,NULL,NULL,'178.240.143.6','2025-10-08 09:42:57'),(1415,38,NULL,NULL,'178.240.143.6','2025-10-08 09:42:59'),(1
+416,38,NULL,NULL,'5.176.117.5','2025-10-08 09:42:59'),(1417,2,NULL,NULL,'78.163.104.187','2025-10-08 09:43:02'),(1418,N
+ULL,58,NULL,'176.41.51.40','2025-10-08 09:43:02'),(1419,38,NULL,NULL,'213.74.253.110','2025-10-08 09:43:04'),(1420,38,N
+ULL,NULL,'46.221.184.154','2025-10-08 09:43:04'),(1421,2,NULL,NULL,'212.47.145.52','2025-10-08 09:43:21'),(1422,38,NULL
+,NULL,'141.196.41.12','2025-10-08 09:43:24'),(1423,38,NULL,NULL,'51.210.177.177','2025-10-08 09:43:25'),(1424,38,NULL,N
+ULL,'195.174.70.253','2025-10-08 09:43:30'),(1425,38,NULL,NULL,'51.210.177.177','2025-10-08 09:43:32'),(1426,38,NULL,NU
+LL,'178.243.233.124','2025-10-08 09:43:37'),(1427,2,NULL,NULL,'109.228.203.48','2025-10-08 09:43:44'),(1428,NULL,58,NUL
+L,'176.238.143.148','2025-10-08 09:43:51'),(1429,38,NULL,NULL,'149.22.252.152','2025-10-08 09:43:56'),(1430,2,NULL,NULL
+,'109.228.222.164','2025-10-08 09:44:07'),(1431,38,NULL,NULL,'95.65.209.11','2025-10-08 09:44:08'),(1432,38,NULL,NULL,'
+212.47.149.52','2025-10-08 09:44:10'),(1433,38,NULL,NULL,'176.43.111.17','2025-10-08 09:44:11'),(1434,38,NULL,NULL,'178
+.240.37.33','2025-10-08 09:44:12'),(1435,38,NULL,NULL,'88.242.129.148','2025-10-08 09:44:14'),(1436,38,NULL,NULL,'176.4
+3.111.17','2025-10-08 09:44:18'),(1437,2,NULL,NULL,'185.177.229.65','2025-10-08 09:44:19'),(1438,38,NULL,NULL,'151.135.
+249.252','2025-10-08 09:44:20'),(1439,38,NULL,NULL,'188.57.32.161','2025-10-08 09:44:29'),(1440,38,NULL,NULL,'54.38.157
+.87','2025-10-08 09:44:29'),(1441,38,NULL,NULL,'178.240.165.66','2025-10-08 09:44:35'),(1442,38,NULL,NULL,'151.135.249.
+252','2025-10-08 09:44:35'),(1443,38,NULL,NULL,'5.229.30.107','2025-10-08 09:44:39'),(1445,2,NULL,NULL,'95.12.65.194','
+2025-10-08 09:44:40'),(1446,38,NULL,NULL,'5.27.38.125','2025-10-08 09:44:40'),(1447,38,NULL,NULL,'5.47.138.246','2025-1
+0-08 09:44:43'),(1448,38,NULL,NULL,'5.47.138.246','2025-10-08 09:44:46'),(1449,38,NULL,NULL,'62.217.152.229','2025-10-0
+8 09:44:46'),(1450,38,NULL,NULL,'62.217.152.229','2025-10-08 09:44:48'),(1451,2,NULL,NULL,'78.163.111.204','2025-10-08 
+09:44:49'),(1452,38,NULL,NULL,'78.163.111.204','2025-10-08 09:44:51'),(1453,38,NULL,NULL,'38.41.53.27','2025-10-08 09:4
+4:51'),(1454,NULL,16,NULL,'31.206.150.246','2025-10-08 09:44:56'),(1455,NULL,19,NULL,'31.206.150.246','2025-10-08 09:44
+:56'),(1456,38,NULL,NULL,'31.143.122.165','2025-10-08 09:44:57'),(1457,NULL,21,NULL,'31.206.150.246','2025-10-08 09:44:
+59'),(1459,2,NULL,NULL,'62.244.199.131','2025-10-08 09:45:00'),(1460,NULL,22,NULL,'31.206.150.246','2025-10-08 09:45:00
+'),(1461,NULL,18,NULL,'31.206.150.246','2025-10-08 09:45:00'),(1462,NULL,23,NULL,'31.206.150.246','2025-10-08 09:45:01'
+),(1463,38,NULL,NULL,'5.47.61.156','2025-10-08 09:45:02'),(1464,2,NULL,NULL,'5.47.183.141','2025-10-08 09:45:04'),(1465
+,NULL,20,NULL,'31.206.150.246','2025-10-08 09:45:04'),(1466,38,NULL,NULL,'178.241.80.163','2025-10-08 09:45:05'),(1467,
+38,NULL,NULL,'45.159.31.14','2025-10-08 09:45:06'),(1468,NULL,25,NULL,'31.206.150.246','2025-10-08 09:45:09'),(1470,38,
+NULL,NULL,'151.135.188.229','2025-10-08 09:45:12'),(1471,NULL,29,NULL,'31.206.150.246','2025-10-08 09:45:12'),(1472,38,
+NULL,NULL,'85.105.108.147','2025-10-08 09:45:14'),(1473,NULL,30,NULL,'31.206.150.246','2025-10-08 09:45:14'),(1474,NULL
+,33,NULL,'31.206.150.246','2025-10-08 09:45:15'),(1475,NULL,28,NULL,'31.206.150.246','2025-10-08 09:45:15'),(1476,38,NU
+LL,NULL,'176.238.254.127','2025-10-08 09:45:15'),(1477,38,NULL,NULL,'176.216.84.174','2025-10-08 09:45:19'),(1478,NULL,
+43,NULL,'31.206.150.246','2025-10-08 09:45:19'),(1479,38,NULL,NULL,'88.242.129.148','2025-10-08 09:45:20'),(1480,38,NUL
+L,NULL,'88.242.129.148','2025-10-08 09:45:20'),(1481,38,NULL,NULL,'78.173.14.187','2025-10-08 09:45:20'),(1482,38,NULL,
+NULL,'88.243.194.128','2025-10-08 09:45:21'),(1483,2,NULL,NULL,'176.216.84.174','2025-10-08 09:45:24'),(1484,38,NULL,NU
+LL,'198.163.204.14','2025-10-08 09:45:25'),(1485,2,NULL,NULL,'151.135.188.229','2025-10-08 09:45:26'),(1486,38,NULL,NUL
+L,'213.74.253.110','2025-10-08 09:45:27'),(1487,38,NULL,NULL,'79.142.74.34','2025-10-08 09:45:27'),(1488,38,NULL,NULL,'
+88.240.185.129','2025-10-08 09:45:27'),(1489,38,NULL,NULL,'5.44.38.110','2025-10-08 09:45:27'),(1490,2,NULL,NULL,'198.1
+63.204.14','2025-10-08 09:45:28'),(1491,38,NULL,NULL,'176.233.27.176','2025-10-08 09:45:28'),(1492,38,NULL,NULL,'5.44.3
+8.110','2025-10-08 09:45:28'),(1493,NULL,32,NULL,'31.206.150.246','2025-10-08 09:45:31'),(1494,38,NULL,NULL,'46.221.229
+.58','2025-10-08 09:45:32'),(1495,38,NULL,NULL,'46.221.229.58','2025-10-08 09:45:33'),(1496,38,NULL,NULL,'88.230.170.11
+','2025-10-08 09:45:36'),(1497,2,NULL,NULL,'88.240.185.129','2025-10-08 09:45:37'),(1498,38,NULL,NULL,'46.197.74.166','
+2025-10-08 09:45:37'),(1499,38,NULL,NULL,'88.230.170.11','2025-10-08 09:45:37'),(1500,2,NULL,NULL,'176.88.130.107','202
+5-10-08 09:45:41'),(1501,NULL,57,NULL,'31.155.131.129','2025-10-08 09:45:54'),(1502,38,NULL,NULL,'78.173.21.142','2025-
+10-08 09:45:57'),(1503,2,NULL,NULL,'78.173.21.142','2025-10-08 09:46:03'),(1504,38,NULL,NULL,'5.46.197.229','2025-10-08
+ 09:46:04'),(1505,NULL,16,NULL,'31.155.133.187','2025-10-08 09:46:08'),(1506,NULL,58,NULL,'88.242.204.228','2025-10-08 
+09:46:09'),(1507,NULL,18,NULL,'31.155.133.187','2025-10-08 09:46:15'),(1508,38,NULL,NULL,'178.241.15.89','2025-10-08 09
+:46:15'),(1509,38,NULL,NULL,'88.238.46.228','2025-10-08 09:46:16'),(1510,NULL,18,NULL,'31.155.133.187','2025-10-08 09:4
+6:17'),(1511,NULL,19,NULL,'31.155.133.187','2025-10-08 09:46:17'),(1512,38,NULL,NULL,'195.155.170.223','2025-10-08 09:4
+6:17'),(1513,38,NULL,NULL,'212.47.146.197','2025-10-08 09:46:20'),(1514,38,NULL,NULL,'94.122.140.64','2025-10-08 09:46:
+21'),(1515,38,NULL,NULL,'95.10.202.176','2025-10-08 09:46:22'),(1516,NULL,16,NULL,'176.88.36.240','2025-10-08 09:46:23'
+),(1517,38,NULL,NULL,'94.122.140.64','2025-10-08 09:46:23'),(1519,38,NULL,NULL,'88.242.26.223','2025-10-08 09:46:27'),(
+1520,38,NULL,NULL,'176.216.84.174','2025-10-08 09:46:31'),(1521,38,NULL,NULL,'88.242.26.223','2025-10-08 09:46:31'),(15
+22,NULL,16,NULL,'94.122.140.64','2025-10-08 09:46:31'),(1523,38,NULL,NULL,'151.135.84.122','2025-10-08 09:46:33'),(1524
+,NULL,16,NULL,'94.122.140.64','2025-10-08 09:46:33'),(1525,NULL,18,NULL,'94.122.140.64','2025-10-08 09:46:34'),(1526,NU
+LL,19,NULL,'94.122.140.64','2025-10-08 09:46:35'),(1527,38,NULL,NULL,'88.230.170.11','2025-10-08 09:46:36'),(1528,38,NU
+LL,NULL,'78.177.168.202','2025-10-08 09:46:36'),(1529,38,NULL,NULL,'77.67.131.14','2025-10-08 09:46:37'),(1530,NULL,21,
+NULL,'94.122.140.64','2025-10-08 09:46:38'),(1531,38,NULL,NULL,'95.10.225.124','2025-10-08 09:46:39'),(1532,NULL,20,NUL
+L,'94.122.140.64','2025-10-08 09:46:40'),(1533,NULL,16,NULL,'31.155.133.187','2025-10-08 09:46:40'),(1534,NULL,18,NULL,
+'31.155.133.187','2025-10-08 09:46:41'),(1535,2,NULL,NULL,'88.230.170.11','2025-10-08 09:46:41'),(1536,NULL,19,NULL,'31
+.155.133.187','2025-10-08 09:46:41'),(1537,38,NULL,NULL,'178.241.15.89','2025-10-08 09:46:41'),(1538,38,NULL,NULL,'141.
+94.20.34','2025-10-08 09:46:42'),(1540,NULL,16,1,'85.99.183.158','2025-10-08 09:46:44'),(1541,NULL,16,NULL,'85.99.183.1
+58','2025-10-08 09:46:44'),(1542,NULL,20,NULL,'31.155.133.187','2025-10-08 09:46:45'),(1543,NULL,22,NULL,'31.155.133.18
+7','2025-10-08 09:46:46'),(1544,NULL,20,NULL,'94.122.140.64','2025-10-08 09:46:46'),(1545,2,NULL,NULL,'212.47.146.197',
+'2025-10-08 09:46:46'),(1546,2,NULL,NULL,'37.61.120.166','2025-10-08 09:46:47'),(1547,NULL,16,2,'85.99.183.158','2025-1
+0-08 09:46:48'),(1548,NULL,24,NULL,'94.122.140.64','2025-10-08 09:46:48'),(1549,NULL,25,NULL,'31.155.133.187','2025-10-
+08 09:46:49'),(1550,38,NULL,NULL,'213.238.187.68','2025-10-08 09:46:49'),(1551,NULL,23,NULL,'94.122.140.64','2025-10-08
+ 09:46:50'),(1552,NULL,26,NULL,'31.155.133.187','2025-10-08 09:46:50'),(1553,38,NULL,NULL,'77.67.131.14','2025-10-08 09
+:46:51'),(1554,NULL,22,NULL,'94.122.140.64','2025-10-08 09:46:52'),(1555,38,NULL,NULL,'5.47.162.2','2025-10-08 09:46:52
+'),(1556,38,NULL,NULL,'78.185.66.178','2025-10-08 09:46:53'),(1557,38,NULL,NULL,'95.2.8.152','2025-10-08 09:46:53'),(15
+58,NULL,25,NULL,'94.122.140.64','2025-10-08 09:46:53'),(1559,2,NULL,NULL,'5.47.162.2','2025-10-08 09:46:53'),(1560,NULL
+,25,NULL,'94.122.140.64','2025-10-08 09:46:54'),(1561,2,NULL,NULL,'158.69.64.152','2025-10-08 09:46:54'),(1562,38,NULL,
+NULL,'78.176.153.157','2025-10-08 09:46:55'),(1563,NULL,21,NULL,'31.155.133.187','2025-10-08 09:46:55'),(1564,NULL,25,N
+ULL,'94.122.140.64','2025-10-08 09:46:55'),(1565,38,NULL,NULL,'162.19.230.57','2025-10-08 09:46:57'),(1567,38,NULL,NULL
+,'158.69.64.152','2025-10-08 09:46:58'),(1568,NULL,29,NULL,'31.155.133.187','2025-10-08 09:46:58'),(1569,NULL,32,NULL,'
+31.155.133.187','2025-10-08 09:46:58'),(1570,NULL,27,NULL,'31.155.133.187','2025-10-08 09:46:59'),(1571,NULL,31,NULL,'3
+1.155.133.187','2025-10-08 09:47:00'),(1572,NULL,41,NULL,'31.155.133.187','2025-10-08 09:47:01'),(1573,NULL,30,NULL,'31
+.155.133.187','2025-10-08 09:47:02'),(1574,38,NULL,NULL,'78.166.235.186','2025-10-08 09:47:02'),(1575,NULL,52,NULL,'46.
+221.135.15','2025-10-08 09:47:04'),(1576,NULL,23,NULL,'31.155.133.187','2025-10-08 09:47:05'),(1577,NULL,24,NULL,'31.15
+5.133.187','2025-10-08 09:47:06'),(1578,38,NULL,NULL,'88.241.170.109','2025-10-08 09:47:07'),(1579,NULL,43,NULL,'31.155
+.133.187','2025-10-08 09:47:07'),(1580,NULL,44,NULL,'31.155.133.187','2025-10-08 09:47:08'),(1581,NULL,58,NULL,'85.105.
+91.14','2025-10-08 09:47:08'),(1582,NULL,58,NULL,'176.88.36.240','2025-10-08 09:47:09'),(1584,NULL,45,NULL,'31.155.133.
+187','2025-10-08 09:47:09'),(1585,NULL,28,NULL,'31.155.133.187','2025-10-08 09:47:09'),(1586,NULL,40,NULL,'31.155.133.1
+87','2025-10-08 09:47:10'),(1587,NULL,16,NULL,'78.182.137.130','2025-10-08 09:47:12'),(1588,NULL,47,NULL,'31.155.133.18
+7','2025-10-08 09:47:12'),(1589,38,NULL,NULL,'78.173.55.90','2025-10-08 09:47:13'),(1590,NULL,48,NULL,'31.155.133.187',
+'2025-10-08 09:47:13'),(1591,38,NULL,NULL,'5.24.120.238','2025-10-08 09:47:14'),(1592,38,NULL,NULL,'144.31.2.57','2025-
+10-08 09:47:14'),(1593,2,NULL,NULL,'5.24.120.238','2025-10-08 09:47:14'),(1594,NULL,47,NULL,'31.155.133.187','2025-10-0
+8 09:47:17'),(1595,NULL,51,NULL,'31.155.133.187','2025-10-08 09:47:19'),(1596,NULL,50,NULL,'31.155.133.187','2025-10-08
+ 09:47:20'),(1597,NULL,58,NULL,'78.190.209.18','2025-10-08 09:47:22'),(1598,38,NULL,NULL,'5.47.37.13','2025-10-08 09:47
+:23'),(1599,38,NULL,NULL,'176.220.38.149','2025-10-08 09:47:23'),(1600,2,NULL,NULL,'5.47.37.13','2025-10-08 09:47:24'),
+(1601,38,NULL,NULL,'88.230.170.11','2025-10-08 09:47:25'),(1603,38,NULL,NULL,'80.214.122.227','2025-10-08 09:47:26'),(1
+604,NULL,46,NULL,'31.155.133.187','2025-10-08 09:47:26'),(1605,38,NULL,NULL,'46.221.135.15','2025-10-08 09:47:27'),(160
+6,38,NULL,NULL,'194.146.158.85','2025-10-08 09:47:28'),(1607,38,NULL,NULL,'194.146.158.85','2025-10-08 09:47:28'),(1608
+,38,NULL,NULL,'46.104.23.176','2025-10-08 09:47:29'),(1609,38,NULL,NULL,'194.146.158.85','2025-10-08 09:47:29'),(1610,N
+ULL,49,NULL,'31.155.133.187','2025-10-08 09:47:30'),(1611,2,NULL,NULL,'94.122.140.64','2025-10-08 09:47:32'),(1612,38,N
+ULL,NULL,'188.3.118.68','2025-10-08 09:47:34'),(1613,NULL,52,NULL,'31.155.133.187','2025-10-08 09:47:36'),(1614,2,NULL,
+NULL,'176.217.198.191','2025-10-08 09:47:37'),(1615,NULL,58,NULL,'78.173.55.90','2025-10-08 09:47:38'),(1616,38,NULL,NU
+LL,'5.47.86.113','2025-10-08 09:47:39'),(1617,2,NULL,NULL,'193.243.192.101','2025-10-08 09:47:39'),(1618,38,NULL,NULL,'
+193.243.192.101','2025-10-08 09:47:39'),(1620,2,NULL,NULL,'78.173.52.148','2025-10-08 09:47:42'),(1621,38,NULL,NULL,'95
+.65.212.65','2025-10-08 09:47:50'),(1622,2,NULL,NULL,'95.65.212.65','2025-10-08 09:47:53'),(1624,38,NULL,NULL,'62.217.1
+29.101','2025-10-08 09:48:00'),(1625,NULL,48,NULL,'5.47.37.13','2025-10-08 09:48:03'),(1626,2,NULL,NULL,'62.217.129.101
+','2025-10-08 09:48:04'),(1627,NULL,58,NULL,'88.230.170.11','2025-10-08 09:48:05'),(1628,NULL,47,NULL,'5.47.37.13','202
+5-10-08 09:48:05'),(1629,NULL,49,NULL,'5.47.37.13','2025-10-08 09:48:06'),(1630,NULL,16,NULL,'78.174.217.206','2025-10-
+08 09:48:09'),(1631,NULL,51,NULL,'5.47.37.13','2025-10-08 09:48:09'),(1632,NULL,16,NULL,'31.223.13.61','2025-10-08 09:4
+8:13'),(1633,NULL,53,NULL,'5.47.37.13','2025-10-08 09:48:13'),(1634,NULL,52,NULL,'5.47.37.13','2025-10-08 09:48:14'),(1
+635,NULL,54,NULL,'5.47.37.13','2025-10-08 09:48:15'),(1636,38,NULL,NULL,'95.10.225.124','2025-10-08 09:48:15'),(1637,NU
+LL,18,NULL,'31.223.13.61','2025-10-08 09:48:16'),(1638,NULL,55,NULL,'5.47.37.13','2025-10-08 09:48:16'),(1639,NULL,50,N
+ULL,'5.47.37.13','2025-10-08 09:48:18'),(1640,NULL,56,NULL,'5.47.37.13','2025-10-08 09:48:20'),(1641,NULL,50,NULL,'5.47
+.37.13','2025-10-08 09:48:20'),(1642,NULL,58,NULL,'5.47.37.13','2025-10-08 09:48:23'),(1643,NULL,57,NULL,'5.47.37.13','
+2025-10-08 09:48:23'),(1644,38,NULL,NULL,'95.7.248.100','2025-10-08 09:48:24'),(1645,NULL,19,NULL,'31.223.13.61','2025-
+10-08 09:48:24'),(1646,38,NULL,NULL,'78.190.156.34','2025-10-08 09:48:25'),(1647,NULL,19,NULL,'31.223.13.61','2025-10-0
+8 09:48:25'),(1649,NULL,58,NULL,'5.47.37.13','2025-10-08 09:48:29'),(1650,NULL,49,NULL,'46.106.158.31','2025-10-08 09:4
+8:31'),(1651,2,NULL,NULL,'176.232.61.114','2025-10-08 09:48:31'),(1652,38,NULL,NULL,'88.236.99.151','2025-10-08 09:48:3
+1'),(1654,38,NULL,NULL,'82.194.25.133','2025-10-08 09:48:32'),(1655,38,NULL,NULL,'178.246.3.65','2025-10-08 09:48:32'),
+(1656,2,NULL,NULL,'176.219.34.225','2025-10-08 09:48:33'),(1657,NULL,19,NULL,'31.223.13.61','2025-10-08 09:48:34'),(165
+8,38,NULL,NULL,'139.59.144.157','2025-10-08 09:48:34'),(1659,38,NULL,NULL,'82.194.25.133','2025-10-08 09:48:35'),(1660,
+NULL,46,NULL,'5.47.37.13','2025-10-08 09:48:36'),(1662,NULL,58,735,'176.88.36.240','2025-10-08 09:48:37'),(1663,NULL,45
+,NULL,'5.47.37.13','2025-10-08 09:48:38'),(1664,NULL,44,NULL,'5.47.37.13','2025-10-08 09:48:39'),(1665,NULL,46,NULL,'5.
+47.37.13','2025-10-08 09:48:39'),(1666,NULL,46,NULL,'5.47.37.13','2025-10-08 09:48:39'),(1667,2,NULL,NULL,'23.158.56.25
+3','2025-10-08 09:48:40'),(1668,2,NULL,NULL,'185.55.38.161','2025-10-08 09:48:43'),(1669,38,NULL,NULL,'23.158.56.253','
+2025-10-08 09:48:45'),(1670,NULL,45,NULL,'5.47.37.13','2025-10-08 09:48:45'),(1671,38,NULL,NULL,'78.172.214.208','2025-
+10-08 09:48:45'),(1674,NULL,42,NULL,'5.47.37.13','2025-10-08 09:48:48'),(1675,38,NULL,NULL,'5.176.54.57','2025-10-08 09
+:48:48'),(1676,38,NULL,NULL,'82.218.171.66','2025-10-08 09:48:51'),(1678,2,NULL,NULL,'82.218.171.66','2025-10-08 09:48:
+55'),(1680,2,NULL,NULL,'5.176.54.57','2025-10-08 09:49:03'),(1681,38,NULL,NULL,'5.176.56.13','2025-10-08 09:49:05'),(16
+83,2,NULL,NULL,'5.176.56.13','2025-10-08 09:49:07'),(1684,38,NULL,NULL,'94.55.61.66','2025-10-08 09:49:08'),(1685,NULL,
+40,NULL,'5.47.37.13','2025-10-08 09:49:09'),(1686,38,NULL,NULL,'178.51.67.220','2025-10-08 09:49:10'),(1687,38,NULL,NUL
+L,'176.88.36.240','2025-10-08 09:49:15'),(1688,38,NULL,NULL,'77.67.214.194','2025-10-08 09:49:19'),(1689,38,NULL,NULL,'
+77.67.214.194','2025-10-08 09:49:19'),(1690,38,NULL,NULL,'88.241.68.244','2025-10-08 09:49:30'),(1691,38,NULL,NULL,'23.
+158.56.253','2025-10-08 09:49:31'),(1692,2,NULL,NULL,'78.173.62.104','2025-10-08 09:49:34'),(1693,38,NULL,NULL,'78.173.
+62.104','2025-10-08 09:49:41'),(1694,2,NULL,NULL,'176.88.36.240','2025-10-08 09:49:42'),(1695,38,NULL,NULL,'89.222.112.
+200','2025-10-08 09:49:50'),(1696,38,NULL,NULL,'176.216.96.58','2025-10-08 09:49:50'),(1697,NULL,18,NULL,'88.238.34.14'
+,'2025-10-08 09:49:51'),(1698,38,NULL,NULL,'139.59.144.157','2025-10-08 09:49:52'),(1699,2,NULL,NULL,'139.59.144.157','
+2025-10-08 09:49:59'),(1700,38,NULL,NULL,'212.154.86.247','2025-10-08 09:50:03'),(1702,38,NULL,NULL,'37.155.150.148','2
+025-10-08 09:50:08'),(1703,38,NULL,NULL,'5.47.175.108','2025-10-08 09:50:11'),(1704,NULL,16,NULL,'88.238.34.14','2025-1
+0-08 09:50:12'),(1705,2,NULL,NULL,'5.47.175.108','2025-10-08 09:50:13'),(1706,NULL,16,NULL,'5.176.62.184','2025-10-08 0
+9:50:14'),(1707,38,NULL,NULL,'188.253.208.189','2025-10-08 09:50:14'),(1708,NULL,58,NULL,'85.103.109.98','2025-10-08 09
+:50:16'),(1709,38,NULL,NULL,'146.70.42.162','2025-10-08 09:50:17'),(1710,NULL,57,NULL,'85.103.109.98','2025-10-08 09:50
+:18'),(1711,NULL,19,NULL,'5.176.62.184','2025-10-08 09:50:19'),(1713,NULL,56,NULL,'85.103.109.98','2025-10-08 09:50:23'
+),(1714,NULL,26,NULL,'5.47.86.113','2025-10-08 09:50:25'),(1715,NULL,58,NULL,'185.146.115.231','2025-10-08 09:50:27'),(
+1716,NULL,54,NULL,'85.103.109.98','2025-10-08 09:50:28'),(1717,38,NULL,NULL,'176.216.166.117','2025-10-08 09:50:28'),(1
+718,NULL,55,NULL,'85.103.109.98','2025-10-08 09:50:29'),(1719,NULL,53,NULL,'85.103.109.98','2025-10-08 09:50:30'),(1720
+,38,NULL,NULL,'185.177.229.37','2025-10-08 09:50:31'),(1721,NULL,52,NULL,'85.103.109.98','2025-10-08 09:50:31'),(1722,N
+ULL,51,NULL,'85.103.109.98','2025-10-08 09:50:33'),(1723,NULL,50,NULL,'85.103.109.98','2025-10-08 09:50:33'),(1724,NULL
+,48,NULL,'85.103.109.98','2025-10-08 09:50:37'),(1725,NULL,47,NULL,'85.103.109.98','2025-10-08 09:50:38'),(1726,2,NULL,
+NULL,'185.233.180.40','2025-10-08 09:50:38'),(1727,NULL,46,NULL,'85.103.109.98','2025-10-08 09:50:38'),(1728,NULL,55,NU
+LL,'85.103.109.98','2025-10-08 09:50:41'),(1729,NULL,16,NULL,'88.238.34.14','2025-10-08 09:50:41'),(1730,NULL,58,NULL,'
+23.158.56.253','2025-10-08 09:50:43'),(1732,38,NULL,NULL,'94.123.169.152','2025-10-08 09:50:48'),(1733,NULL,46,NULL,'18
+5.146.112.241','2025-10-08 09:50:49'),(1736,2,NULL,NULL,'94.123.169.152','2025-10-08 09:50:51'),(1737,38,NULL,NULL,'37.
+154.73.229','2025-10-08 09:50:54'),(1738,NULL,43,NULL,'85.103.109.98','2025-10-08 09:50:55'),(1739,NULL,45,NULL,'85.103
+.109.98','2025-10-08 09:50:55'),(1740,NULL,44,NULL,'85.103.109.98','2025-10-08 09:50:56'),(1741,38,NULL,NULL,'5.229.38.
+50','2025-10-08 09:50:57'),(1742,38,NULL,NULL,'37.154.73.229','2025-10-08 09:50:57'),(1743,NULL,41,NULL,'85.103.109.98'
+,'2025-10-08 09:50:57'),(1744,NULL,40,NULL,'85.103.109.98','2025-10-08 09:50:58'),(1745,38,NULL,NULL,'5.229.38.50','202
+5-10-08 09:50:58'),(1746,NULL,32,NULL,'85.103.109.98','2025-10-08 09:50:59'),(1747,NULL,31,NULL,'85.103.109.98','2025-1
+0-08 09:51:00'),(1748,NULL,33,NULL,'85.103.109.98','2025-10-08 09:51:00'),(1749,NULL,30,NULL,'85.103.109.98','2025-10-0
+8 09:51:01'),(1752,NULL,29,NULL,'85.103.109.98','2025-10-08 09:51:03'),(1754,NULL,42,NULL,'85.103.109.98','2025-10-08 0
+9:51:05'),(1755,NULL,27,NULL,'85.103.109.98','2025-10-08 09:51:05'),(1756,NULL,28,NULL,'85.103.109.98','2025-10-08 09:5
+1:06'),(1757,NULL,16,NULL,'37.154.225.159','2025-10-08 09:51:07'),(1759,38,NULL,NULL,'88.245.190.103','2025-10-08 09:51
+:09'),(1761,NULL,58,25,'23.158.56.253','2025-10-08 09:51:10'),(1762,NULL,19,NULL,'37.154.225.159','2025-10-08 09:51:11'
+),(1763,NULL,26,NULL,'85.103.109.98','2025-10-08 09:51:12'),(1764,NULL,25,NULL,'85.103.109.98','2025-10-08 09:51:13'),(
+1765,NULL,23,NULL,'85.103.109.98','2025-10-08 09:51:14'),(1766,NULL,19,NULL,'37.154.225.159','2025-10-08 09:51:14'),(17
+67,NULL,22,NULL,'85.103.109.98','2025-10-08 09:51:14'),(1768,NULL,24,NULL,'85.103.109.98','2025-10-08 09:51:17'),(1769,
+NULL,18,NULL,'85.103.109.98','2025-10-08 09:51:17'),(1770,NULL,16,NULL,'85.103.109.98','2025-10-08 09:51:19'),(1771,38,
+NULL,NULL,'5.47.175.108','2025-10-08 09:51:20'),(1772,NULL,57,NULL,'37.32.71.18','2025-10-08 09:51:21'),(1773,NULL,21,N
+ULL,'85.103.109.98','2025-10-08 09:51:22'),(1774,NULL,20,NULL,'85.103.109.98','2025-10-08 09:51:23'),(1775,38,NULL,NULL
+,'62.217.145.186','2025-10-08 09:51:24'),(1776,NULL,19,NULL,'85.103.109.98','2025-10-08 09:51:26'),(1777,NULL,24,NULL,'
+46.154.49.71','2025-10-08 09:51:28'),(1778,38,NULL,NULL,'213.74.46.177','2025-10-08 09:51:28'),(1779,2,NULL,NULL,'62.21
+7.145.186','2025-10-08 09:51:29'),(1780,NULL,23,NULL,'46.154.49.71','2025-10-08 09:51:34'),(1781,38,NULL,NULL,'176.220.
+59.10','2025-10-08 09:51:34'),(1782,NULL,24,NULL,'46.154.49.71','2025-10-08 09:51:36'),(1783,NULL,30,NULL,'46.23.100.57
+','2025-10-08 09:51:39'),(1785,NULL,16,NULL,'31.155.133.187','2025-10-08 09:51:44'),(1786,38,NULL,NULL,'176.216.184.19'
+,'2025-10-08 09:51:52'),(1788,2,NULL,NULL,'176.216.184.19','2025-10-08 09:51:53'),(1791,38,NULL,NULL,'176.54.2.239','20
+25-10-08 09:51:55'),(1792,NULL,58,NULL,'176.54.21.191','2025-10-08 09:51:56'),(1793,NULL,58,NULL,'151.135.6.223','2025-
+10-08 09:51:56'),(1795,NULL,58,NULL,'46.154.49.71','2025-10-08 09:51:58'),(1796,38,NULL,NULL,'46.22.230.19','2025-10-08
+ 09:51:59'),(1798,NULL,58,17,'78.180.9.136','2025-10-08 09:52:07'),(1799,38,NULL,NULL,'149.140.21.245','2025-10-08 09:5
+2:08'),(1800,NULL,58,NULL,'5.47.175.108','2025-10-08 09:52:09'),(1801,NULL,16,NULL,'178.51.114.160','2025-10-08 09:52:1
+0'),(1802,38,NULL,NULL,'149.140.21.245','2025-10-08 09:52:11'),(1803,38,NULL,NULL,'46.155.101.152','2025-10-08 09:52:11
+'),(1804,38,NULL,NULL,'193.243.192.101','2025-10-08 09:52:12'),(1805,2,NULL,NULL,'46.155.101.152','2025-10-08 09:52:15'
+),(1806,38,NULL,NULL,'193.243.192.101','2025-10-08 09:52:17'),(1807,38,NULL,NULL,'78.191.250.32','2025-10-08 09:52:24')
+,(1808,NULL,16,NULL,'78.190.164.31','2025-10-08 09:52:27'),(1811,NULL,18,NULL,'31.155.133.187','2025-10-08 09:52:31'),(
+1813,NULL,16,NULL,'78.191.250.32','2025-10-08 09:52:33'),(1814,NULL,18,NULL,'78.191.250.32','2025-10-08 09:52:34'),(181
+5,NULL,16,NULL,'78.177.168.202','2025-10-08 09:52:36'),(1816,38,NULL,NULL,'176.55.160.140','2025-10-08 09:52:38'),(1818
+,NULL,18,NULL,'78.190.164.31','2025-10-08 09:52:41'),(1819,NULL,58,NULL,'193.243.192.101','2025-10-08 09:52:41'),(1820,
+NULL,19,NULL,'78.191.250.32','2025-10-08 09:52:41'),(1821,NULL,20,NULL,'78.191.250.32','2025-10-08 09:52:44'),(1822,38,
+NULL,NULL,'78.190.157.196','2025-10-08 09:52:45'),(1823,NULL,19,NULL,'78.191.250.32','2025-10-08 09:52:47'),(1824,38,NU
+LL,NULL,'212.47.147.150','2025-10-08 09:52:47'),(1825,38,NULL,NULL,'88.230.168.156','2025-10-08 09:52:54'),(1826,NULL,1
+6,NULL,'176.217.198.191','2025-10-08 09:52:54'),(1827,38,NULL,NULL,'176.238.152.139','2025-10-08 09:52:55'),(1828,NULL,
+55,NULL,'176.216.184.19','2025-10-08 09:52:57'),(1829,NULL,18,NULL,'78.177.168.202','2025-10-08 09:52:58'),(1830,NULL,5
+8,NULL,'144.31.2.57','2025-10-08 09:53:01'),(1831,38,NULL,NULL,'188.119.20.79','2025-10-08 09:53:02'),(1832,38,NULL,NUL
+L,'95.70.185.61','2025-10-08 09:53:13'),(1833,38,NULL,NULL,'95.70.185.61','2025-10-08 09:53:14'),(1835,38,NULL,NULL,'78
+.190.252.255','2025-10-08 09:53:17'),(1836,2,NULL,NULL,'95.70.185.61','2025-10-08 09:53:19'),(1837,38,NULL,NULL,'178.24
+0.220.178','2025-10-08 09:53:28'),(1838,NULL,16,8,'176.217.198.191','2025-10-08 09:53:34'),(1839,2,NULL,NULL,'178.240.2
+20.178','2025-10-08 09:53:36'),(1840,NULL,18,NULL,'78.173.21.142','2025-10-08 09:53:37'),(1841,NULL,16,NULL,'78.173.21.
+142','2025-10-08 09:53:39'),(1842,NULL,58,NULL,'188.253.212.2','2025-10-08 09:53:40'),(1843,NULL,19,NULL,'78.173.21.142
+','2025-10-08 09:53:41'),(1845,38,NULL,NULL,'5.25.21.65','2025-10-08 09:53:43'),(1846,38,NULL,NULL,'5.25.21.65','2025-1
+0-08 09:53:45'),(1847,38,NULL,NULL,'78.190.155.241','2025-10-08 09:53:47'),(1848,NULL,20,NULL,'78.173.21.142','2025-10-
+08 09:53:47'),(1849,38,NULL,NULL,'78.190.155.241','2025-10-08 09:53:48'),(1850,NULL,21,NULL,'78.173.21.142','2025-10-08
+ 09:53:50'),(1851,NULL,22,NULL,'78.173.21.142','2025-10-08 09:53:54'),(1852,NULL,22,NULL,'78.173.21.142','2025-10-08 09
+:54:00'),(1853,NULL,23,NULL,'78.173.21.142','2025-10-08 09:54:00'),(1854,NULL,23,NULL,'78.173.21.142','2025-10-08 09:54
+:01'),(1855,NULL,22,NULL,'78.173.21.142','2025-10-08 09:54:02'),(1856,NULL,47,NULL,'37.61.118.18','2025-10-08 09:54:20'
+),(1857,38,NULL,NULL,'212.47.141.178','2025-10-08 10:29:39'),(1858,2,NULL,NULL,'212.47.141.178','2025-10-08 10:29:39'),
+(1859,2,NULL,NULL,'178.241.80.108','2025-10-08 11:53:46'),(1860,38,NULL,NULL,'178.241.80.108','2025-10-08 11:53:46'),(1
+861,38,NULL,NULL,'178.241.80.108','2025-10-08 11:54:33'),(1862,2,NULL,NULL,'178.241.80.108','2025-10-08 11:54:33'),(186
+3,38,NULL,NULL,'178.241.80.108','2025-10-08 11:55:11'),(1864,2,NULL,NULL,'178.241.80.108','2025-10-08 11:55:11'),(1867,
+38,NULL,NULL,'176.220.33.200','2025-10-08 13:29:23'),(1868,38,NULL,NULL,'95.70.218.4','2025-10-08 14:07:21'),(1869,38,N
+ULL,NULL,'45.83.34.99','2025-10-08 15:02:05'),(1870,38,NULL,NULL,'95.10.29.146','2025-10-08 15:03:25'),(1875,38,NULL,NU
+LL,'195.7.11.33','2025-10-09 06:04:54'),(1876,2,NULL,NULL,'195.7.11.33','2025-10-09 06:04:57'),(1897,38,NULL,NULL,'46.1
+.230.212','2025-10-12 08:12:58'),(1898,38,NULL,NULL,'88.234.237.106','2025-10-12 08:12:59'),(1899,38,NULL,NULL,'51.158.
+178.190','2025-10-12 08:13:02'),(1900,38,NULL,NULL,'88.236.163.3','2025-10-12 08:13:06'),(1901,38,NULL,NULL,'88.236.167
+.245','2025-10-12 08:13:06'),(1903,38,NULL,NULL,'46.106.136.47','2025-10-12 08:13:07'),(1905,2,NULL,NULL,'88.236.163.3'
+,'2025-10-12 08:13:08'),(1906,38,NULL,NULL,'178.247.177.202','2025-10-12 08:13:12'),(1909,38,NULL,NULL,'88.121.153.52',
+'2025-10-12 08:13:15'),(1910,38,NULL,NULL,'78.181.161.35','2025-10-12 08:13:16'),(1911,38,NULL,NULL,'176.240.172.37','2
+025-10-12 08:13:20'),(1912,38,NULL,NULL,'176.238.182.239','2025-10-12 08:13:21'),(1914,2,NULL,NULL,'78.177.161.109','20
+25-10-12 08:13:24'),(1915,38,NULL,NULL,'88.227.33.24','2025-10-12 08:13:25'),(1916,38,NULL,NULL,'176.240.244.216','2025
+-10-12 08:13:26'),(1917,38,NULL,NULL,'88.235.206.168','2025-10-12 08:13:26'),(1919,38,NULL,NULL,'5.24.114.8','2025-10-1
+2 08:13:26'),(1920,38,NULL,NULL,'5.24.114.8','2025-10-12 08:13:27'),(1921,2,NULL,NULL,'176.238.182.239','2025-10-12 08:
+13:28'),(1922,38,NULL,NULL,'5.24.114.8','2025-10-12 08:13:28'),(1923,38,NULL,NULL,'46.154.228.174','2025-10-12 08:13:33
+'),(1924,2,NULL,NULL,'88.234.199.4','2025-10-12 08:13:35'),(1925,38,NULL,NULL,'178.241.87.240','2025-10-12 08:13:37'),(
+1926,38,NULL,NULL,'178.243.107.89','2025-10-12 08:13:37'),(1927,38,NULL,NULL,'176.220.34.211','2025-10-12 08:13:38'),(1
+928,38,NULL,NULL,'88.234.199.4','2025-10-12 08:13:39'),(1929,2,NULL,NULL,'178.241.87.240','2025-10-12 08:13:40'),(1930,
+2,NULL,NULL,'88.236.167.245','2025-10-12 08:13:40'),(1931,38,NULL,NULL,'78.179.55.87','2025-10-12 08:13:40'),(1932,38,N
+ULL,NULL,'78.162.62.238','2025-10-12 08:13:40'),(1933,38,NULL,NULL,'78.172.222.193','2025-10-12 08:13:41'),(1934,2,NULL
+,NULL,'94.54.242.40','2025-10-12 08:13:42'),(1935,2,NULL,NULL,'78.162.62.238','2025-10-12 08:13:44'),(1937,38,NULL,NULL
+,'5.47.67.201','2025-10-12 08:13:46'),(1938,38,NULL,NULL,'94.54.242.40','2025-10-12 08:13:47'),(1939,38,NULL,NULL,'95.1
+3.30.220','2025-10-12 08:13:49'),(1940,NULL,17,NULL,'46.155.242.227','2025-10-12 08:13:50'),(1941,38,NULL,NULL,'85.98.1
+9.107','2025-10-12 08:13:51'),(1942,38,NULL,NULL,'88.230.42.205','2025-10-12 08:13:52'),(1943,38,NULL,NULL,'176.33.110.
+225','2025-10-12 08:13:53'),(1944,38,NULL,NULL,'5.229.34.58','2025-10-12 08:13:53'),(1945,38,NULL,NULL,'78.181.161.35',
+'2025-10-12 08:13:54'),(1946,38,NULL,NULL,'78.181.161.35','2025-10-12 08:13:55'),(1947,2,NULL,NULL,'88.242.136.100','20
+25-10-12 08:13:55'),(1948,38,NULL,NULL,'78.174.168.36','2025-10-12 08:13:55'),(1949,38,NULL,NULL,'78.181.161.35','2025-
+10-12 08:13:56'),(1951,38,NULL,NULL,'31.142.223.222','2025-10-12 08:13:58'),(1952,38,NULL,NULL,'176.33.106.253','2025-1
+0-12 08:13:58'),(1953,2,NULL,NULL,'204.136.10.106','2025-10-12 08:13:58'),(1954,38,NULL,NULL,'193.108.117.89','2025-10-
+12 08:13:59'),(1955,38,NULL,NULL,'84.59.154.220','2025-10-12 08:13:59'),(1956,38,NULL,NULL,'193.108.117.89','2025-10-12
+ 08:14:00'),(1957,38,NULL,NULL,'78.163.210.116','2025-10-12 08:14:00'),(1958,NULL,16,NULL,'88.234.199.4','2025-10-12 08
+:14:00'),(1960,NULL,18,NULL,'88.234.199.4','2025-10-12 08:14:02'),(1961,38,NULL,NULL,'31.142.20.212','2025-10-12 08:14:
+02'),(1962,NULL,16,NULL,'88.234.199.4','2025-10-12 08:14:03'),(1963,38,NULL,NULL,'78.181.73.83','2025-10-12 08:14:03'),
+(1964,38,NULL,NULL,'185.184.192.242','2025-10-12 08:14:03'),(1965,38,NULL,NULL,'85.106.187.161','2025-10-12 08:14:03'),
+(1966,NULL,16,NULL,'88.234.199.4','2025-10-12 08:14:04'),(1967,38,NULL,NULL,'176.54.195.55','2025-10-12 08:14:05'),(196
+8,38,NULL,NULL,'78.163.161.255','2025-10-12 08:14:05'),(1969,38,NULL,NULL,'159.146.29.154','2025-10-12 08:14:05'),(1970
+,2,NULL,NULL,'85.106.187.161','2025-10-12 08:14:05'),(1971,38,NULL,NULL,'31.206.110.14','2025-10-12 08:14:06'),(1972,38
+,NULL,NULL,'176.88.137.252','2025-10-12 08:14:07'),(1973,38,NULL,NULL,'94.54.242.40','2025-10-12 08:14:08'),(1974,2,NUL
+L,NULL,'159.146.29.154','2025-10-12 08:14:08'),(1975,2,NULL,NULL,'176.54.195.55','2025-10-12 08:14:08'),(1976,38,NULL,N
+ULL,'85.153.238.127','2025-10-12 08:14:09'),(1977,2,NULL,NULL,'51.89.6.230','2025-10-12 08:14:09'),(1978,NULL,58,NULL,'
+31.155.225.161','2025-10-12 08:14:10'),(1979,2,NULL,NULL,'78.191.193.39','2025-10-12 08:14:10'),(1980,38,NULL,NULL,'85.
+106.232.165','2025-10-12 08:14:11'),(1981,38,NULL,NULL,'95.10.224.249','2025-10-12 08:14:11'),(1982,38,NULL,NULL,'78.17
+4.214.6','2025-10-12 08:14:11'),(1983,2,NULL,NULL,'85.153.238.127','2025-10-12 08:14:11'),(1984,38,NULL,NULL,'51.89.6.2
+30','2025-10-12 08:14:12'),(1985,38,NULL,NULL,'78.191.193.39','2025-10-12 08:14:12'),(1986,38,NULL,NULL,'78.163.73.130'
+,'2025-10-12 08:14:13'),(1987,38,NULL,NULL,'78.179.55.87','2025-10-12 08:14:13'),(1988,38,NULL,NULL,'178.233.143.165','
+2025-10-12 08:14:13'),(1989,NULL,58,NULL,'31.155.225.161','2025-10-12 08:14:15'),(1990,38,NULL,NULL,'212.253.209.84','2
+025-10-12 08:14:16'),(1991,38,NULL,NULL,'78.191.124.169','2025-10-12 08:14:16'),(1992,2,NULL,NULL,'178.233.143.165','20
+25-10-12 08:14:16'),(1993,38,NULL,NULL,'176.234.105.56','2025-10-12 08:14:17'),(1995,38,NULL,NULL,'176.240.69.138','202
+5-10-12 08:14:21'),(1996,38,NULL,NULL,'46.106.10.159','2025-10-12 08:14:22'),(1997,38,NULL,NULL,'88.242.136.100','2025-
+10-12 08:14:26'),(1998,38,NULL,NULL,'51.89.6.230','2025-10-12 08:14:26'),(1999,38,NULL,NULL,'46.2.109.128','2025-10-12 
+08:14:28'),(2001,38,NULL,NULL,'195.142.71.14','2025-10-12 08:14:29'),(2002,2,NULL,NULL,'78.177.161.109','2025-10-12 08:
+14:29'),(2004,38,NULL,NULL,'31.155.139.130','2025-10-12 08:14:32'),(2005,NULL,19,NULL,'88.234.199.4','2025-10-12 08:14:
+32'),(2006,38,NULL,NULL,'81.215.140.3','2025-10-12 08:14:32'),(2007,2,NULL,NULL,'46.2.109.128','2025-10-12 08:14:33'),(
+2008,38,NULL,NULL,'5.229.34.58','2025-10-12 08:14:33'),(2009,2,NULL,NULL,'176.220.34.211','2025-10-12 08:14:34'),(2010,
+38,NULL,NULL,'78.166.53.116','2025-10-12 08:14:35'),(2011,38,NULL,NULL,'95.173.234.242','2025-10-12 08:14:35'),(2012,2,
+NULL,NULL,'195.142.71.14','2025-10-12 08:14:35'),(2013,NULL,21,NULL,'88.234.199.4','2025-10-12 08:14:35'),(2014,38,NULL
+,NULL,'176.240.98.44','2025-10-12 08:14:35'),(2015,2,NULL,NULL,'5.229.34.58','2025-10-12 08:14:36'),(2016,2,NULL,NULL,'
+149.140.68.34','2025-10-12 08:14:36'),(2017,2,NULL,NULL,'88.238.44.216','2025-10-12 08:14:38'),(2018,2,NULL,NULL,'88.22
+7.88.1','2025-10-12 08:14:40'),(2019,38,NULL,NULL,'78.176.230.202','2025-10-12 08:14:42'),(2020,38,NULL,NULL,'88.254.55
+.229','2025-10-12 08:14:43'),(2021,2,NULL,NULL,'88.234.228.53','2025-10-12 08:14:43'),(2022,38,NULL,NULL,'46.154.220.33
+','2025-10-12 08:14:43'),(2023,38,NULL,NULL,'88.227.88.1','2025-10-12 08:14:44'),(2025,38,NULL,NULL,'193.108.117.89','2
+025-10-12 08:14:45'),(2026,38,NULL,NULL,'178.233.120.190','2025-10-12 08:14:45'),(2027,38,NULL,NULL,'88.227.91.31','202
+5-10-12 08:14:49'),(2028,38,NULL,NULL,'213.186.152.253','2025-10-12 08:14:49'),(2029,38,NULL,NULL,'195.174.54.67','2025
+-10-12 08:14:50'),(2030,2,NULL,NULL,'78.174.168.36','2025-10-12 08:14:50'),(2031,38,NULL,NULL,'141.196.8.201','2025-10-
+12 08:14:52'),(2032,2,NULL,NULL,'88.243.69.198','2025-10-12 08:14:52'),(2033,38,NULL,NULL,'88.245.58.128','2025-10-12 0
+8:14:54'),(2035,38,NULL,NULL,'176.237.72.169','2025-10-12 08:14:56'),(2036,2,NULL,NULL,'141.196.8.201','2025-10-12 08:1
+4:56'),(2037,38,NULL,NULL,'5.24.114.8','2025-10-12 08:14:57'),(2039,2,NULL,NULL,'176.219.85.36','2025-10-12 08:15:01'),
+(2040,38,NULL,NULL,'185.154.129.25','2025-10-12 08:15:01'),(2041,2,NULL,NULL,'46.106.10.159','2025-10-12 08:15:02'),(20
+42,38,NULL,NULL,'178.233.0.152','2025-10-12 08:15:03'),(2043,NULL,20,NULL,'88.234.199.4','2025-10-12 08:15:03'),(2044,3
+8,NULL,NULL,'195.174.54.67','2025-10-12 08:15:03'),(2045,38,NULL,NULL,'185.177.229.36','2025-10-12 08:15:04'),(2046,2,N
+ULL,NULL,'178.241.162.214','2025-10-12 08:15:07'),(2048,38,NULL,NULL,'79.123.220.223','2025-10-12 08:15:08'),(2049,2,NU
+LL,NULL,'5.25.140.30','2025-10-12 08:15:08'),(2050,38,NULL,NULL,'78.180.56.172','2025-10-12 08:15:09'),(2051,38,NULL,NU
+LL,'159.146.29.154','2025-10-12 08:15:09'),(2052,38,NULL,NULL,'88.230.4.26','2025-10-12 08:15:10'),(2053,2,NULL,NULL,'1
+95.174.54.67','2025-10-12 08:15:10'),(2054,2,NULL,NULL,'88.230.4.26','2025-10-12 08:15:12'),(2055,38,NULL,NULL,'176.54.
+214.66','2025-10-12 08:15:12'),(2056,2,NULL,NULL,'178.233.0.152','2025-10-12 08:15:13'),(2057,38,NULL,NULL,'176.233.29.
+82','2025-10-12 08:15:13'),(2058,NULL,53,NULL,'88.234.226.223','2025-10-12 08:15:14'),(2059,38,NULL,NULL,'46.2.231.202'
+,'2025-10-12 08:15:14'),(2060,2,NULL,NULL,'78.180.56.172','2025-10-12 08:15:14'),(2061,38,NULL,NULL,'176.237.113.195','
+2025-10-12 08:15:14'),(2062,38,NULL,NULL,'78.176.230.202','2025-10-12 08:15:17'),(2063,38,NULL,NULL,'88.243.138.223','2
+025-10-12 08:15:17'),(2064,2,NULL,NULL,'176.237.113.195','2025-10-12 08:15:18'),(2065,38,NULL,NULL,'78.169.215.14','202
+5-10-12 08:15:19'),(2066,38,NULL,NULL,'46.197.71.149','2025-10-12 08:15:19'),(2067,2,NULL,NULL,'78.176.230.202','2025-1
+0-12 08:15:21'),(2068,2,NULL,NULL,'82.222.237.19','2025-10-12 08:15:22'),(2069,2,NULL,NULL,'78.169.215.14','2025-10-12 
+08:15:22'),(2070,38,NULL,NULL,'88.243.64.30','2025-10-12 08:15:23'),(2071,38,NULL,NULL,'46.221.194.43','2025-10-12 08:1
+5:23'),(2072,38,NULL,NULL,'31.142.123.169','2025-10-12 08:15:24'),(2073,38,NULL,NULL,'178.247.177.202','2025-10-12 08:1
+5:25'),(2075,38,NULL,NULL,'85.107.53.93','2025-10-12 08:15:28'),(2077,38,NULL,NULL,'193.108.118.101','2025-10-12 08:15:
+31'),(2078,38,NULL,NULL,'151.250.23.180','2025-10-12 08:15:32'),(2079,38,NULL,NULL,'46.155.202.85','2025-10-12 08:15:33
+'),(2080,38,NULL,NULL,'88.245.58.128','2025-10-12 08:15:35'),(2081,2,NULL,NULL,'78.190.14.74','2025-10-12 08:15:37'),(2
+083,2,NULL,NULL,'78.190.14.74','2025-10-12 08:15:40'),(2084,38,NULL,NULL,'94.54.232.178','2025-10-12 08:15:41'),(2085,3
+8,NULL,NULL,'37.154.12.84','2025-10-12 08:15:41'),(2086,38,NULL,NULL,'78.177.171.3','2025-10-12 08:15:44'),(2087,38,NUL
+L,NULL,'88.242.6.185','2025-10-12 08:15:44'),(2088,38,NULL,NULL,'176.88.125.168','2025-10-12 08:15:45'),(2089,NULL,58,N
+ULL,'88.227.33.24','2025-10-12 08:15:45'),(2091,38,NULL,NULL,'78.163.128.8','2025-10-12 08:15:46'),(2092,2,NULL,NULL,'1
+76.88.125.168','2025-10-12 08:15:48'),(2093,2,NULL,NULL,'78.163.128.8','2025-10-12 08:15:48'),(2095,38,NULL,NULL,'176.2
+36.214.82','2025-10-12 08:15:56'),(2096,38,NULL,NULL,'45.15.43.85','2025-10-12 08:16:00'),(2097,38,NULL,NULL,'88.254.12
+6.246','2025-10-12 08:16:00'),(2098,2,NULL,NULL,'45.15.43.85','2025-10-12 08:16:01'),(2099,38,NULL,NULL,'151.135.64.136
+','2025-10-12 08:16:01'),(2101,38,NULL,NULL,'78.180.49.8','2025-10-12 08:16:01'),(2102,38,NULL,NULL,'176.232.181.20','2
+025-10-12 08:16:02'),(2103,38,NULL,NULL,'81.8.66.115','2025-10-12 08:16:02'),(2104,2,NULL,NULL,'176.236.214.82','2025-1
+0-12 08:16:03'),(2106,38,NULL,NULL,'78.165.175.192','2025-10-12 08:16:03'),(2107,38,NULL,NULL,'78.163.35.221','2025-10-
+12 08:16:03'),(2108,NULL,16,NULL,'78.177.171.3','2025-10-12 08:16:05'),(2109,2,NULL,NULL,'78.191.124.169','2025-10-12 0
+8:16:05'),(2110,38,NULL,NULL,'176.88.29.38','2025-10-12 08:16:07'),(2111,38,NULL,NULL,'178.55.250.191','2025-10-12 08:1
+6:09'),(2113,38,NULL,NULL,'205.147.17.4','2025-10-12 08:16:10'),(2114,38,NULL,NULL,'95.10.22.31','2025-10-12 08:16:11')
+,(2115,NULL,58,NULL,'5.47.47.224','2025-10-12 08:16:12'),(2116,38,NULL,NULL,'37.114.165.228','2025-10-12 08:16:12'),(21
+17,38,NULL,NULL,'78.171.43.169','2025-10-12 08:16:14'),(2118,38,NULL,NULL,'78.177.169.128','2025-10-12 08:16:14'),(2119
+,38,NULL,NULL,'5.46.137.9','2025-10-12 08:16:14'),(2120,38,NULL,NULL,'85.106.144.138','2025-10-12 08:16:15'),(2121,NULL
+,58,NULL,'188.57.9.66','2025-10-12 08:16:16'),(2122,38,NULL,NULL,'176.88.29.96','2025-10-12 08:16:18'),(2123,2,NULL,NUL
+L,'212.47.133.144','2025-10-12 08:16:19'),(2124,38,NULL,NULL,'51.158.183.17','2025-10-12 08:16:19'),(2125,38,NULL,NULL,
+'212.12.143.90','2025-10-12 08:16:20'),(2126,2,NULL,NULL,'5.176.142.42','2025-10-12 08:16:20'),(2127,38,NULL,NULL,'212.
+47.133.144','2025-10-12 08:16:21'),(2128,38,NULL,NULL,'213.74.188.4','2025-10-12 08:16:22'),(2129,38,NULL,NULL,'78.165.
+175.192','2025-10-12 08:16:22'),(2130,38,NULL,NULL,'37.114.156.135','2025-10-12 08:16:22'),(2132,38,NULL,NULL,'88.243.7
+5.119','2025-10-12 08:16:24'),(2133,38,NULL,NULL,'45.15.43.209','2025-10-12 08:16:25'),(2134,2,NULL,NULL,'78.165.175.19
+2','2025-10-12 08:16:26'),(2135,NULL,53,NULL,'78.169.215.14','2025-10-12 08:16:26'),(2137,38,NULL,NULL,'78.171.199.172'
+,'2025-10-12 08:16:27'),(2138,NULL,53,NULL,'78.169.215.14','2025-10-12 08:16:28'),(2139,38,NULL,NULL,'31.223.127.145','
+2025-10-12 08:16:29'),(2141,2,NULL,NULL,'46.154.228.174','2025-10-12 08:16:33'),(2142,38,NULL,NULL,'5.229.54.194','2025
+-10-12 08:16:33'),(2143,38,NULL,NULL,'78.166.60.146','2025-10-12 08:16:35'),(2144,38,NULL,NULL,'46.32.190.131','2025-10
+-12 08:16:35'),(2145,38,NULL,NULL,'151.135.64.136','2025-10-12 08:16:36'),(2146,2,NULL,NULL,'46.32.190.131','2025-10-12
+ 08:16:37'),(2147,38,NULL,NULL,'78.190.196.229','2025-10-12 08:16:38'),(2148,38,NULL,NULL,'176.238.182.239','2025-10-12
+ 08:16:38'),(2149,NULL,18,NULL,'78.177.171.3','2025-10-12 08:16:39'),(2150,38,NULL,NULL,'78.174.222.140','2025-10-12 08
+:16:41'),(2151,2,NULL,NULL,'46.196.252.36','2025-10-12 08:16:42'),(2153,NULL,16,NULL,'95.10.22.31','2025-10-12 08:16:43
+'),(2154,38,NULL,NULL,'46.196.252.36','2025-10-12 08:16:44'),(2155,2,NULL,NULL,'78.174.222.140','2025-10-12 08:16:44'),
+(2156,NULL,16,NULL,'95.10.22.31','2025-10-12 08:16:45'),(2157,NULL,58,NULL,'89.200.217.240','2025-10-12 08:16:46'),(215
+8,NULL,58,NULL,'89.200.217.240','2025-10-12 08:16:47'),(2159,38,NULL,NULL,'88.244.168.59','2025-10-12 08:16:47'),(2160,
+2,NULL,NULL,'176.240.244.216','2025-10-12 08:16:48'),(2161,NULL,58,NULL,'46.1.186.110','2025-10-12 08:16:48'),(2162,NUL
+L,58,NULL,'89.200.217.240','2025-10-12 08:16:48'),(2163,38,NULL,NULL,'78.167.6.93','2025-10-12 08:16:50'),(2164,38,NULL
+,NULL,'88.236.104.171','2025-10-12 08:16:52'),(2165,38,NULL,NULL,'176.88.140.101','2025-10-12 08:16:53'),(2167,NULL,58,
+NULL,'31.142.20.212','2025-10-12 08:16:56'),(2168,NULL,58,NULL,'46.197.71.149','2025-10-12 08:16:57'),(2169,NULL,58,NUL
+L,'46.197.71.149','2025-10-12 08:16:59'),(2170,38,NULL,NULL,'31.143.15.59','2025-10-12 08:17:00'),(2172,38,NULL,NULL,'9
+5.5.107.37','2025-10-12 08:17:00'),(2173,38,NULL,NULL,'78.163.128.8','2025-10-12 08:17:01'),(2174,38,NULL,NULL,'176.236
+.236.94','2025-10-12 08:17:01'),(2177,NULL,58,NULL,'149.140.173.26','2025-10-12 08:17:03'),(2179,38,NULL,NULL,'31.200.1
+3.37','2025-10-12 08:17:05'),(2180,38,NULL,NULL,'194.156.237.52','2025-10-12 08:17:06'),(2181,2,NULL,NULL,'31.223.127.1
+45','2025-10-12 08:17:07'),(2182,2,NULL,NULL,'95.5.64.13','2025-10-12 08:17:07'),(2183,38,NULL,NULL,'78.175.136.173','2
+025-10-12 08:17:09'),(2184,NULL,16,NULL,'176.41.181.227','2025-10-12 08:17:11'),(2186,2,NULL,NULL,'78.173.7.103','2025-
+10-12 08:17:12'),(2187,38,NULL,NULL,'46.154.228.174','2025-10-12 08:17:13'),(2188,38,NULL,NULL,'217.131.103.187','2025-
+10-12 08:17:15'),(2189,38,NULL,NULL,'46.154.228.174','2025-10-12 08:17:15'),(2191,38,NULL,NULL,'46.154.228.174','2025-1
+0-12 08:17:16'),(2192,38,NULL,NULL,'88.244.168.59','2025-10-12 08:17:16'),(2194,38,NULL,NULL,'176.54.79.66','2025-10-12
+ 08:17:18'),(2195,38,NULL,NULL,'88.236.73.43','2025-10-12 08:17:19'),(2196,38,NULL,NULL,'78.190.220.196','2025-10-12 08
+:17:20'),(2198,38,NULL,NULL,'88.233.71.62','2025-10-12 08:17:24'),(2199,2,NULL,NULL,'78.190.55.12','2025-10-12 08:17:28
+'),(2200,38,NULL,NULL,'88.236.73.43','2025-10-12 08:17:32'),(2201,38,NULL,NULL,'159.65.112.164','2025-10-12 08:17:35'),
+(2202,NULL,27,NULL,'78.176.100.232','2025-10-12 08:17:35'),(2203,38,NULL,NULL,'85.99.16.207','2025-10-12 08:17:36'),(22
+04,2,NULL,NULL,'31.200.13.37','2025-10-12 08:17:37'),(2205,2,NULL,NULL,'217.131.103.187','2025-10-12 08:17:38'),(2206,3
+8,NULL,NULL,'46.154.228.174','2025-10-12 08:17:39'),(2207,38,NULL,NULL,'193.108.117.20','2025-10-12 08:17:40'),(2209,NU
+LL,28,NULL,'78.176.100.232','2025-10-12 08:17:42'),(2210,NULL,29,NULL,'78.176.100.232','2025-10-12 08:17:42'),(2211,NUL
+L,30,NULL,'78.176.100.232','2025-10-12 08:17:42'),(2213,38,NULL,NULL,'176.240.244.216','2025-10-12 08:17:43'),(2214,NUL
+L,19,NULL,'57.128.177.66','2025-10-12 08:17:44'),(2215,2,NULL,NULL,'193.108.117.20','2025-10-12 08:17:45'),(2216,38,NUL
+L,NULL,'78.177.87.133','2025-10-12 08:17:46'),(2217,38,NULL,NULL,'5.47.180.12','2025-10-12 08:17:47'),(2218,2,NULL,NULL
+,'5.47.180.12','2025-10-12 08:17:49'),(2219,2,NULL,NULL,'85.106.232.165','2025-10-12 08:17:50'),(2220,2,NULL,NULL,'85.1
+06.114.85','2025-10-12 08:17:50'),(2221,38,NULL,NULL,'78.175.167.196','2025-10-12 08:17:50'),(2222,38,NULL,NULL,'78.181
+.161.35','2025-10-12 08:17:51'),(2223,38,NULL,NULL,'78.181.161.35','2025-10-12 08:17:52'),(2224,38,NULL,NULL,'78.181.16
+1.35','2025-10-12 08:17:52'),(2225,38,NULL,NULL,'212.47.146.216','2025-10-12 08:17:52'),(2226,38,NULL,NULL,'78.181.161.
+35','2025-10-12 08:17:53'),(2227,38,NULL,NULL,'24.133.249.158','2025-10-12 08:17:55'),(2228,38,NULL,NULL,'88.236.73.43'
+,'2025-10-12 08:17:55'),(2229,2,NULL,NULL,'95.5.64.13','2025-10-12 08:17:55'),(2230,38,NULL,NULL,'78.191.193.39','2025-
+10-12 08:17:56'),(2232,38,NULL,NULL,'78.191.193.39','2025-10-12 08:17:57'),(2233,2,NULL,NULL,'57.128.212.209','2025-10-
+12 08:17:58'),(2234,NULL,16,NULL,'46.221.153.104','2025-10-12 08:17:59'),(2235,2,NULL,NULL,'5.24.195.183','2025-10-12 0
+8:18:00'),(2236,38,NULL,NULL,'57.128.212.209','2025-10-12 08:18:01'),(2237,2,NULL,NULL,'212.47.146.216','2025-10-12 08:
+18:02'),(2238,NULL,23,NULL,'88.230.42.205','2025-10-12 08:18:02'),(2240,38,NULL,NULL,'78.166.57.150','2025-10-12 08:18:
+04'),(2241,38,NULL,NULL,'85.104.255.212','2025-10-12 08:18:04'),(2242,38,NULL,NULL,'85.104.255.212','2025-10-12 08:18:0
+5'),(2243,NULL,58,NULL,'176.41.181.227','2025-10-12 08:18:05'),(2244,38,NULL,NULL,'85.104.255.212','2025-10-12 08:18:05
+'),(2245,38,NULL,NULL,'85.104.255.212','2025-10-12 08:18:06'),(2246,NULL,19,NULL,'46.221.153.104','2025-10-12 08:18:07'
+),(2247,38,NULL,NULL,'149.140.178.16','2025-10-12 08:18:08'),(2248,NULL,18,NULL,'159.65.112.164','2025-10-12 08:18:08')
+,(2249,NULL,20,NULL,'46.221.153.104','2025-10-12 08:18:08'),(2250,NULL,21,NULL,'46.221.153.104','2025-10-12 08:18:10'),
+(2251,38,NULL,NULL,'85.106.114.85','2025-10-12 08:18:11'),(2253,38,NULL,NULL,'88.241.74.122','2025-10-12 08:18:14'),(22
+55,2,NULL,NULL,'78.169.255.214','2025-10-12 08:18:18'),(2258,NULL,50,NULL,'88.236.73.43','2025-10-12 08:18:19'),(2259,N
+ULL,22,NULL,'176.54.79.66','2025-10-12 08:18:19'),(2260,38,NULL,NULL,'88.233.197.24','2025-10-12 08:18:20'),(2261,NULL,
+16,NULL,'46.221.153.104','2025-10-12 08:18:21'),(2262,NULL,24,NULL,'46.221.153.104','2025-10-12 08:18:24'),(2263,NULL,5
+8,NULL,'188.57.140.191','2025-10-12 08:18:26'),(2265,NULL,25,NULL,'46.221.153.104','2025-10-12 08:18:26'),(2266,38,NULL
+,NULL,'46.221.108.32','2025-10-12 08:18:27'),(2267,38,NULL,NULL,'95.173.234.242','2025-10-12 08:18:27'),(2268,NULL,26,N
+ULL,'46.221.153.104','2025-10-12 08:18:27'),(2269,2,NULL,NULL,'46.221.108.32','2025-10-12 08:18:30'),(2271,NULL,18,NULL
+,'46.221.153.104','2025-10-12 08:18:32'),(2272,38,NULL,NULL,'78.190.196.229','2025-10-12 08:18:32'),(2273,NULL,36,NULL,
+'78.163.35.221','2025-10-12 08:18:33'),(2274,38,NULL,NULL,'88.230.234.26','2025-10-12 08:18:33'),(2275,38,NULL,NULL,'31
+.223.127.145','2025-10-12 08:18:34'),(2276,NULL,36,NULL,'78.163.35.221','2025-10-12 08:18:34'),(2277,NULL,36,NULL,'78.1
+63.35.221','2025-10-12 08:18:34'),(2278,38,NULL,NULL,'62.248.104.202','2025-10-12 08:18:41'),(2279,NULL,58,NULL,'24.133
+.249.158','2025-10-12 08:18:41'),(2281,NULL,57,NULL,'24.133.249.158','2025-10-12 08:18:45'),(2283,NULL,22,NULL,'46.221.
+153.104','2025-10-12 08:18:46'),(2284,NULL,56,NULL,'24.133.249.158','2025-10-12 08:18:47'),(2285,NULL,56,NULL,'24.133.2
+49.158','2025-10-12 08:18:47'),(2286,NULL,55,NULL,'24.133.249.158','2025-10-12 08:18:49'),(2287,NULL,55,NULL,'24.133.24
+9.158','2025-10-12 08:18:49'),(2289,NULL,53,NULL,'24.133.249.158','2025-10-12 08:18:51'),(2291,2,NULL,NULL,'88.233.28.1
+62','2025-10-12 08:18:53'),(2292,38,NULL,NULL,'204.136.10.106','2025-10-12 08:18:54'),(2293,38,NULL,NULL,'178.233.94.14
+1','2025-10-12 08:18:54'),(2294,NULL,54,NULL,'24.133.249.158','2025-10-12 08:18:54'),(2295,NULL,58,NULL,'78.177.171.3',
+'2025-10-12 08:18:54'),(2296,NULL,52,NULL,'24.133.249.158','2025-10-12 08:18:55'),(2297,NULL,51,NULL,'24.133.249.158','
+2025-10-12 08:18:56'),(2298,NULL,50,NULL,'24.133.249.158','2025-10-12 08:18:56'),(2299,NULL,49,NULL,'24.133.249.158','2
+025-10-12 08:18:57'),(2300,NULL,58,NULL,'178.233.65.207','2025-10-12 08:19:00'),(2301,NULL,38,NULL,'5.25.22.211','2025-
+10-12 08:19:00'),(2302,NULL,16,NULL,'109.38.144.73','2025-10-12 08:19:00'),(2303,38,NULL,NULL,'176.239.72.209','2025-10
+-12 08:19:01'),(2304,NULL,57,NULL,'24.133.249.158','2025-10-12 08:19:03'),(2305,38,NULL,NULL,'78.162.179.71','2025-10-1
+2 08:19:03'),(2306,38,NULL,NULL,'94.122.132.236','2025-10-12 08:19:04'),(2307,2,NULL,NULL,'176.239.72.209','2025-10-12 
+08:19:05'),(2308,NULL,38,NULL,'78.190.209.18','2025-10-12 08:19:10'),(2309,38,NULL,NULL,'212.47.146.216','2025-10-12 08
+:19:11'),(2312,38,NULL,NULL,'88.233.28.162','2025-10-12 08:19:20'),(2313,38,NULL,NULL,'57.129.66.64','2025-10-12 08:19:
+22'),(2315,38,NULL,NULL,'178.247.125.70','2025-10-12 08:19:26'),(2316,38,NULL,NULL,'85.98.63.30','2025-10-12 08:19:28')
+,(2317,NULL,16,NULL,'149.140.56.178','2025-10-12 08:19:29'),(2318,NULL,58,9,'159.146.29.154','2025-10-12 08:19:30'),(23
+19,NULL,18,NULL,'149.140.56.178','2025-10-12 08:19:32'),(2320,NULL,18,NULL,'149.140.56.178','2025-10-12 08:19:33'),(232
+1,38,NULL,NULL,'78.178.116.156','2025-10-12 08:19:34'),(2322,38,NULL,NULL,'77.67.231.124','2025-10-12 08:19:34'),(2323,
+NULL,19,NULL,'149.140.56.178','2025-10-12 08:19:35'),(2324,NULL,19,NULL,'149.140.56.178','2025-10-12 08:19:35'),(2325,3
+8,NULL,NULL,'212.47.146.216','2025-10-12 08:19:36'),(2326,NULL,58,11,'159.146.29.154','2025-10-12 08:19:36'),(2327,NULL
+,16,NULL,'78.177.169.128','2025-10-12 08:19:37'),(2328,NULL,20,NULL,'149.140.56.178','2025-10-12 08:19:37'),(2329,NULL,
+21,NULL,'149.140.56.178','2025-10-12 08:19:38'),(2330,NULL,21,NULL,'149.140.56.178','2025-10-12 08:19:38'),(2331,38,NUL
+L,NULL,'88.238.15.213','2025-10-12 08:19:39'),(2332,NULL,22,NULL,'149.140.56.178','2025-10-12 08:19:40'),(2333,NULL,22,
+NULL,'149.140.56.178','2025-10-12 08:19:40'),(2334,NULL,26,NULL,'212.47.146.216','2025-10-12 08:19:42'),(2335,NULL,23,N
+ULL,'149.140.56.178','2025-10-12 08:19:42'),(2336,38,NULL,NULL,'85.101.67.61','2025-10-12 08:19:42'),(2337,NULL,23,NULL
+,'149.140.56.178','2025-10-12 08:19:42'),(2339,NULL,24,NULL,'149.140.56.178','2025-10-12 08:19:43'),(2340,NULL,24,NULL,
+'149.140.56.178','2025-10-12 08:19:43'),(2341,38,NULL,NULL,'88.238.101.193','2025-10-12 08:19:44'),(2342,NULL,51,NULL,'
+195.174.54.67','2025-10-12 08:19:44'),(2343,NULL,25,NULL,'149.140.56.178','2025-10-12 08:19:45'),(2344,NULL,25,NULL,'14
+9.140.56.178','2025-10-12 08:19:45'),(2346,NULL,58,NULL,'185.252.220.149','2025-10-12 08:19:46'),(2347,NULL,26,NULL,'14
+9.140.56.178','2025-10-12 08:19:47'),(2350,38,NULL,NULL,'78.190.13.140','2025-10-12 08:19:53'),(2351,NULL,58,NULL,'78.1
+69.255.214','2025-10-12 08:19:55'),(2354,38,NULL,NULL,'77.67.231.124','2025-10-12 08:19:57'),(2355,2,NULL,NULL,'78.182.
+131.65','2025-10-12 08:19:58'),(2356,38,NULL,NULL,'5.25.22.211','2025-10-12 08:19:59'),(2357,NULL,16,NULL,'77.67.231.12
+4','2025-10-12 08:20:01'),(2358,38,NULL,NULL,'88.245.27.49','2025-10-12 08:20:01'),(2359,38,NULL,NULL,'78.182.131.65','
+2025-10-12 08:20:03'),(2360,38,NULL,NULL,'46.221.250.121','2025-10-12 08:20:04'),(2362,38,NULL,NULL,'185.171.91.107','2
+025-10-12 08:20:05'),(2363,2,NULL,NULL,'88.245.27.49','2025-10-12 08:20:05'),(2364,NULL,58,NULL,'78.175.136.173','2025-
+10-12 08:20:06'),(2365,38,NULL,NULL,'5.25.21.153','2025-10-12 08:20:10'),(2366,38,NULL,NULL,'95.5.64.13','2025-10-12 08
+:20:12'),(2367,2,NULL,NULL,'95.5.64.13','2025-10-12 08:20:14'),(2368,38,NULL,NULL,'31.145.146.185','2025-10-12 08:20:17
+'),(2369,38,NULL,NULL,'31.206.206.253','2025-10-12 08:20:19'),(2370,38,NULL,NULL,'88.236.179.67','2025-10-12 08:20:21')
+,(2371,2,NULL,NULL,'88.236.179.67','2025-10-12 08:20:23'),(2372,2,NULL,NULL,'95.5.126.200','2025-10-12 08:20:31'),(2373
+,2,NULL,NULL,'176.216.142.76','2025-10-12 08:20:35'),(2374,38,NULL,NULL,'5.25.22.211','2025-10-12 08:20:39'),(2375,2,NU
+LL,NULL,'85.106.144.107','2025-10-12 08:20:41'),(2376,38,NULL,NULL,'5.25.22.211','2025-10-12 08:20:41'),(2377,2,NULL,NU
+LL,'5.176.120.80','2025-10-12 08:20:41'),(2378,NULL,58,NULL,'195.174.54.67','2025-10-12 08:20:47'),(2380,2,NULL,NULL,'5
+.176.153.197','2025-10-12 08:20:52'),(2381,NULL,58,NULL,'88.241.130.23','2025-10-12 08:20:52'),(2384,38,NULL,NULL,'185.
+146.113.25','2025-10-12 08:20:53'),(2385,38,NULL,NULL,'5.176.153.197','2025-10-12 08:20:55'),(2386,NULL,58,NULL,'81.214
+.8.31','2025-10-12 08:20:55'),(2387,38,NULL,NULL,'176.216.142.76','2025-10-12 08:20:58'),(2389,38,NULL,NULL,'176.88.141
+.7','2025-10-12 08:21:02'),(2391,38,NULL,NULL,'78.176.224.21','2025-10-12 08:21:04'),(2392,38,NULL,NULL,'5.176.120.80',
+'2025-10-12 08:21:05'),(2394,2,NULL,NULL,'176.41.54.41','2025-10-12 08:21:07'),(2396,38,NULL,NULL,'85.103.192.170','202
+5-10-12 08:21:08'),(2398,NULL,58,NULL,'95.7.209.183','2025-10-12 08:21:08'),(2399,2,NULL,NULL,'78.176.224.21','2025-10-
+12 08:21:09'),(2400,NULL,58,462,'188.119.36.218','2025-10-12 08:21:09'),(2401,2,NULL,NULL,'172.232.159.36','2025-10-12 
+08:21:09'),(2402,38,NULL,NULL,'94.121.85.45','2025-10-12 08:21:10'),(2403,38,NULL,NULL,'151.135.99.62','2025-10-12 08:2
+1:10'),(2405,2,NULL,NULL,'151.135.99.62','2025-10-12 08:21:12'),(2406,38,NULL,NULL,'149.140.145.152','2025-10-12 08:21:
+13'),(2407,38,NULL,NULL,'94.20.42.42','2025-10-12 08:21:13'),(2408,38,NULL,NULL,'172.232.159.36','2025-10-12 08:21:14')
+,(2409,38,NULL,NULL,'176.219.8.178','2025-10-12 08:21:17'),(2410,38,NULL,NULL,'176.216.59.34','2025-10-12 08:21:21'),(2
+411,38,NULL,NULL,'176.41.54.41','2025-10-12 08:21:22'),(2412,2,NULL,NULL,'176.219.8.178','2025-10-12 08:21:22'),(2413,3
+8,NULL,NULL,'88.245.18.135','2025-10-12 08:21:22'),(2416,NULL,57,NULL,'176.237.213.74','2025-10-12 08:21:28'),(2417,38,
+NULL,NULL,'88.230.77.6','2025-10-12 08:21:30'),(2419,38,NULL,NULL,'5.24.21.54','2025-10-12 08:21:34'),(2420,2,NULL,NULL
+,'88.230.77.6','2025-10-12 08:21:35'),(2421,38,NULL,NULL,'78.163.170.67','2025-10-12 08:21:35'),(2422,38,NULL,NULL,'149
+.140.192.187','2025-10-12 08:21:36'),(2425,38,NULL,NULL,'178.241.87.240','2025-10-12 08:21:40'),(2427,38,NULL,NULL,'176
+.216.59.34','2025-10-12 08:21:41'),(2428,NULL,57,NULL,'213.186.146.141','2025-10-12 08:21:41'),(2429,NULL,57,NULL,'213.
+186.146.141','2025-10-12 08:21:41'),(2430,2,NULL,NULL,'46.196.76.208','2025-10-12 08:21:41'),(2431,38,NULL,NULL,'77.67.
+181.123','2025-10-12 08:21:42'),(2432,38,NULL,NULL,'88.233.227.237','2025-10-12 08:21:42'),(2434,38,NULL,NULL,'5.47.149
+.120','2025-10-12 08:21:43'),(2435,38,NULL,NULL,'88.231.249.201','2025-10-12 08:21:45'),(2436,38,NULL,NULL,'5.24.17.250
+','2025-10-12 08:21:46'),(2437,38,NULL,NULL,'193.140.239.246','2025-10-12 08:21:47'),(2438,38,NULL,NULL,'176.88.38.23',
+'2025-10-12 08:21:48'),(2439,38,NULL,NULL,'176.33.240.205','2025-10-12 08:21:48'),(2440,38,NULL,NULL,'178.243.16.0','20
+25-10-12 08:21:49'),(2441,38,NULL,NULL,'85.153.231.92','2025-10-12 08:21:51'),(2442,NULL,58,NULL,'5.25.22.211','2025-10
+-12 08:21:51'),(2443,38,NULL,NULL,'85.153.231.92','2025-10-12 08:21:52'),(2444,38,NULL,NULL,'176.41.46.127','2025-10-12
+ 08:21:53'),(2445,38,NULL,NULL,'188.3.238.108','2025-10-12 08:21:55'),(2446,38,NULL,NULL,'151.135.115.167','2025-10-12 
+08:21:55'),(2447,38,NULL,NULL,'78.166.249.185','2025-10-12 08:21:55'),(2448,38,NULL,NULL,'5.25.19.1','2025-10-12 08:21:
+55'),(2449,38,NULL,NULL,'188.3.162.133','2025-10-12 08:21:55'),(2450,38,NULL,NULL,'46.197.73.206','2025-10-12 08:21:57'
+),(2451,38,NULL,NULL,'176.88.31.198','2025-10-12 08:21:57'),(2452,2,NULL,NULL,'151.135.115.167','2025-10-12 08:21:57'),
+(2453,NULL,58,NULL,'141.196.12.8','2025-10-12 08:21:59'),(2454,38,NULL,NULL,'78.163.116.14','2025-10-12 08:22:00'),(245
+5,38,NULL,NULL,'78.190.144.4','2025-10-12 08:22:00'),(2456,38,NULL,NULL,'212.253.209.84','2025-10-12 08:22:00'),(2458,3
+8,NULL,NULL,'82.222.126.108','2025-10-12 08:22:04'),(2459,38,NULL,NULL,'88.236.104.171','2025-10-12 08:22:04'),(2460,NU
+LL,58,NULL,'78.190.196.229','2025-10-12 08:22:05'),(2461,38,NULL,NULL,'88.241.89.175','2025-10-12 08:22:06'),(2462,38,N
+ULL,NULL,'188.119.20.74','2025-10-12 08:22:07'),(2463,38,NULL,NULL,'176.54.239.147','2025-10-12 08:22:08'),(2464,38,NUL
+L,NULL,'85.153.225.136','2025-10-12 08:22:10'),(2465,38,NULL,NULL,'176.233.26.19','2025-10-12 08:22:10'),(2466,NULL,46,
+NULL,'78.163.143.146','2025-10-12 08:22:10'),(2467,38,NULL,NULL,'37.61.112.138','2025-10-12 08:22:13'),(2468,2,NULL,NUL
+L,'85.106.144.107','2025-10-12 08:22:13'),(2469,38,NULL,NULL,'51.89.6.230','2025-10-12 08:22:13'),(2470,2,NULL,NULL,'5.
+24.17.250','2025-10-12 08:22:14'),(2471,2,NULL,NULL,'176.33.240.205','2025-10-12 08:22:16'),(2472,38,NULL,NULL,'78.190.
+135.59','2025-10-12 08:22:17'),(2473,38,NULL,NULL,'185.252.220.149','2025-10-12 08:22:18'),(2474,NULL,58,NULL,'5.25.22.
+211','2025-10-12 08:22:19'),(2476,38,NULL,NULL,'88.236.104.171','2025-10-12 08:22:19'),(2477,38,NULL,NULL,'213.153.146.
+102','2025-10-12 08:22:20'),(2478,NULL,58,NULL,'141.196.12.8','2025-10-12 08:22:20'),(2480,38,NULL,NULL,'94.121.85.45',
+'2025-10-12 08:22:22'),(2481,38,NULL,NULL,'88.230.255.13','2025-10-12 08:22:22'),(2482,38,NULL,NULL,'88.234.198.68','20
+25-10-12 08:22:22'),(2483,38,NULL,NULL,'78.163.186.162','2025-10-12 08:22:23'),(2484,38,NULL,NULL,'88.230.85.187','2025
+-10-12 08:22:23'),(2485,38,NULL,NULL,'84.51.20.91','2025-10-12 08:22:25'),(2486,38,NULL,NULL,'78.190.9.137','2025-10-12
+ 08:22:28'),(2487,2,NULL,NULL,'5.24.17.250','2025-10-12 08:22:29'),(2488,NULL,58,NULL,'5.177.162.19','2025-10-12 08:22:
+30'),(2489,38,NULL,NULL,'57.129.66.219','2025-10-12 08:22:30'),(2490,38,NULL,NULL,'46.1.186.110','2025-10-12 08:22:30')
+,(2491,38,NULL,NULL,'159.146.64.4','2025-10-12 08:22:33'),(2492,2,NULL,NULL,'159.146.64.4','2025-10-12 08:22:37'),(2493
+,38,NULL,NULL,'176.239.72.209','2025-10-12 08:22:39'),(2494,2,NULL,NULL,'176.54.239.147','2025-10-12 08:22:39'),(2495,2
+,NULL,NULL,'88.231.114.177','2025-10-12 08:22:40'),(2496,38,NULL,NULL,'176.239.72.209','2025-10-12 08:22:40'),(2497,38,
+NULL,NULL,'176.239.72.209','2025-10-12 08:22:41'),(2498,38,NULL,NULL,'176.239.72.209','2025-10-12 08:22:42'),(2499,38,N
+ULL,NULL,'176.239.72.209','2025-10-12 08:22:42'),(2500,38,NULL,NULL,'176.239.72.209','2025-10-12 08:22:42'),(2501,38,NU
+LL,NULL,'176.239.72.209','2025-10-12 08:22:42'),(2502,38,NULL,NULL,'176.239.72.209','2025-10-12 08:22:43'),(2503,38,NUL
+L,NULL,'176.55.180.91','2025-10-12 08:22:45'),(2504,38,NULL,NULL,'188.57.60.54','2025-10-12 08:22:45'),(2505,2,NULL,NUL
+L,'95.5.107.37','2025-10-12 08:22:46'),(2506,2,NULL,NULL,'78.180.5.133','2025-10-12 08:22:47'),(2507,38,NULL,NULL,'149.
+140.145.152','2025-10-12 08:22:48'),(2508,38,NULL,NULL,'78.173.16.70','2025-10-12 08:22:49'),(2509,2,NULL,NULL,'37.154.
+230.148','2025-10-12 08:22:49'),(2510,38,NULL,NULL,'78.180.5.133','2025-10-12 08:22:49'),(2515,NULL,16,NULL,'78.163.128
+.8','2025-10-12 08:22:50'),(2521,NULL,19,NULL,'84.51.20.91','2025-10-12 08:22:51'),(2524,38,NULL,NULL,'31.145.188.48','
+2025-10-12 08:22:52'),(2525,NULL,18,NULL,'84.51.20.91','2025-10-12 08:22:52'),(2526,38,NULL,NULL,'149.22.91.226','2025-
+10-12 08:22:54'),(2529,NULL,16,NULL,'84.51.20.91','2025-10-12 08:22:55'),(2531,NULL,20,NULL,'84.51.20.91','2025-10-12 0
+8:22:56'),(2532,NULL,21,NULL,'84.51.20.91','2025-10-12 08:22:57'),(2533,38,NULL,NULL,'37.154.230.148','2025-10-12 08:22
+:58'),(2534,NULL,22,NULL,'84.51.20.91','2025-10-12 08:22:58'),(2535,38,NULL,NULL,'46.106.74.107','2025-10-12 08:23:01')
+,(2536,38,NULL,NULL,'78.173.49.181','2025-10-12 08:23:02'),(2537,38,NULL,NULL,'31.155.181.103','2025-10-12 08:23:03'),(
+2540,38,NULL,NULL,'176.240.227.58','2025-10-12 08:23:04'),(2541,NULL,17,NULL,'85.106.144.107','2025-10-12 08:23:05'),(2
+542,38,NULL,NULL,'176.220.145.72','2025-10-12 08:23:06'),(2543,38,NULL,NULL,'78.161.245.214','2025-10-12 08:23:07'),(25
+44,38,NULL,NULL,'5.24.17.250','2025-10-12 08:23:12'),(2545,2,NULL,NULL,'5.24.17.250','2025-10-12 08:23:13'),(2547,38,NU
+LL,NULL,'46.101.253.224','2025-10-12 08:23:14'),(2548,38,NULL,NULL,'178.243.100.73','2025-10-12 08:23:15'),(2549,38,NUL
+L,NULL,'88.231.24.88','2025-10-12 08:23:15'),(2550,2,NULL,NULL,'91.93.135.197','2025-10-12 08:23:18'),(2551,2,NULL,NULL
+,'178.243.100.73','2025-10-12 08:23:18'),(2552,38,NULL,NULL,'94.54.232.178','2025-10-12 08:23:18'),(2553,38,NULL,NULL,'
+46.2.12.237','2025-10-12 08:23:18'),(2554,38,NULL,NULL,'88.231.128.0','2025-10-12 08:23:18'),(2555,NULL,41,NULL,'78.176
+.100.232','2025-10-12 08:23:21'),(2556,38,NULL,NULL,'188.132.248.53','2025-10-12 08:23:21'),(2557,38,NULL,NULL,'94.54.2
+32.178','2025-10-12 08:23:21'),(2558,NULL,41,NULL,'78.176.100.232','2025-10-12 08:23:24'),(2559,38,NULL,NULL,'149.34.21
+5.92','2025-10-12 08:23:24'),(2560,38,NULL,NULL,'88.227.88.1','2025-10-12 08:23:27'),(2561,2,NULL,NULL,'149.34.215.92',
+'2025-10-12 08:23:28'),(2562,38,NULL,NULL,'176.88.135.135','2025-10-12 08:23:28'),(2563,2,NULL,NULL,'88.227.88.1','2025
+-10-12 08:23:28'),(2564,38,NULL,NULL,'88.236.175.18','2025-10-12 08:23:28'),(2565,38,NULL,NULL,'46.106.74.107','2025-10
+-12 08:23:32'),(2566,38,NULL,NULL,'31.145.208.92','2025-10-12 08:23:32'),(2567,38,NULL,NULL,'78.161.89.252','2025-10-12
+ 08:23:35'),(2568,38,NULL,NULL,'85.153.235.199','2025-10-12 08:23:35'),(2569,38,NULL,NULL,'88.234.229.36','2025-10-12 0
+8:23:36'),(2570,2,NULL,NULL,'88.227.176.226','2025-10-12 08:23:36'),(2571,NULL,44,NULL,'78.176.100.232','2025-10-12 08:
+23:37'),(2572,NULL,44,NULL,'78.176.100.232','2025-10-12 08:23:37'),(2573,38,NULL,NULL,'188.132.248.53','2025-10-12 08:2
+3:38'),(2574,38,NULL,NULL,'78.174.80.227','2025-10-12 08:23:39'),(2575,38,NULL,NULL,'37.155.171.92','2025-10-12 08:23:4
+0'),(2576,38,NULL,NULL,'78.167.247.10','2025-10-12 08:23:41'),(2577,38,NULL,NULL,'85.98.21.212','2025-10-12 08:23:43'),
+(2578,2,NULL,NULL,'176.88.135.135','2025-10-12 08:23:43'),(2579,38,NULL,NULL,'81.214.164.93','2025-10-12 08:23:44'),(25
+80,38,NULL,NULL,'95.10.3.83','2025-10-12 08:23:45'),(2581,38,NULL,NULL,'176.216.143.243','2025-10-12 08:23:47'),(2582,2
+,NULL,NULL,'176.220.145.72','2025-10-12 08:23:47'),(2584,38,NULL,NULL,'178.233.143.165','2025-10-12 08:23:49'),(2585,NU
+LL,56,NULL,'46.106.74.107','2025-10-12 08:23:49'),(2586,38,NULL,NULL,'91.93.135.197','2025-10-12 08:23:49'),(2587,38,NU
+LL,NULL,'94.235.239.84','2025-10-12 08:23:52'),(2589,38,NULL,NULL,'46.196.72.125','2025-10-12 08:23:55'),(2590,NULL,48,
+NULL,'188.57.60.54','2025-10-12 08:23:56'),(2591,2,NULL,NULL,'78.178.138.107','2025-10-12 08:23:57'),(2592,38,NULL,NULL
+,'176.41.128.38','2025-10-12 08:23:58'),(2593,38,NULL,NULL,'95.12.124.90','2025-10-12 08:23:59'),(2594,2,NULL,NULL,'78.
+187.1.21','2025-10-12 08:24:03'),(2595,38,NULL,NULL,'78.178.138.107','2025-10-12 08:24:03'),(2596,38,NULL,NULL,'178.244
+.189.235','2025-10-12 08:24:03'),(2597,38,NULL,NULL,'78.167.247.10','2025-10-12 08:24:04'),(2598,2,NULL,NULL,'85.106.18
+3.87','2025-10-12 08:24:06'),(2599,38,NULL,NULL,'31.145.208.92','2025-10-12 08:24:10'),(2600,38,NULL,NULL,'31.145.208.9
+2','2025-10-12 08:24:10'),(2601,38,NULL,NULL,'185.47.4.47','2025-10-12 08:24:11'),(2602,38,NULL,NULL,'88.241.42.57','20
+25-10-12 08:24:12'),(2603,38,NULL,NULL,'91.93.33.194','2025-10-12 08:24:15'),(2607,38,NULL,NULL,'178.241.11.226','2025-
+10-12 08:24:21'),(2608,2,NULL,NULL,'5.47.180.12','2025-10-12 08:24:24'),(2609,38,NULL,NULL,'5.47.180.12','2025-10-12 08
+:24:24'),(2610,38,NULL,NULL,'88.241.219.132','2025-10-12 08:24:25'),(2611,2,NULL,NULL,'88.241.219.132','2025-10-12 08:2
+4:28'),(2612,2,NULL,NULL,'88.234.198.68','2025-10-12 08:24:31'),(2613,2,NULL,NULL,'88.241.42.57','2025-10-12 08:24:35')
+,(2614,2,NULL,NULL,'188.57.31.159','2025-10-12 08:24:39'),(2615,NULL,58,NULL,'149.140.178.16','2025-10-12 08:24:39'),(2
+616,38,NULL,NULL,'88.230.127.48','2025-10-12 08:24:41'),(2618,38,NULL,NULL,'185.171.91.56','2025-10-12 08:24:43'),(2619
+,38,NULL,NULL,'176.88.38.23','2025-10-12 08:24:43'),(2620,38,NULL,NULL,'37.155.182.127','2025-10-12 08:24:43'),(2621,NU
+LL,52,NULL,'92.44.116.4','2025-10-12 08:24:45'),(2622,2,NULL,NULL,'31.155.181.103','2025-10-12 08:24:46'),(2623,38,NULL
+,NULL,'88.243.137.173','2025-10-12 08:24:46'),(2624,NULL,16,NULL,'82.222.126.108','2025-10-12 08:24:47'),(2625,38,NULL,
+NULL,'185.171.91.56','2025-10-12 08:24:47'),(2626,NULL,57,NULL,'188.119.20.74','2025-10-12 08:24:49'),(2628,2,NULL,NULL
+,'88.236.187.49','2025-10-12 08:24:50'),(2630,NULL,16,NULL,'31.145.208.92','2025-10-12 08:24:53'),(2632,38,NULL,NULL,'1
+93.108.117.34','2025-10-12 08:25:02'),(2633,2,NULL,NULL,'37.26.17.220','2025-10-12 08:25:03'),(2635,38,NULL,NULL,'178.2
+33.136.97','2025-10-12 08:25:03'),(2636,38,NULL,NULL,'37.26.17.220','2025-10-12 08:25:04'),(2637,2,NULL,NULL,'176.33.11
+1.195','2025-10-12 08:25:08'),(2638,38,NULL,NULL,'176.33.111.195','2025-10-12 08:25:08'),(2639,38,NULL,NULL,'37.154.122
+.19','2025-10-12 08:25:08'),(2641,38,NULL,NULL,'78.174.75.153','2025-10-12 08:25:10'),(2643,38,NULL,NULL,'78.174.75.153
+','2025-10-12 08:25:11'),(2644,NULL,58,NULL,'178.233.17.4','2025-10-12 08:25:12'),(2645,NULL,16,NULL,'37.154.230.148','
+2025-10-12 08:25:13'),(2646,2,NULL,NULL,'88.234.227.119','2025-10-12 08:25:13'),(2647,38,NULL,NULL,'176.41.38.23','2025
+-10-12 08:25:14'),(2648,NULL,16,NULL,'37.154.230.148','2025-10-12 08:25:14'),(2649,2,NULL,NULL,'88.241.42.57','2025-10-
+12 08:25:15'),(2650,38,NULL,NULL,'88.243.198.231','2025-10-12 08:25:15'),(2651,38,NULL,NULL,'88.234.227.119','2025-10-1
+2 08:25:16'),(2652,NULL,57,NULL,'176.54.98.169','2025-10-12 08:25:16'),(2653,38,NULL,NULL,'88.236.175.7','2025-10-12 08
+:25:16'),(2654,38,NULL,NULL,'5.25.164.180','2025-10-12 08:25:17'),(2655,38,NULL,NULL,'95.12.225.139','2025-10-12 08:25:
+18'),(2656,NULL,57,NULL,'176.54.98.169','2025-10-12 08:25:18'),(2657,2,NULL,NULL,'88.243.198.231','2025-10-12 08:25:18'
+),(2658,38,NULL,NULL,'78.182.2.74','2025-10-12 08:25:19'),(2659,NULL,58,NULL,'78.176.97.122','2025-10-12 08:25:21'),(26
+60,38,NULL,NULL,'178.240.154.244','2025-10-12 08:25:21'),(2661,2,NULL,NULL,'78.182.2.74','2025-10-12 08:25:23'),(2662,2
+,NULL,NULL,'178.240.154.244','2025-10-12 08:25:25'),(2663,NULL,58,NULL,'5.47.67.201','2025-10-12 08:25:26'),(2664,NULL,
+57,NULL,'5.47.67.201','2025-10-12 08:25:27'),(2665,NULL,56,NULL,'5.47.67.201','2025-10-12 08:25:28'),(2666,NULL,55,NULL
+,'5.47.67.201','2025-10-12 08:25:29'),(2667,38,NULL,NULL,'78.176.119.72','2025-10-12 08:25:30'),(2668,38,NULL,NULL,'176
+.33.111.195','2025-10-12 08:25:37'),(2669,NULL,41,NULL,'88.242.171.22','2025-10-12 08:25:37'),(2670,38,NULL,NULL,'178.2
+44.79.75','2025-10-12 08:25:39'),(2671,38,NULL,NULL,'88.230.225.20','2025-10-12 08:25:44'),(2672,38,NULL,NULL,'176.33.1
+01.124','2025-10-12 08:25:44'),(2673,NULL,58,NULL,'212.253.209.84','2025-10-12 08:25:46'),(2674,NULL,57,NULL,'95.65.211
+.209','2025-10-12 08:25:47'),(2675,NULL,16,NULL,'178.240.154.244','2025-10-12 08:25:48'),(2677,NULL,58,NULL,'78.176.97.
+122','2025-10-12 08:25:49'),(2678,NULL,45,NULL,'178.241.11.226','2025-10-12 08:25:49'),(2679,38,NULL,NULL,'81.214.105.1
+34','2025-10-12 08:25:49'),(2680,NULL,57,NULL,'85.99.130.196','2025-10-12 08:25:49'),(2681,NULL,53,NULL,'5.47.67.201','
+2025-10-12 08:25:50'),(2682,2,NULL,NULL,'176.216.134.105','2025-10-12 08:25:50'),(2683,NULL,52,NULL,'5.47.67.201','2025
+-10-12 08:25:50'),(2684,NULL,57,NULL,'85.99.130.196','2025-10-12 08:25:50'),(2685,38,NULL,NULL,'81.214.105.134','2025-1
+0-12 08:25:50'),(2686,NULL,51,NULL,'5.47.67.201','2025-10-12 08:25:51'),(2687,NULL,50,NULL,'5.47.67.201','2025-10-12 08
+:25:51'),(2688,38,NULL,NULL,'176.216.216.15','2025-10-12 08:25:51'),(2689,38,NULL,NULL,'149.140.178.16','2025-10-12 08:
+25:51'),(2690,2,NULL,NULL,'81.214.105.134','2025-10-12 08:25:52'),(2691,NULL,48,NULL,'5.47.67.201','2025-10-12 08:25:53
+'),(2692,NULL,47,NULL,'5.47.67.201','2025-10-12 08:25:53'),(2693,38,NULL,NULL,'149.140.178.16','2025-10-12 08:25:53'),(
+2694,NULL,46,NULL,'5.47.67.201','2025-10-12 08:25:54'),(2695,NULL,45,NULL,'5.47.67.201','2025-10-12 08:25:55'),(2696,38
+,NULL,NULL,'95.5.64.13','2025-10-12 08:25:55'),(2697,NULL,44,NULL,'5.47.67.201','2025-10-12 08:25:55'),(2698,NULL,43,NU
+LL,'5.47.67.201','2025-10-12 08:25:56'),(2699,NULL,42,NULL,'5.47.67.201','2025-10-12 08:25:56'),(2700,NULL,41,NULL,'5.4
+7.67.201','2025-10-12 08:25:57'),(2701,2,NULL,NULL,'78.162.62.238','2025-10-12 08:25:57'),(2702,NULL,57,NULL,'78.176.97
+.122','2025-10-12 08:25:58'),(2703,NULL,33,NULL,'5.47.67.201','2025-10-12 08:25:58'),(2704,NULL,32,NULL,'5.47.67.201','
+2025-10-12 08:25:58'),(2705,NULL,55,NULL,'78.176.97.122','2025-10-12 08:25:59'),(2706,NULL,28,NULL,'5.47.67.201','2025-
+10-12 08:26:00'),(2707,NULL,54,NULL,'78.176.97.122','2025-10-12 08:26:01'),(2708,NULL,27,NULL,'5.47.67.201','2025-10-12
+ 08:26:01'),(2709,NULL,58,NULL,'94.235.239.84','2025-10-12 08:26:01'),(2710,NULL,58,NULL,'94.235.239.84','2025-10-12 08
+:26:02'),(2711,NULL,26,NULL,'5.47.67.201','2025-10-12 08:26:04'),(2712,NULL,25,NULL,'5.47.67.201','2025-10-12 08:26:04'
+),(2713,NULL,24,NULL,'5.47.67.201','2025-10-12 08:26:05'),(2714,NULL,22,NULL,'5.47.67.201','2025-10-12 08:26:06'),(2715
+,38,NULL,NULL,'217.20.255.133','2025-10-12 08:26:07'),(2716,NULL,21,NULL,'5.47.67.201','2025-10-12 08:26:07'),(2717,38,
+NULL,NULL,'5.24.98.202','2025-10-12 08:26:07'),(2718,38,NULL,NULL,'195.174.246.45','2025-10-12 08:26:07'),(2719,38,NULL
+,NULL,'88.241.81.172','2025-10-12 08:26:07'),(2720,NULL,58,NULL,'176.41.38.23','2025-10-12 08:26:08'),(2721,NULL,20,NUL
+L,'5.47.67.201','2025-10-12 08:26:08'),(2722,2,NULL,NULL,'5.46.143.158','2025-10-12 08:26:09'),(2723,38,NULL,NULL,'95.5
+.188.39','2025-10-12 08:26:09'),(2724,NULL,19,NULL,'5.47.67.201','2025-10-12 08:26:09'),(2725,NULL,18,NULL,'5.47.67.201
+','2025-10-12 08:26:10'),(2726,NULL,16,NULL,'5.47.67.201','2025-10-12 08:26:10'),(2727,38,NULL,NULL,'5.46.143.158','202
+5-10-12 08:26:10'),(2728,38,NULL,NULL,'5.25.19.1','2025-10-12 08:26:11'),(2729,38,NULL,NULL,'176.55.20.199','2025-10-12
+ 08:26:12'),(2730,NULL,49,NULL,'5.47.67.201','2025-10-12 08:26:12'),(2731,2,NULL,NULL,'195.155.171.234','2025-10-12 08:
+26:12'),(2732,NULL,16,NULL,'185.195.252.153','2025-10-12 08:26:13'),(2733,NULL,18,NULL,'88.252.52.178','2025-10-12 08:2
+6:15'),(2734,NULL,49,NULL,'5.47.67.201','2025-10-12 08:26:18'),(2735,NULL,18,NULL,'88.252.52.178','2025-10-12 08:26:18'
+),(2736,NULL,30,NULL,'5.47.67.201','2025-10-12 08:26:22'),(2737,38,NULL,NULL,'78.162.62.238','2025-10-12 08:26:22'),(27
+38,NULL,40,NULL,'5.47.67.201','2025-10-12 08:26:23'),(2740,NULL,24,NULL,'176.33.111.195','2025-10-12 08:26:24'),(2741,N
+ULL,56,NULL,'78.176.97.122','2025-10-12 08:26:25'),(2742,NULL,25,NULL,'176.33.111.195','2025-10-12 08:26:25'),(2743,NUL
+L,16,10,'178.240.154.244','2025-10-12 08:26:25'),(2744,38,NULL,NULL,'109.228.250.163','2025-10-12 08:26:25'),(2745,38,N
+ULL,NULL,'176.216.207.151','2025-10-12 08:26:25'),(2746,NULL,26,NULL,'176.33.111.195','2025-10-12 08:26:26'),(2747,38,N
+ULL,NULL,'62.248.106.98','2025-10-12 08:26:26'),(2748,38,NULL,NULL,'109.228.250.163','2025-10-12 08:26:26'),(2749,38,NU
+LL,NULL,'5.25.164.180','2025-10-12 08:26:27'),(2750,38,NULL,NULL,'176.216.207.151','2025-10-12 08:26:27'),(2751,38,NULL
+,NULL,'78.161.250.217','2025-10-12 08:26:28'),(2752,38,NULL,NULL,'109.228.250.163','2025-10-12 08:26:28'),(2753,2,NULL,
+NULL,'78.173.54.240','2025-10-12 08:26:29'),(2754,38,NULL,NULL,'176.216.207.151','2025-10-12 08:26:29'),(2755,38,NULL,N
+ULL,'176.240.245.48','2025-10-12 08:26:32'),(2756,NULL,45,119,'178.241.11.226','2025-10-12 08:26:35'),(2757,38,NULL,NUL
+L,'88.238.55.79','2025-10-12 08:26:35'),(2758,38,NULL,NULL,'94.20.96.11','2025-10-12 08:26:38'),(2759,38,NULL,NULL,'31.
+155.2.77','2025-10-12 08:26:41'),(2760,38,NULL,NULL,'176.238.39.196','2025-10-12 08:26:45'),(2761,38,NULL,NULL,'176.238
+.39.196','2025-10-12 08:26:48'),(2762,38,NULL,NULL,'37.130.68.44','2025-10-12 08:26:49'),(2763,38,NULL,NULL,'95.15.59.3
+6','2025-10-12 08:26:49'),(2764,38,NULL,NULL,'176.237.13.88','2025-10-12 08:26:49'),(2765,NULL,57,NULL,'46.1.132.19','2
+025-10-12 08:26:50'),(2766,38,NULL,NULL,'176.216.134.105','2025-10-12 08:26:52'),(2767,NULL,26,NULL,'176.33.111.195','2
+025-10-12 08:26:54'),(2768,38,NULL,NULL,'46.106.83.38','2025-10-12 08:26:54'),(2769,38,NULL,NULL,'46.106.148.53','2025-
+10-12 08:26:54'),(2770,NULL,57,NULL,'46.104.16.25','2025-10-12 08:26:54'),(2771,NULL,16,NULL,'94.235.227.227','2025-10-
+12 08:26:55'),(2772,NULL,58,NULL,'149.22.91.236','2025-10-12 08:26:56'),(2773,38,NULL,NULL,'46.154.46.222','2025-10-12 
+08:26:56'),(2775,38,NULL,NULL,'185.43.231.235','2025-10-12 08:26:59'),(2776,2,NULL,NULL,'78.177.135.70','2025-10-12 08:
+27:00'),(2777,38,NULL,NULL,'176.237.13.88','2025-10-12 08:27:00'),(2778,2,NULL,NULL,'178.247.49.102','2025-10-12 08:27:
+00'),(2779,38,NULL,NULL,'78.162.179.71','2025-10-12 08:27:00'),(2780,38,NULL,NULL,'176.237.13.88','2025-10-12 08:27:03'
+),(2781,38,NULL,NULL,'95.70.138.48','2025-10-12 08:27:04'),(2783,38,NULL,NULL,'176.237.13.88','2025-10-12 08:27:04'),(2
+784,NULL,16,NULL,'188.132.248.53','2025-10-12 08:27:07'),(2785,38,NULL,NULL,'88.234.193.33','2025-10-12 08:27:07'),(278
+6,2,NULL,NULL,'78.180.25.62','2025-10-12 08:27:13'),(2787,NULL,18,NULL,'94.235.227.227','2025-10-12 08:27:14'),(2788,2,
+NULL,NULL,'78.179.55.87','2025-10-12 08:27:14'),(2789,38,NULL,NULL,'88.241.42.57','2025-10-12 08:27:15'),(2790,38,NULL,
+NULL,'88.241.42.57','2025-10-12 08:27:15'),(2791,38,NULL,NULL,'88.241.42.57','2025-10-12 08:27:15'),(2792,38,NULL,NULL,
+'88.241.42.57','2025-10-12 08:27:16'),(2793,38,NULL,NULL,'88.241.42.57','2025-10-12 08:27:16'),(2794,2,NULL,NULL,'37.15
+5.172.177','2025-10-12 08:27:17'),(2795,NULL,58,NULL,'78.178.138.107','2025-10-12 08:27:18'),(2796,2,NULL,NULL,'46.197.
+74.95','2025-10-12 08:27:18'),(2797,38,NULL,NULL,'37.155.172.177','2025-10-12 08:27:19'),(2798,38,NULL,NULL,'24.133.212
+.73','2025-10-12 08:27:23'),(2799,38,NULL,NULL,'78.180.57.8','2025-10-12 08:27:23'),(2800,NULL,58,NULL,'176.55.79.93','
+2025-10-12 08:27:24'),(2801,38,NULL,NULL,'78.177.135.70','2025-10-12 08:27:27'),(2802,2,NULL,NULL,'185.43.231.235','202
+5-10-12 08:27:28'),(2805,38,NULL,NULL,'176.199.254.102','2025-10-12 08:27:31'),(2810,NULL,17,NULL,'78.167.1.226','2025-
+10-12 08:27:34'),(2811,2,NULL,NULL,'109.228.250.163','2025-10-12 08:27:34'),(2812,38,NULL,NULL,'88.241.42.57','2025-10-
+12 08:27:35'),(2813,2,NULL,NULL,'78.167.6.93','2025-10-12 08:27:35'),(2814,2,NULL,NULL,'176.42.17.136','2025-10-12 08:2
+7:42'),(2815,38,NULL,NULL,'95.5.64.13','2025-10-12 08:27:43'),(2816,2,NULL,NULL,'176.42.17.136','2025-10-12 08:27:43'),
+(2817,38,NULL,NULL,'95.5.64.13','2025-10-12 08:27:44'),(2818,38,NULL,NULL,'94.235.217.38','2025-10-12 08:27:44'),(2819,
+2,NULL,NULL,'176.42.17.136','2025-10-12 08:27:44'),(2820,2,NULL,NULL,'176.42.17.136','2025-10-12 08:27:44'),(2821,38,NU
+LL,NULL,'95.5.64.13','2025-10-12 08:27:44'),(2822,38,NULL,NULL,'95.5.64.13','2025-10-12 08:27:45'),(2823,38,NULL,NULL,'
+95.5.64.13','2025-10-12 08:27:45'),(2824,38,NULL,NULL,'95.5.64.13','2025-10-12 08:27:45'),(2825,38,NULL,NULL,'31.223.61
+.41','2025-10-12 08:27:45'),(2826,2,NULL,NULL,'176.42.17.136','2025-10-12 08:27:45'),(2827,2,NULL,NULL,'176.42.17.136',
+'2025-10-12 08:27:45'),(2828,2,NULL,NULL,'176.42.17.136','2025-10-12 08:27:46'),(2829,2,NULL,NULL,'176.42.17.136','2025
+-10-12 08:27:46'),(2830,38,NULL,NULL,'95.5.64.13','2025-10-12 08:27:46'),(2831,38,NULL,NULL,'88.236.161.70','2025-10-12
+ 08:27:46'),(2832,38,NULL,NULL,'95.5.64.13','2025-10-12 08:27:46'),(2833,38,NULL,NULL,'95.5.64.13','2025-10-12 08:27:48
+'),(2834,38,NULL,NULL,'95.5.64.13','2025-10-12 08:27:49'),(2835,38,NULL,NULL,'88.234.227.119','2025-10-12 08:27:51'),(2
+836,NULL,45,127,'178.241.11.226','2025-10-12 08:27:51'),(2837,38,NULL,NULL,'217.131.100.35','2025-10-12 08:27:57'),(284
+0,NULL,17,NULL,'37.155.172.177','2025-10-12 08:27:59'),(2841,NULL,17,NULL,'37.155.172.177','2025-10-12 08:28:01'),(2842
+,NULL,34,NULL,'37.155.172.177','2025-10-12 08:28:02'),(2843,NULL,35,NULL,'37.155.172.177','2025-10-12 08:28:03'),(2844,
+NULL,45,NULL,'88.241.219.132','2025-10-12 08:28:05'),(2845,38,NULL,NULL,'95.5.64.13','2025-10-12 08:28:06'),(2846,38,NU
+LL,NULL,'88.234.193.33','2025-10-12 08:28:07'),(2847,38,NULL,NULL,'86.95.226.200','2025-10-12 08:28:08'),(2848,38,NULL,
+NULL,'176.55.75.169','2025-10-12 08:28:08'),(2849,38,NULL,NULL,'88.234.193.33','2025-10-12 08:28:08'),(2850,38,NULL,NUL
+L,'86.95.226.200','2025-10-12 08:28:08'),(2851,38,NULL,NULL,'5.25.16.63','2025-10-12 08:28:09'),(2852,38,NULL,NULL,'77.
+67.231.240','2025-10-12 08:28:12'),(2853,38,NULL,NULL,'5.176.120.80','2025-10-12 08:28:16'),(2854,38,NULL,NULL,'85.99.1
+40.213','2025-10-12 08:28:16'),(2855,38,NULL,NULL,'78.179.55.87','2025-10-12 08:28:17'),(2856,38,NULL,NULL,'78.179.55.8
+7','2025-10-12 08:28:17'),(2857,38,NULL,NULL,'78.179.55.87','2025-10-12 08:28:17'),(2858,38,NULL,NULL,'78.179.55.87','2
+025-10-12 08:28:17'),(2859,38,NULL,NULL,'5.176.120.80','2025-10-12 08:28:17'),(2860,38,NULL,NULL,'78.179.55.87','2025-1
+0-12 08:28:18'),(2861,38,NULL,NULL,'172.232.159.36','2025-10-12 08:28:23'),(2862,38,NULL,NULL,'176.237.85.227','2025-10
+-12 08:28:25'),(2863,NULL,17,NULL,'46.106.87.23','2025-10-12 08:28:25'),(2864,38,NULL,NULL,'149.86.132.40','2025-10-12 
+08:28:26'),(2865,NULL,57,NULL,'88.234.193.33','2025-10-12 08:28:26'),(2866,2,NULL,NULL,'159.146.91.145','2025-10-12 08:
+28:27'),(2867,2,NULL,NULL,'149.86.132.40','2025-10-12 08:28:28'),(2869,38,NULL,NULL,'89.40.30.74','2025-10-12 08:28:32'
+),(2870,38,NULL,NULL,'195.175.84.242','2025-10-12 08:28:34'),(2872,38,NULL,NULL,'5.47.125.11','2025-10-12 08:28:36'),(2
+873,NULL,16,NULL,'86.95.226.200','2025-10-12 08:28:36'),(2874,NULL,19,NULL,'94.235.227.227','2025-10-12 08:28:38'),(287
+5,38,NULL,NULL,'151.250.20.192','2025-10-12 08:28:38'),(2876,38,NULL,NULL,'95.12.209.57','2025-10-12 08:28:38'),(2878,2
+,NULL,NULL,'5.47.125.11','2025-10-12 08:28:38'),(2879,38,NULL,NULL,'193.108.119.76','2025-10-12 08:28:39'),(2880,2,NULL
+,NULL,'95.12.209.57','2025-10-12 08:28:40'),(2881,2,NULL,NULL,'78.174.218.67','2025-10-12 08:28:44'),(2882,2,NULL,NULL,
+'78.177.168.167','2025-10-12 08:28:48'),(2883,NULL,47,NULL,'185.146.113.20','2025-10-12 08:28:49'),(2884,2,NULL,NULL,'7
+8.175.167.196','2025-10-12 08:28:50'),(2885,38,NULL,NULL,'95.15.59.36','2025-10-12 08:28:50'),(2886,38,NULL,NULL,'85.10
+6.251.105','2025-10-12 08:28:52'),(2887,38,NULL,NULL,'5.47.32.27','2025-10-12 08:28:54'),(2888,2,NULL,NULL,'176.42.129.
+105','2025-10-12 08:28:54'),(2889,38,NULL,NULL,'82.194.30.133','2025-10-12 08:28:57'),(2890,38,NULL,NULL,'88.242.134.81
+','2025-10-12 08:28:58'),(2891,38,NULL,NULL,'78.177.168.167','2025-10-12 08:29:01'),(2892,38,NULL,NULL,'94.54.60.207','
+2025-10-12 08:29:02'),(2893,38,NULL,NULL,'85.106.232.165','2025-10-12 08:29:02'),(2894,NULL,58,NULL,'5.229.157.171','20
+25-10-12 08:29:04'),(2895,38,NULL,NULL,'212.252.116.128','2025-10-12 08:29:04'),(2896,38,NULL,NULL,'2.205.8.122','2025-
+10-12 08:29:07'),(2897,2,NULL,NULL,'2.205.8.122','2025-10-12 08:29:11'),(2898,38,NULL,NULL,'151.250.203.4','2025-10-12 
+08:29:12'),(2899,38,NULL,NULL,'176.42.129.105','2025-10-12 08:29:13'),(2900,38,NULL,NULL,'78.174.218.67','2025-10-12 08
+:29:15'),(2901,38,NULL,NULL,'88.236.98.79','2025-10-12 08:29:15'),(2902,38,NULL,NULL,'37.155.146.27','2025-10-12 08:29:
+15'),(2903,2,NULL,NULL,'151.250.203.4','2025-10-12 08:29:15'),(2904,38,NULL,NULL,'37.114.171.165','2025-10-12 08:29:16'
+),(2905,38,NULL,NULL,'159.146.27.195','2025-10-12 08:29:17'),(2907,38,NULL,NULL,'88.230.161.130','2025-10-12 08:29:19')
+,(2908,38,NULL,NULL,'88.236.167.245','2025-10-12 08:29:19'),(2909,2,NULL,NULL,'159.146.27.195','2025-10-12 08:29:20'),(
+2910,38,NULL,NULL,'88.236.167.245','2025-10-12 08:29:21'),(2912,2,NULL,NULL,'78.162.179.71','2025-10-12 08:29:22'),(291
+4,2,NULL,NULL,'176.238.231.36','2025-10-12 08:29:24'),(2915,38,NULL,NULL,'176.41.128.38','2025-10-12 08:29:25'),(2916,N
+ULL,57,NULL,'46.32.172.95','2025-10-12 08:29:25'),(2917,38,NULL,NULL,'95.15.59.36','2025-10-12 08:29:25'),(2918,38,NULL
+,NULL,'176.41.128.38','2025-10-12 08:29:26'),(2919,38,NULL,NULL,'176.41.128.38','2025-10-12 08:29:27'),(2921,NULL,17,NU
+LL,'81.213.220.43','2025-10-12 08:29:29'),(2922,38,NULL,NULL,'78.166.57.150','2025-10-12 08:29:32'),(2923,NULL,58,NULL,
+'176.216.216.15','2025-10-12 08:29:33'),(2925,2,NULL,NULL,'178.247.52.184','2025-10-12 08:29:36'),(2926,38,NULL,NULL,'1
+09.127.12.113','2025-10-12 08:29:37'),(2927,2,NULL,NULL,'37.155.146.27','2025-10-12 08:29:37'),(2928,NULL,34,NULL,'81.2
+13.220.43','2025-10-12 08:29:42'),(2929,NULL,34,NULL,'81.213.220.43','2025-10-12 08:29:43'),(2930,NULL,45,145,'178.241.
+11.226','2025-10-12 08:29:45'),(2931,38,NULL,NULL,'213.153.144.251','2025-10-12 08:29:46'),(2932,38,NULL,NULL,'213.153.
+144.251','2025-10-12 08:29:49'),(2933,38,NULL,NULL,'176.41.128.38','2025-10-12 08:29:53'),(2934,38,NULL,NULL,'85.100.11
+6.201','2025-10-12 08:29:54'),(2935,38,NULL,NULL,'95.5.191.51','2025-10-12 08:29:56'),(2937,38,NULL,NULL,'178.244.48.23
+0','2025-10-12 08:29:56'),(2938,38,NULL,NULL,'88.230.181.167','2025-10-12 08:29:58'),(2939,38,NULL,NULL,'81.214.105.84'
+,'2025-10-12 08:30:02'),(2940,NULL,45,147,'178.241.11.226','2025-10-12 08:30:05'),(2942,38,NULL,NULL,'109.228.241.164',
+'2025-10-12 08:30:07'),(2943,2,NULL,NULL,'92.44.104.179','2025-10-12 08:30:08'),(2944,38,NULL,NULL,'5.47.153.18','2025-
+10-12 08:30:08'),(2945,2,NULL,NULL,'85.107.105.98','2025-10-12 08:30:09'),(2946,NULL,16,NULL,'37.114.171.165','2025-10-
+12 08:30:10'),(2947,NULL,16,NULL,'37.114.171.165','2025-10-12 08:30:12'),(2948,38,NULL,NULL,'46.154.41.130','2025-10-12
+ 08:30:12'),(2949,38,NULL,NULL,'176.55.229.37','2025-10-12 08:30:15'),(2950,38,NULL,NULL,'85.100.147.102','2025-10-12 0
+8:30:15'),(2951,38,NULL,NULL,'88.235.223.38','2025-10-12 08:30:22'),(2952,2,NULL,NULL,'31.141.35.89','2025-10-12 08:30:
+22'),(2953,38,NULL,NULL,'46.106.227.43','2025-10-12 08:30:23'),(2954,38,NULL,NULL,'31.141.35.89','2025-10-12 08:30:26')
+,(2955,38,NULL,NULL,'82.222.124.175','2025-10-12 08:30:27'),(2956,NULL,58,NULL,'31.223.61.41','2025-10-12 08:30:27'),(2
+957,2,NULL,NULL,'31.155.128.76','2025-10-12 08:30:32'),(2958,38,NULL,NULL,'46.154.216.88','2025-10-12 08:30:32'),(2959,
+NULL,57,NULL,'88.234.218.103','2025-10-12 08:30:34'),(2960,38,NULL,NULL,'31.155.128.76','2025-10-12 08:30:39'),(2961,38
+,NULL,NULL,'95.12.123.182','2025-10-12 08:30:40'),(2962,2,NULL,NULL,'95.12.123.182','2025-10-12 08:30:41'),(2963,NULL,1
+6,NULL,'2.205.8.122','2025-10-12 08:30:42'),(2964,NULL,17,NULL,'92.44.104.179','2025-10-12 08:30:42'),(2965,NULL,34,NUL
+L,'81.213.220.43','2025-10-12 08:30:49'),(2966,NULL,57,NULL,'176.219.74.135','2025-10-12 08:30:50'),(2967,NULL,58,NULL,
+'37.155.135.86','2025-10-12 08:30:52'),(2968,38,NULL,NULL,'31.206.86.66','2025-10-12 08:30:52'),(2969,NULL,58,NULL,'172
+.232.159.36','2025-10-12 08:30:54'),(2970,NULL,58,NULL,'172.232.159.36','2025-10-12 08:30:55'),(2971,NULL,58,NULL,'88.2
+34.227.119','2025-10-12 08:30:55'),(2972,2,NULL,NULL,'178.247.52.184','2025-10-12 08:30:56'),(2973,NULL,58,NULL,'5.176.
+120.80','2025-10-12 08:30:57'),(2974,2,NULL,NULL,'178.247.52.184','2025-10-12 08:30:58'),(2975,38,NULL,NULL,'46.1.21.89
+','2025-10-12 08:30:59'),(2976,NULL,18,NULL,'88.241.42.156','2025-10-12 08:30:59'),(2977,2,NULL,NULL,'81.213.220.43','2
+025-10-12 08:31:01'),(2978,2,NULL,NULL,'176.240.245.48','2025-10-12 08:31:05'),(2979,38,NULL,NULL,'176.235.102.31','202
+5-10-12 08:31:08'),(2980,NULL,52,NULL,'176.216.167.158','2025-10-12 08:31:08'),(2981,NULL,52,NULL,'176.216.167.158','20
+25-10-12 08:31:09'),(2983,NULL,35,NULL,'81.213.220.43','2025-10-12 08:31:12'),(2984,38,NULL,NULL,'78.173.54.70','2025-1
+0-12 08:31:12'),(2985,2,NULL,NULL,'212.68.37.1','2025-10-12 08:31:13'),(2986,NULL,32,NULL,'5.25.16.63','2025-10-12 08:3
+1:14'),(2987,NULL,58,NULL,'94.235.227.227','2025-10-12 08:31:19'),(2988,38,NULL,NULL,'78.185.192.198','2025-10-12 08:31
+:22'),(2989,NULL,57,NULL,'85.106.232.165','2025-10-12 08:31:22'),(2990,NULL,57,NULL,'172.232.159.36','2025-10-12 08:31:
+22'),(2991,NULL,57,NULL,'172.232.159.36','2025-10-12 08:31:23'),(2992,NULL,57,NULL,'172.232.159.36','2025-10-12 08:31:2
+4'),(2993,NULL,45,167,'178.241.11.226','2025-10-12 08:31:25'),(2994,NULL,56,NULL,'172.232.159.36','2025-10-12 08:31:25'
+),(2995,38,NULL,NULL,'176.43.196.100','2025-10-12 08:31:26'),(2996,NULL,58,NULL,'212.108.151.194','2025-10-12 08:31:27'
+),(2997,NULL,56,NULL,'172.232.159.36','2025-10-12 08:31:27'),(2998,NULL,57,NULL,'149.140.69.47','2025-10-12 08:31:27'),
+(2999,38,NULL,NULL,'151.250.203.4','2025-10-12 08:31:27'),(3000,2,NULL,NULL,'176.43.196.100','2025-10-12 08:31:27'),(30
+01,2,NULL,NULL,'176.235.102.31','2025-10-12 08:31:28'),(3003,38,NULL,NULL,'88.226.156.95','2025-10-12 08:31:34'),(3004,
+NULL,35,NULL,'78.167.1.226','2025-10-12 08:31:34'),(3005,2,NULL,NULL,'88.226.156.95','2025-10-12 08:31:35'),(3006,NULL,
+55,NULL,'172.232.159.36','2025-10-12 08:31:35'),(3007,NULL,55,NULL,'172.232.159.36','2025-10-12 08:31:36'),(3009,2,NULL
+,NULL,'88.240.65.5','2025-10-12 08:31:41'),(3010,NULL,58,NULL,'212.108.151.194','2025-10-12 08:31:45'),(3011,NULL,38,NU
+LL,'176.55.81.173','2025-10-12 08:31:45'),(3012,38,NULL,NULL,'95.7.0.185','2025-10-12 08:31:46'),(3013,2,NULL,NULL,'95.
+10.7.219','2025-10-12 08:31:49'),(3014,38,NULL,NULL,'88.238.39.95','2025-10-12 08:31:50'),(3015,NULL,16,NULL,'78.180.57
+.8','2025-10-12 08:31:50'),(3016,NULL,47,NULL,'78.176.100.232','2025-10-12 08:31:50'),(3017,38,NULL,NULL,'95.10.7.219',
+'2025-10-12 08:31:51'),(3018,NULL,57,NULL,'85.106.232.165','2025-10-12 08:31:52'),(3019,NULL,34,NULL,'78.167.1.226','20
+25-10-12 08:31:53'),(3020,NULL,58,NULL,'88.227.218.189','2025-10-12 08:31:55'),(3021,NULL,34,1,'78.167.1.226','2025-10-
+12 08:31:56'),(3022,NULL,58,13,'178.246.51.61','2025-10-12 08:31:56'),(3023,38,NULL,NULL,'212.68.37.1','2025-10-12 08:3
+1:56'),(3024,38,NULL,NULL,'46.1.21.89','2025-10-12 08:32:00'),(3025,NULL,58,15,'178.246.51.61','2025-10-12 08:32:01'),(
+3027,38,NULL,NULL,'85.106.98.99','2025-10-12 08:32:03'),(3028,38,NULL,NULL,'31.145.241.112','2025-10-12 08:32:04'),(302
+9,2,NULL,NULL,'31.145.241.112','2025-10-12 08:32:06'),(3030,38,NULL,NULL,'176.233.16.156','2025-10-12 08:32:07'),(3031,
+NULL,33,3,'46.154.41.130','2025-10-12 08:32:07'),(3032,2,NULL,NULL,'95.70.135.152','2025-10-12 08:32:07'),(3033,38,NULL
+,NULL,'94.20.46.81','2025-10-12 08:32:08'),(3035,NULL,33,1,'46.154.41.130','2025-10-12 08:32:08'),(3036,NULL,33,5,'46.1
+54.41.130','2025-10-12 08:32:09'),(3037,NULL,33,7,'46.154.41.130','2025-10-12 08:32:12'),(3038,38,NULL,NULL,'95.70.135.
+152','2025-10-12 08:32:12'),(3039,NULL,33,9,'46.154.41.130','2025-10-12 08:32:16'),(3040,NULL,33,11,'46.154.41.130','20
+25-10-12 08:32:19'),(3041,NULL,33,13,'46.154.41.130','2025-10-12 08:32:23'),(3042,NULL,58,NULL,'188.26.156.30','2025-10
+-12 08:32:25'),(3043,38,NULL,NULL,'188.57.10.61','2025-10-12 08:32:26'),(3044,NULL,33,15,'46.154.41.130','2025-10-12 08
+:32:27'),(3045,NULL,33,17,'46.154.41.130','2025-10-12 08:32:28'),(3046,2,NULL,NULL,'85.106.98.99','2025-10-12 08:32:31'
+),(3047,38,NULL,NULL,'95.10.7.219','2025-10-12 08:32:33'),(3049,38,NULL,NULL,'37.155.166.210','2025-10-12 08:32:35'),(3
+051,38,NULL,NULL,'37.114.170.99','2025-10-12 08:32:39'),(3052,NULL,33,19,'46.154.41.130','2025-10-12 08:32:41'),(3053,N
+ULL,33,23,'46.154.41.130','2025-10-12 08:32:43'),(3054,2,NULL,NULL,'88.241.88.24','2025-10-12 08:32:43'),(3055,NULL,33,
+21,'46.154.41.130','2025-10-12 08:32:44'),(3056,38,NULL,NULL,'37.114.170.99','2025-10-12 08:32:48'),(3057,2,NULL,NULL,'
+88.234.227.119','2025-10-12 08:32:48'),(3058,38,NULL,NULL,'5.47.177.123','2025-10-12 08:32:50'),(3059,NULL,45,279,'178.
+241.11.226','2025-10-12 08:32:50'),(3060,NULL,57,NULL,'185.146.115.167, 141.0.12.140','2025-10-12 08:32:54'),(3061,NULL
+,33,27,'46.154.41.130','2025-10-12 08:32:56'),(3062,NULL,33,25,'46.154.41.130','2025-10-12 08:32:57'),(3063,NULL,58,NUL
+L,'188.57.10.61','2025-10-12 08:32:59'),(3064,NULL,33,29,'46.154.41.130','2025-10-12 08:33:00'),(3065,NULL,38,NULL,'88.
+241.88.24','2025-10-12 08:33:03'),(3066,NULL,37,NULL,'88.241.88.24','2025-10-12 08:33:04'),(3067,NULL,33,31,'46.154.41.
+130','2025-10-12 08:33:05'),(3068,NULL,36,NULL,'88.241.88.24','2025-10-12 08:33:05'),(3069,NULL,35,NULL,'88.241.88.24',
+'2025-10-12 08:33:06'),(3070,NULL,34,NULL,'88.241.88.24','2025-10-12 08:33:07'),(3071,NULL,17,NULL,'88.241.88.24','2025
+-10-12 08:33:09'),(3072,NULL,58,NULL,'88.241.176.246','2025-10-12 08:33:11'),(3073,2,NULL,NULL,'78.190.6.237','2025-10-
+12 08:33:12'),(3074,38,NULL,NULL,'62.248.106.98','2025-10-12 08:33:13'),(3075,38,NULL,NULL,'176.88.125.37','2025-10-12 
+08:33:14'),(3076,NULL,58,NULL,'88.236.167.245','2025-10-12 08:33:14'),(3077,2,NULL,NULL,'176.88.125.37','2025-10-12 08:
+33:17'),(3078,NULL,58,NULL,'95.10.7.219','2025-10-12 08:33:20'),(3079,38,NULL,NULL,'24.133.212.113','2025-10-12 08:33:2
+1'),(3080,NULL,57,NULL,'95.10.7.219','2025-10-12 08:33:21'),(3081,NULL,56,NULL,'95.10.7.219','2025-10-12 08:33:22'),(30
+82,NULL,55,NULL,'95.10.7.219','2025-10-12 08:33:23'),(3083,38,NULL,NULL,'37.154.73.94','2025-10-12 08:33:23'),(3084,NUL
+L,45,289,'178.241.11.226','2025-10-12 08:33:24'),(3085,38,NULL,NULL,'78.190.6.237','2025-10-12 08:33:24'),(3086,NULL,54
+,NULL,'95.10.7.219','2025-10-12 08:33:25'),(3087,NULL,53,NULL,'95.10.7.219','2025-10-12 08:33:26'),(3088,NULL,52,NULL,'
+95.10.7.219','2025-10-12 08:33:27'),(3089,NULL,51,NULL,'95.10.7.219','2025-10-12 08:33:27'),(3090,38,NULL,NULL,'24.133.
+212.113','2025-10-12 08:33:29'),(3091,NULL,50,NULL,'95.10.7.219','2025-10-12 08:33:29'),(3092,NULL,49,NULL,'95.10.7.219
+','2025-10-12 08:33:29'),(3094,38,NULL,NULL,'185.213.168.3','2025-10-12 08:33:31'),(3095,NULL,48,NULL,'95.10.7.219','20
+25-10-12 08:33:32'),(3096,NULL,47,NULL,'95.10.7.219','2025-10-12 08:33:33'),(3097,NULL,46,NULL,'95.10.7.219','2025-10-1
+2 08:33:34'),(3098,NULL,45,NULL,'95.10.7.219','2025-10-12 08:33:35'),(3099,NULL,44,NULL,'95.10.7.219','2025-10-12 08:33
+:36'),(3100,NULL,51,NULL,'46.106.168.41','2025-10-12 08:33:36'),(3101,NULL,43,NULL,'95.10.7.219','2025-10-12 08:33:38')
+,(3103,NULL,42,NULL,'95.10.7.219','2025-10-12 08:33:39'),(3104,NULL,41,NULL,'95.10.7.219','2025-10-12 08:33:39'),(3105,
+NULL,16,NULL,'88.241.88.24','2025-10-12 08:33:41'),(3106,NULL,18,NULL,'88.241.88.24','2025-10-12 08:33:43'),(3107,NULL,
+45,293,'178.241.11.226','2025-10-12 08:33:43'),(3108,NULL,19,NULL,'88.241.88.24','2025-10-12 08:33:44'),(3109,NULL,40,N
+ULL,'95.10.7.219','2025-10-12 08:33:44'),(3110,38,NULL,NULL,'78.181.161.35','2025-10-12 08:33:44'),(3111,NULL,20,NULL,'
+88.241.88.24','2025-10-12 08:33:45'),(3112,NULL,33,NULL,'95.10.7.219','2025-10-12 08:33:45'),(3113,2,NULL,NULL,'88.240.
+182.227','2025-10-12 08:33:45'),(3114,38,NULL,NULL,'176.233.26.130','2025-10-12 08:33:46'),(3115,NULL,21,NULL,'88.241.8
+8.24','2025-10-12 08:33:46'),(3116,NULL,32,NULL,'95.10.7.219','2025-10-12 08:33:46'),(3117,NULL,22,NULL,'88.241.88.24',
+'2025-10-12 08:33:48'),(3118,NULL,31,NULL,'95.10.7.219','2025-10-12 08:33:48'),(3119,2,NULL,NULL,'176.233.26.130','2025
+-10-12 08:33:48'),(3120,NULL,23,NULL,'88.241.88.24','2025-10-12 08:33:49'),(3121,NULL,30,NULL,'95.10.7.219','2025-10-12
+ 08:33:49'),(3122,NULL,24,NULL,'88.241.88.24','2025-10-12 08:33:50'),(3123,NULL,29,NULL,'95.10.7.219','2025-10-12 08:33
+:50'),(3124,NULL,45,NULL,'24.133.212.113','2025-10-12 08:33:50'),(3125,38,NULL,NULL,'176.240.122.243','2025-10-12 08:33
+:51'),(3126,NULL,25,NULL,'88.241.88.24','2025-10-12 08:33:51'),(3127,NULL,40,NULL,'95.10.7.219','2025-10-12 08:33:51'),
+(3128,NULL,28,NULL,'95.10.7.219','2025-10-12 08:33:51'),(3129,NULL,44,NULL,'24.133.212.113','2025-10-12 08:33:52'),(313
+0,NULL,26,NULL,'88.241.88.24','2025-10-12 08:33:52'),(3131,NULL,27,NULL,'95.10.7.219','2025-10-12 08:33:53'),(3132,NULL
+,43,NULL,'24.133.212.113','2025-10-12 08:33:53'),(3133,2,NULL,NULL,'176.240.122.243','2025-10-12 08:33:54'),(3134,NULL,
+42,NULL,'24.133.212.113','2025-10-12 08:33:55'),(3135,NULL,26,NULL,'95.10.7.219','2025-10-12 08:33:55'),(3136,NULL,27,N
+ULL,'88.241.88.24','2025-10-12 08:33:55'),(3137,NULL,25,NULL,'95.10.7.219','2025-10-12 08:33:56'),(3138,NULL,41,NULL,'2
+4.133.212.113','2025-10-12 08:33:56'),(3139,NULL,28,NULL,'88.241.88.24','2025-10-12 08:33:56'),(3140,38,NULL,NULL,'81.2
+15.237.171','2025-10-12 08:33:56'),(3141,NULL,45,NULL,'24.133.212.113','2025-10-12 08:33:57'),(3142,NULL,24,NULL,'95.10
+.7.219','2025-10-12 08:33:57'),(3143,NULL,40,NULL,'24.133.212.113','2025-10-12 08:33:58'),(3144,38,NULL,NULL,'88.235.22
+7.18','2025-10-12 08:33:58'),(3145,NULL,23,NULL,'95.10.7.219','2025-10-12 08:33:58'),(3146,NULL,58,NULL,'212.47.150.22'
+,'2025-10-12 08:33:58'),(3147,NULL,29,NULL,'88.241.88.24','2025-10-12 08:33:59'),(3148,NULL,33,NULL,'24.133.212.113','2
+025-10-12 08:33:59'),(3149,NULL,22,NULL,'95.10.7.219','2025-10-12 08:33:59'),(3150,NULL,57,NULL,'212.47.150.22','2025-1
+0-12 08:33:59'),(3151,NULL,30,NULL,'88.241.88.24','2025-10-12 08:34:00'),(3152,NULL,32,NULL,'24.133.212.113','2025-10-1
+2 08:34:00'),(3153,NULL,20,NULL,'95.10.7.219','2025-10-12 08:34:01'),(3154,NULL,56,NULL,'212.47.150.22','2025-10-12 08:
+34:01'),(3155,NULL,31,NULL,'24.133.212.113','2025-10-12 08:34:01'),(3156,NULL,21,NULL,'95.10.7.219','2025-10-12 08:34:0
+2'),(3157,NULL,55,NULL,'212.47.150.22','2025-10-12 08:34:02'),(3158,NULL,30,NULL,'24.133.212.113','2025-10-12 08:34:03'
+),(3159,NULL,31,NULL,'88.241.88.24','2025-10-12 08:34:03'),(3160,2,NULL,NULL,'81.215.237.171','2025-10-12 08:34:03'),(3
+161,38,NULL,NULL,'178.245.90.136','2025-10-12 08:34:03'),(3162,NULL,19,NULL,'95.10.7.219','2025-10-12 08:34:03'),(3163,
+NULL,29,NULL,'24.133.212.113','2025-10-12 08:34:04'),(3164,NULL,32,NULL,'88.241.88.24','2025-10-12 08:34:04'),(3165,NUL
+L,18,NULL,'95.10.7.219','2025-10-12 08:34:04'),(3166,38,NULL,NULL,'5.46.24.238','2025-10-12 08:34:04'),(3167,NULL,33,NU
+LL,'88.241.88.24','2025-10-12 08:34:05'),(3168,NULL,53,NULL,'212.47.150.22','2025-10-12 08:34:05'),(3169,NULL,28,NULL,'
+24.133.212.113','2025-10-12 08:34:05'),(3170,NULL,16,NULL,'95.10.7.219','2025-10-12 08:34:05'),(3171,NULL,54,NULL,'212.
+47.150.22','2025-10-12 08:34:06'),(3172,NULL,21,NULL,'95.10.7.219','2025-10-12 08:34:06'),(3173,NULL,45,297,'178.241.11
+.226','2025-10-12 08:34:07'),(3174,NULL,52,NULL,'212.47.150.22','2025-10-12 08:34:07'),(3175,NULL,31,NULL,'88.241.88.24
+','2025-10-12 08:34:07'),(3176,NULL,51,NULL,'212.47.150.22','2025-10-12 08:34:09'),(3177,NULL,50,NULL,'212.47.150.22','
+2025-10-12 08:34:09'),(3178,2,NULL,NULL,'176.90.158.156','2025-10-12 08:34:09'),(3179,NULL,49,NULL,'212.47.150.22','202
+5-10-12 08:34:11'),(3180,NULL,48,NULL,'212.47.150.22','2025-10-12 08:34:11'),(3181,NULL,54,NULL,'212.47.150.22','2025-1
+0-12 08:34:12'),(3182,38,NULL,NULL,'176.90.158.156','2025-10-12 08:34:13'),(3183,NULL,47,NULL,'212.47.150.22','2025-10-
+12 08:34:13'),(3184,NULL,46,NULL,'212.47.150.22','2025-10-12 08:34:14'),(3185,NULL,40,NULL,'88.241.88.24','2025-10-12 0
+8:34:14'),(3186,NULL,45,NULL,'212.47.150.22','2025-10-12 08:34:15'),(3187,NULL,43,NULL,'212.47.150.22','2025-10-12 08:3
+4:17'),(3188,NULL,44,NULL,'212.47.150.22','2025-10-12 08:34:18'),(3189,NULL,42,NULL,'212.47.150.22','2025-10-12 08:34:1
+9'),(3190,38,NULL,NULL,'91.98.175.49','2025-10-12 08:34:20'),(3191,NULL,58,NULL,'88.241.88.24','2025-10-12 08:34:20'),(
+3192,NULL,41,NULL,'212.47.150.22','2025-10-12 08:34:20'),(3193,NULL,40,NULL,'212.47.150.22','2025-10-12 08:34:21'),(319
+4,NULL,57,NULL,'88.241.88.24','2025-10-12 08:34:21'),(3195,NULL,33,NULL,'212.47.150.22','2025-10-12 08:34:22'),(3196,NU
+LL,56,NULL,'88.241.88.24','2025-10-12 08:34:23'),(3197,NULL,32,NULL,'212.47.150.22','2025-10-12 08:34:23'),(3199,NULL,5
+5,NULL,'88.241.88.24','2025-10-12 08:34:24'),(3200,NULL,31,NULL,'212.47.150.22','2025-10-12 08:34:24'),(3201,38,NULL,NU
+LL,'169.150.218.38','2025-10-12 08:34:25'),(3202,NULL,54,NULL,'88.241.88.24','2025-10-12 08:34:25'),(3203,NULL,30,NULL,
+'212.47.150.22','2025-10-12 08:34:26'),(3204,NULL,53,NULL,'88.241.88.24','2025-10-12 08:34:26'),(3205,NULL,52,NULL,'88.
+241.88.24','2025-10-12 08:34:26'),(3206,NULL,29,NULL,'212.47.150.22','2025-10-12 08:34:27'),(3207,NULL,44,NULL,'212.47.
+150.22','2025-10-12 08:34:27'),(3208,NULL,51,NULL,'88.241.88.24','2025-10-12 08:34:28'),(3210,NULL,50,NULL,'88.241.88.2
+4','2025-10-12 08:34:28'),(3211,NULL,28,NULL,'212.47.150.22','2025-10-12 08:34:29'),(3212,NULL,49,NULL,'88.241.88.24','
+2025-10-12 08:34:29'),(3213,38,NULL,NULL,'178.245.90.136','2025-10-12 08:34:30'),(3214,NULL,48,NULL,'88.241.88.24','202
+5-10-12 08:34:30'),(3215,NULL,27,NULL,'212.47.150.22','2025-10-12 08:34:30'),(3216,NULL,47,NULL,'88.241.88.24','2025-10
+-12 08:34:32'),(3217,NULL,26,NULL,'212.47.150.22','2025-10-12 08:34:32'),(3218,NULL,46,NULL,'88.241.88.24','2025-10-12 
+08:34:32'),(3219,NULL,25,NULL,'212.47.150.22','2025-10-12 08:34:33'),(3220,NULL,45,NULL,'88.241.88.24','2025-10-12 08:3
+4:34'),(3221,NULL,44,NULL,'88.241.88.24','2025-10-12 08:34:34'),(3222,NULL,16,NULL,'176.233.26.130','2025-10-12 08:34:3
+4'),(3223,NULL,24,NULL,'212.47.150.22','2025-10-12 08:34:35'),(3224,NULL,18,NULL,'176.233.26.130','2025-10-12 08:34:35'
+),(3225,NULL,43,NULL,'88.241.88.24','2025-10-12 08:34:35'),(3226,NULL,42,NULL,'88.241.88.24','2025-10-12 08:34:36'),(32
+28,NULL,23,NULL,'212.47.150.22','2025-10-12 08:34:36'),(3229,38,NULL,NULL,'95.65.202.171','2025-10-12 08:34:36'),(3230,
+NULL,41,NULL,'88.241.88.24','2025-10-12 08:34:37'),(3231,NULL,22,NULL,'212.47.150.22','2025-10-12 08:34:37'),(3232,NULL
+,40,NULL,'88.241.88.24','2025-10-12 08:34:37'),(3233,NULL,33,NULL,'88.241.88.24','2025-10-12 08:34:39'),(3234,NULL,21,N
+ULL,'212.47.150.22','2025-10-12 08:34:39'),(3235,NULL,32,NULL,'88.241.88.24','2025-10-12 08:34:39'),(3236,NULL,31,NULL,
+'88.241.88.24','2025-10-12 08:34:41'),(3237,NULL,20,NULL,'212.47.150.22','2025-10-12 08:34:41'),(3238,NULL,30,NULL,'88.
+241.88.24','2025-10-12 08:34:41'),(3239,NULL,20,NULL,'176.233.26.130','2025-10-12 08:34:41'),(3240,NULL,19,NULL,'212.47
+.150.22','2025-10-12 08:34:42'),(3241,NULL,29,NULL,'88.241.88.24','2025-10-12 08:34:43'),(3242,NULL,18,NULL,'212.47.150
+.22','2025-10-12 08:34:43'),(3243,NULL,27,NULL,'88.241.88.24','2025-10-12 08:34:45'),(3244,NULL,16,NULL,'212.47.150.22'
+,'2025-10-12 08:34:45'),(3245,NULL,28,NULL,'88.241.88.24','2025-10-12 08:34:46'),(3246,NULL,26,NULL,'88.241.88.24','202
+5-10-12 08:34:49'),(3247,NULL,31,NULL,'91.98.175.49','2025-10-12 08:34:49'),(3248,38,NULL,NULL,'85.108.207.165','2025-1
+0-12 08:34:50'),(3249,NULL,25,NULL,'88.241.88.24','2025-10-12 08:34:51'),(3251,NULL,24,NULL,'88.241.88.24','2025-10-12 
+08:34:51'),(3252,NULL,32,NULL,'91.98.175.49','2025-10-12 08:34:52'),(3253,NULL,23,NULL,'88.241.88.24','2025-10-12 08:34
+:53'),(3254,NULL,23,NULL,'88.241.88.24','2025-10-12 08:34:54'),(3255,NULL,28,NULL,'88.241.88.24','2025-10-12 08:34:54')
+,(3256,NULL,22,NULL,'88.241.88.24','2025-10-12 08:34:55'),(3257,NULL,33,NULL,'91.98.175.49','2025-10-12 08:34:55'),(325
+8,NULL,21,NULL,'88.241.88.24','2025-10-12 08:34:56'),(3259,NULL,40,NULL,'91.98.175.49','2025-10-12 08:34:57'),(3260,NUL
+L,20,NULL,'88.241.88.24','2025-10-12 08:34:57'),(3261,NULL,19,NULL,'88.241.88.24','2025-10-12 08:34:58'),(3262,NULL,41,
+NULL,'91.98.175.49','2025-10-12 08:34:58'),(3263,NULL,16,12,'5.176.33.32','2025-10-12 08:34:59'),(3264,38,NULL,NULL,'21
+2.47.150.22','2025-10-12 08:34:59'),(3266,38,NULL,NULL,'88.241.176.246','2025-10-12 08:35:00'),(3267,NULL,42,NULL,'91.9
+8.175.49','2025-10-12 08:35:00'),(3268,NULL,18,NULL,'88.241.88.24','2025-10-12 08:35:00'),(3269,NULL,57,NULL,'176.233.2
+6.130','2025-10-12 08:35:01'),(3270,NULL,16,NULL,'88.241.88.24','2025-10-12 08:35:02'),(3271,NULL,43,NULL,'91.98.175.49
+','2025-10-12 08:35:02'),(3273,38,NULL,NULL,'212.252.139.57','2025-10-12 08:35:03'),(3274,NULL,44,NULL,'91.98.175.49','
+2025-10-12 08:35:03'),(3275,NULL,21,NULL,'88.241.88.24','2025-10-12 08:35:03'),(3276,NULL,16,8,'5.176.33.32','2025-10-1
+2 08:35:04'),(3277,NULL,56,NULL,'176.233.26.130','2025-10-12 08:35:05'),(3278,NULL,45,NULL,'91.98.175.49','2025-10-12 0
+8:35:05'),(3279,NULL,55,NULL,'176.233.26.130','2025-10-12 08:35:06'),(3280,NULL,46,NULL,'91.98.175.49','2025-10-12 08:3
+5:07'),(3281,NULL,26,NULL,'85.108.207.165','2025-10-12 08:35:07'),(3282,NULL,47,NULL,'91.98.175.49','2025-10-12 08:35:0
+8'),(3283,NULL,16,NULL,'178.245.90.136','2025-10-12 08:35:08'),(3284,NULL,16,10,'5.176.33.32','2025-10-12 08:35:09'),(3
+285,NULL,54,NULL,'176.233.26.130','2025-10-12 08:35:09'),(3286,NULL,48,NULL,'91.98.175.49','2025-10-12 08:35:09'),(3287
+,NULL,53,NULL,'176.233.26.130','2025-10-12 08:35:10'),(3288,NULL,57,NULL,'169.150.218.38','2025-10-12 08:35:10'),(3289,
+NULL,49,NULL,'91.98.175.49','2025-10-12 08:35:10'),(3290,NULL,52,NULL,'176.233.26.130','2025-10-12 08:35:12'),(3291,NUL
+L,50,NULL,'91.98.175.49','2025-10-12 08:35:12'),(3292,NULL,51,NULL,'176.233.26.130','2025-10-12 08:35:12'),(3293,2,NULL
+,NULL,'212.47.150.22','2025-10-12 08:35:13'),(3294,NULL,50,NULL,'176.233.26.130','2025-10-12 08:35:13'),(3296,NULL,51,N
+ULL,'91.98.175.49','2025-10-12 08:35:13'),(3297,NULL,49,NULL,'176.233.26.130','2025-10-12 08:35:14'),(3298,NULL,48,NULL
+,'176.233.26.130','2025-10-12 08:35:15'),(3299,NULL,52,NULL,'91.98.175.49','2025-10-12 08:35:16'),(3301,NULL,53,NULL,'9
+1.98.175.49','2025-10-12 08:35:18'),(3302,2,NULL,NULL,'94.20.46.81','2025-10-12 08:35:20'),(3303,NULL,46,NULL,'176.233.
+26.130','2025-10-12 08:35:20'),(3304,NULL,16,4,'78.174.205.29','2025-10-12 08:35:20'),(3305,NULL,45,NULL,'176.233.26.13
+0','2025-10-12 08:35:21'),(3306,NULL,55,NULL,'91.98.175.49','2025-10-12 08:35:23'),(3307,NULL,44,NULL,'176.233.26.130',
+'2025-10-12 08:35:23'),(3308,NULL,43,NULL,'176.233.26.130','2025-10-12 08:35:24'),(3309,NULL,54,NULL,'91.98.175.49','20
+25-10-12 08:35:24'),(3310,NULL,56,NULL,'91.98.175.49','2025-10-12 08:35:26'),(3311,38,NULL,NULL,'82.194.22.172','2025-1
+0-12 08:35:26'),(3312,2,NULL,NULL,'212.47.150.22','2025-10-12 08:35:27'),(3313,NULL,57,NULL,'91.98.175.49','2025-10-12 
+08:35:28'),(3314,38,NULL,NULL,'45.67.152.98','2025-10-12 08:35:28'),(3315,NULL,45,329,'178.241.11.226','2025-10-12 08:3
+5:29'),(3316,NULL,58,NULL,'91.98.175.49','2025-10-12 08:35:29'),(3317,NULL,54,NULL,'91.98.175.49','2025-10-12 08:35:30'
+),(3318,NULL,58,735,'188.57.10.61','2025-10-12 08:35:30'),(3319,NULL,17,NULL,'212.47.150.22','2025-10-12 08:35:31'),(33
+20,NULL,34,NULL,'212.47.150.22','2025-10-12 08:35:33'),(3321,NULL,45,331,'178.241.11.226','2025-10-12 08:35:34'),(3322,
+2,NULL,NULL,'45.67.152.98','2025-10-12 08:35:35'),(3326,NULL,21,NULL,'91.98.175.49','2025-10-12 08:35:37'),(3327,NULL,2
+2,NULL,'91.98.175.49','2025-10-12 08:35:38'),(3328,38,NULL,NULL,'88.236.65.23','2025-10-12 08:35:38'),(3329,2,NULL,NULL
+,'45.67.152.98','2025-10-12 08:35:39'),(3330,NULL,23,NULL,'91.98.175.49','2025-10-12 08:35:39'),(3331,2,NULL,NULL,'139.
+64.166.28','2025-10-12 08:35:39'),(3332,NULL,36,NULL,'212.47.150.22','2025-10-12 08:35:39'),(3333,NULL,24,NULL,'91.98.1
+75.49','2025-10-12 08:35:40'),(3335,NULL,37,NULL,'212.47.150.22','2025-10-12 08:35:41'),(3336,NULL,25,NULL,'91.98.175.4
+9','2025-10-12 08:35:42'),(3337,NULL,26,NULL,'91.98.175.49','2025-10-12 08:35:43'),(3338,NULL,38,NULL,'212.47.150.22','
+2025-10-12 08:35:44'),(3339,38,NULL,NULL,'85.106.149.98','2025-10-12 08:35:44'),(3340,NULL,58,NULL,'176.90.190.203','20
+25-10-12 08:35:45'),(3341,NULL,58,NULL,'213.186.152.253','2025-10-12 08:35:46'),(3342,NULL,20,NULL,'91.98.175.49','2025
+-10-12 08:35:46'),(3344,NULL,58,NULL,'212.47.129.62','2025-10-12 08:35:50'),(3345,NULL,18,NULL,'91.98.175.49','2025-10-
+12 08:35:50'),(3346,NULL,16,NULL,'91.98.175.49','2025-10-12 08:35:51'),(3347,NULL,19,NULL,'91.98.175.49','2025-10-12 08
+:35:52'),(3348,NULL,45,333,'178.241.11.226','2025-10-12 08:35:53'),(3349,38,NULL,NULL,'88.231.59.207','2025-10-12 08:35
+:55'),(3350,NULL,57,NULL,'85.153.228.100','2025-10-12 08:35:55'),(3351,2,NULL,NULL,'85.106.149.98','2025-10-12 08:35:56
+'),(3352,NULL,18,NULL,'91.98.175.49','2025-10-12 08:35:57'),(3353,2,NULL,NULL,'78.163.148.86','2025-10-12 08:35:57'),(3
+354,NULL,34,NULL,'78.167.1.226','2025-10-12 08:35:58'),(3355,NULL,35,NULL,'78.167.1.226','2025-10-12 08:36:00'),(3356,N
+ULL,36,NULL,'78.167.1.226','2025-10-12 08:36:01'),(3357,NULL,37,NULL,'78.167.1.226','2025-10-12 08:36:03'),(3358,2,NULL
+,NULL,'151.250.203.4','2025-10-12 08:36:03'),(3359,NULL,38,NULL,'78.167.1.226','2025-10-12 08:36:05'),(3360,38,NULL,NUL
+L,'46.106.73.242','2025-10-12 08:36:06'),(3361,NULL,58,NULL,'46.104.55.44','2025-10-12 08:36:06'),(3362,2,NULL,NULL,'15
+1.250.203.4','2025-10-12 08:36:08'),(3363,NULL,45,335,'178.241.11.226','2025-10-12 08:36:09'),(3364,38,NULL,NULL,'176.2
+35.182.148','2025-10-12 08:36:12'),(3365,38,NULL,NULL,'24.133.212.113','2025-10-12 08:36:13'),(3366,NULL,26,NULL,'149.1
+40.39.113','2025-10-12 08:36:13'),(3367,2,NULL,NULL,'78.167.1.226','2025-10-12 08:36:14'),(3368,2,NULL,NULL,'176.235.18
+2.148','2025-10-12 08:36:14'),(3369,38,NULL,NULL,'178.244.79.75','2025-10-12 08:36:16'),(3370,NULL,45,337,'178.241.11.2
+26','2025-10-12 08:36:20'),(3371,NULL,16,NULL,'24.133.212.113','2025-10-12 08:36:22'),(3372,38,NULL,NULL,'151.135.169.1
+05','2025-10-12 08:36:27'),(3373,38,NULL,NULL,'37.155.171.92','2025-10-12 08:36:27'),(3376,2,NULL,NULL,'151.135.169.105
+','2025-10-12 08:36:29'),(3378,NULL,45,341,'178.241.11.226','2025-10-12 08:36:37'),(3379,38,NULL,NULL,'78.167.1.226','2
+025-10-12 08:36:41'),(3380,NULL,16,NULL,'94.235.225.222','2025-10-12 08:36:41'),(3381,2,NULL,NULL,'188.57.10.61','2025-
+10-12 08:36:44'),(3382,2,NULL,NULL,'151.135.168.20','2025-10-12 08:36:46'),(3383,NULL,16,NULL,'94.235.225.222','2025-10
+-12 08:36:46'),(3384,38,NULL,NULL,'176.54.56.201','2025-10-12 08:36:47'),(3385,2,NULL,NULL,'176.54.56.201','2025-10-12 
+08:36:49'),(3386,38,NULL,NULL,'78.174.54.156','2025-10-12 08:36:49'),(3387,38,NULL,NULL,'151.135.168.20','2025-10-12 08
+:36:51'),(3389,NULL,47,417,'5.25.16.63','2025-10-12 08:36:57'),(3390,NULL,58,NULL,'95.70.165.23','2025-10-12 08:36:57')
+,(3392,NULL,47,419,'5.25.16.63','2025-10-12 08:37:01'),(3393,38,NULL,NULL,'217.131.126.204','2025-10-12 08:37:03'),(339
+4,NULL,58,NULL,'78.173.179.224','2025-10-12 08:37:08'),(3395,2,NULL,NULL,'95.15.59.36','2025-10-12 08:37:17'),(3396,38,
+NULL,NULL,'176.88.11.117','2025-10-12 08:37:18'),(3397,NULL,58,1,'176.90.158.156','2025-10-12 08:37:22'),(3398,38,NULL,
+NULL,'217.131.126.204','2025-10-12 08:37:22'),(3399,2,NULL,NULL,'91.98.175.49','2025-10-12 08:37:25'),(3400,2,NULL,NULL
+,'85.98.63.30','2025-10-12 08:37:25'),(3401,NULL,17,NULL,'91.98.175.49','2025-10-12 08:37:27'),(3402,NULL,58,NULL,'176.
+90.158.156','2025-10-12 08:37:28'),(3403,NULL,34,NULL,'91.98.175.49','2025-10-12 08:37:28'),(3404,NULL,57,261,'151.135.
+223.65','2025-10-12 08:37:29'),(3405,NULL,35,NULL,'91.98.175.49','2025-10-12 08:37:30'),(3407,NULL,36,NULL,'91.98.175.4
+9','2025-10-12 08:37:31'),(3408,NULL,37,NULL,'91.98.175.49','2025-10-12 08:37:33'),(3410,NULL,38,NULL,'91.98.175.49','2
+025-10-12 08:37:34'),(3411,38,NULL,NULL,'46.2.14.30','2025-10-12 08:37:38'),(3413,NULL,26,NULL,'149.140.204.80','2025-1
+0-12 08:37:48'),(3415,2,NULL,NULL,'88.240.178.20','2025-10-12 08:38:05'),(3416,2,NULL,NULL,'88.241.176.246','2025-10-12
+ 08:38:12'),(3417,38,NULL,NULL,'78.183.239.29','2025-10-12 08:38:14'),(3418,2,NULL,NULL,'78.183.239.29','2025-10-12 08:
+38:15'),(3419,38,NULL,NULL,'94.235.193.122','2025-10-12 08:38:16'),(3422,2,NULL,NULL,'217.131.126.204','2025-10-12 08:3
+8:19'),(3423,NULL,57,339,'151.135.223.65','2025-10-12 08:38:20'),(3424,38,NULL,NULL,'193.108.117.208','2025-10-12 08:38
+:32'),(3425,NULL,16,NULL,'176.220.34.145','2025-10-12 08:38:37'),(3426,38,NULL,NULL,'151.250.133.216','2025-10-12 08:38
+:48'),(3428,NULL,41,NULL,'213.238.187.20','2025-10-12 08:38:55'),(3429,NULL,40,NULL,'85.98.63.30','2025-10-12 08:39:07'
+),(3430,2,NULL,NULL,'151.250.133.216','2025-10-12 08:39:18'),(3431,38,NULL,NULL,'178.246.1.90','2025-10-12 08:39:19'),(
+3432,NULL,40,1,'85.98.63.30','2025-10-12 08:39:24'),(3433,NULL,57,417,'172.232.159.36','2025-10-12 08:39:25'),(3434,38,
+NULL,NULL,'88.241.169.229','2025-10-12 08:39:32'),(3435,NULL,58,NULL,'94.235.193.122','2025-10-12 08:39:32'),(3436,NULL
+,58,NULL,'176.88.36.240','2025-10-12 08:39:36'),(3437,NULL,30,NULL,'78.174.222.140','2025-10-12 08:39:44'),(3438,NULL,3
+1,NULL,'78.174.222.140','2025-10-12 08:39:45'),(3439,NULL,32,NULL,'78.174.222.140','2025-10-12 08:39:46'),(3440,NULL,33
+,NULL,'78.174.222.140','2025-10-12 08:39:47'),(3441,NULL,40,NULL,'78.174.222.140','2025-10-12 08:39:48'),(3442,NULL,41,
+NULL,'78.174.222.140','2025-10-12 08:39:49'),(3443,NULL,42,NULL,'78.174.222.140','2025-10-12 08:39:50'),(3444,NULL,43,N
+ULL,'78.174.222.140','2025-10-12 08:39:52'),(3445,NULL,44,NULL,'78.174.222.140','2025-10-12 08:39:52'),(3446,NULL,47,45
+7,'5.25.16.63','2025-10-12 08:39:53'),(3447,NULL,45,NULL,'78.174.222.140','2025-10-12 08:39:54'),(3448,NULL,46,NULL,'78
+.174.222.140','2025-10-12 08:39:54'),(3450,NULL,47,NULL,'78.174.222.140','2025-10-12 08:39:56'),(3451,NULL,48,NULL,'78.
+174.222.140','2025-10-12 08:39:57'),(3452,NULL,49,NULL,'78.174.222.140','2025-10-12 08:39:57'),(3453,NULL,50,NULL,'78.1
+74.222.140','2025-10-12 08:39:59'),(3454,NULL,51,NULL,'78.174.222.140','2025-10-12 08:39:59'),(3455,NULL,52,NULL,'78.17
+4.222.140','2025-10-12 08:39:59'),(3456,NULL,58,NULL,'85.107.68.95','2025-10-12 08:40:01'),(3457,NULL,53,NULL,'78.174.2
+22.140','2025-10-12 08:40:01'),(3458,NULL,54,NULL,'78.174.222.140','2025-10-12 08:40:01'),(3459,NULL,55,NULL,'78.174.22
+2.140','2025-10-12 08:40:02'),(3460,NULL,56,NULL,'78.174.222.140','2025-10-12 08:40:03'),(3461,NULL,57,NULL,'78.174.222
+.140','2025-10-12 08:40:04'),(3462,NULL,58,NULL,'78.174.222.140','2025-10-12 08:40:05'),(3463,38,NULL,NULL,'212.253.189
+.82','2025-10-12 08:40:06'),(3464,2,NULL,NULL,'212.253.189.82','2025-10-12 08:40:08'),(3466,NULL,16,NULL,'78.174.222.14
+0','2025-10-12 08:40:09'),(3467,NULL,19,NULL,'78.174.222.140','2025-10-12 08:40:10'),(3468,NULL,18,NULL,'78.174.222.140
+','2025-10-12 08:40:10'),(3469,NULL,20,NULL,'78.174.222.140','2025-10-12 08:40:12'),(3470,NULL,21,NULL,'78.174.222.140'
+,'2025-10-12 08:40:13'),(3471,NULL,22,NULL,'78.174.222.140','2025-10-12 08:40:14'),(3472,NULL,23,NULL,'78.174.222.140',
+'2025-10-12 08:40:14'),(3473,NULL,24,NULL,'78.174.222.140','2025-10-12 08:40:16'),(3474,NULL,25,NULL,'78.174.222.140','
+2025-10-12 08:40:16'),(3475,NULL,26,NULL,'78.174.222.140','2025-10-12 08:40:17'),(3476,NULL,27,NULL,'78.174.222.140','2
+025-10-12 08:40:18'),(3477,NULL,28,NULL,'78.174.222.140','2025-10-12 08:40:19'),(3478,NULL,29,NULL,'78.174.222.140','20
+25-10-12 08:40:20'),(3479,NULL,18,NULL,'88.231.59.207','2025-10-12 08:40:20'),(3480,38,NULL,NULL,'31.155.157.227','2025
+-10-12 08:40:26'),(3481,38,NULL,NULL,'85.99.181.58','2025-10-12 08:40:27'),(3482,38,NULL,NULL,'91.218.56.6','2025-10-12
+ 08:40:28'),(3483,2,NULL,NULL,'85.99.181.58','2025-10-12 08:40:30'),(3484,NULL,57,NULL,'94.54.236.245','2025-10-12 08:4
+0:32'),(3485,NULL,58,NULL,'94.54.236.245','2025-10-12 08:40:34'),(3486,2,NULL,NULL,'91.218.56.6','2025-10-12 08:40:34')
+,(3487,NULL,48,NULL,'5.25.16.63','2025-10-12 08:40:40'),(3489,38,NULL,NULL,'212.253.219.108','2025-10-12 08:40:46'),(34
+90,38,NULL,NULL,'78.173.7.103','2025-10-12 08:40:47'),(3491,2,NULL,NULL,'212.253.219.108','2025-10-12 08:40:53'),(3492,
+NULL,57,NULL,'176.238.176.179','2025-10-12 08:40:54'),(3493,NULL,50,NULL,'37.155.171.92','2025-10-12 08:40:56'),(3494,3
+8,NULL,NULL,'178.246.48.89','2025-10-12 08:41:00'),(3495,2,NULL,NULL,'178.246.48.89','2025-10-12 08:41:03'),(3496,NULL,
+16,NULL,'31.223.54.246','2025-10-12 08:41:11'),(3497,NULL,18,NULL,'31.223.54.246','2025-10-12 08:41:12'),(3498,38,NULL,
+NULL,'37.61.118.71','2025-10-12 08:41:13'),(3499,NULL,19,NULL,'31.223.54.246','2025-10-12 08:41:14'),(3500,2,NULL,NULL,
+'37.61.118.71','2025-10-12 08:41:16'),(3501,NULL,20,NULL,'31.223.54.246','2025-10-12 08:41:18'),(3502,NULL,58,NULL,'37.
+114.157.46','2025-10-12 08:41:20'),(3503,NULL,21,NULL,'31.223.54.246','2025-10-12 08:41:22'),(3504,NULL,22,NULL,'31.223
+.54.246','2025-10-12 08:41:22'),(3505,NULL,23,NULL,'31.223.54.246','2025-10-12 08:41:25'),(3506,NULL,48,5,'5.25.16.63',
+'2025-10-12 08:41:26'),(3507,NULL,24,NULL,'31.223.54.246','2025-10-12 08:41:27'),(3508,2,NULL,NULL,'213.186.152.253','2
+025-10-12 08:41:28'),(3509,NULL,25,NULL,'31.223.54.246','2025-10-12 08:41:29'),(3510,NULL,26,NULL,'31.223.54.246','2025
+-10-12 08:41:30'),(3511,NULL,27,NULL,'31.223.54.246','2025-10-12 08:41:33'),(3512,NULL,28,NULL,'31.223.54.246','2025-10
+-12 08:41:34'),(3513,NULL,29,NULL,'31.223.54.246','2025-10-12 08:41:36'),(3515,NULL,30,NULL,'31.223.54.246','2025-10-12
+ 08:41:37'),(3516,NULL,48,7,'5.25.16.63','2025-10-12 08:41:38'),(3517,NULL,31,NULL,'31.223.54.246','2025-10-12 08:41:39
+'),(3518,NULL,26,NULL,'212.133.195.235','2025-10-12 08:41:40'),(3519,NULL,32,NULL,'31.223.54.246','2025-10-12 08:41:40'
+),(3520,NULL,40,NULL,'31.143.188.112','2025-10-12 08:41:41'),(3521,NULL,33,NULL,'31.223.54.246','2025-10-12 08:41:42'),
+(3522,NULL,40,NULL,'31.223.54.246','2025-10-12 08:41:43'),(3523,NULL,41,NULL,'31.223.54.246','2025-10-12 08:41:45'),(35
+24,NULL,42,NULL,'31.223.54.246','2025-10-12 08:41:46'),(3525,38,NULL,NULL,'78.190.221.71','2025-10-12 08:41:47'),(3526,
+NULL,43,NULL,'31.223.54.246','2025-10-12 08:41:48'),(3527,NULL,44,NULL,'31.223.54.246','2025-10-12 08:41:49'),(3528,NUL
+L,45,NULL,'31.223.54.246','2025-10-12 08:41:51'),(3529,NULL,46,NULL,'31.223.54.246','2025-10-12 08:41:52'),(3530,2,NULL
+,NULL,'193.108.119.180','2025-10-12 08:41:53'),(3531,38,NULL,NULL,'193.108.119.180','2025-10-12 08:41:56'),(3532,38,NUL
+L,NULL,'85.153.234.154','2025-10-12 08:41:59'),(3533,38,NULL,NULL,'78.164.202.105','2025-10-12 08:42:03'),(3534,NULL,53
+,NULL,'78.190.221.71','2025-10-12 08:42:08'),(3535,NULL,54,NULL,'78.190.221.71','2025-10-12 08:42:09'),(3537,2,NULL,NUL
+L,'178.243.108.69','2025-10-12 08:42:16'),(3538,38,NULL,NULL,'178.243.108.69','2025-10-12 08:42:17'),(3539,NULL,58,NULL
+,'193.108.118.94','2025-10-12 08:42:19'),(3540,2,NULL,NULL,'88.236.125.77','2025-10-12 08:42:19'),(3541,38,NULL,NULL,'8
+8.236.125.77','2025-10-12 08:42:21'),(3542,NULL,58,NULL,'37.61.118.71','2025-10-12 08:42:22'),(3543,38,NULL,NULL,'178.2
+46.30.37','2025-10-12 08:42:22'),(3544,NULL,57,NULL,'37.61.118.71','2025-10-12 08:42:23'),(3545,2,NULL,NULL,'88.230.148
+.240','2025-10-12 08:42:24'),(3546,NULL,56,NULL,'37.61.118.71','2025-10-12 08:42:24'),(3548,38,NULL,NULL,'78.190.127.12
+5','2025-10-12 08:42:26'),(3549,NULL,55,NULL,'37.61.118.71','2025-10-12 08:42:26'),(3550,NULL,54,NULL,'37.61.118.71','2
+025-10-12 08:42:26'),(3552,38,NULL,NULL,'88.242.128.53','2025-10-12 08:42:27'),(3553,NULL,53,NULL,'37.61.118.71','2025-
+10-12 08:42:27'),(3554,2,NULL,NULL,'178.246.30.37','2025-10-12 08:42:28'),(3555,2,NULL,NULL,'78.190.127.125','2025-10-1
+2 08:42:28'),(3556,38,NULL,NULL,'31.145.39.238','2025-10-12 08:42:28'),(3557,NULL,52,NULL,'37.61.118.71','2025-10-12 08
+:42:29'),(3558,38,NULL,NULL,'88.242.128.53','2025-10-12 08:42:29'),(3560,NULL,51,NULL,'37.61.118.71','2025-10-12 08:42:
+29'),(3561,NULL,50,NULL,'37.61.118.71','2025-10-12 08:42:29'),(3562,NULL,17,NULL,'88.230.148.240','2025-10-12 08:42:29'
+),(3564,NULL,49,NULL,'37.61.118.71','2025-10-12 08:42:31'),(3565,NULL,48,NULL,'37.61.118.71','2025-10-12 08:42:31'),(35
+66,2,NULL,NULL,'95.8.227.23','2025-10-12 08:42:31'),(3567,2,NULL,NULL,'31.145.39.238','2025-10-12 08:42:32'),(3568,NULL
+,47,NULL,'37.61.118.71','2025-10-12 08:42:32'),(3569,NULL,46,NULL,'37.61.118.71','2025-10-12 08:42:32'),(3570,NULL,45,N
+ULL,'37.61.118.71','2025-10-12 08:42:33'),(3571,NULL,43,NULL,'37.61.118.71','2025-10-12 08:42:34'),(3572,NULL,42,NULL,'
+37.61.118.71','2025-10-12 08:42:35'),(3573,NULL,58,NULL,'85.106.114.85','2025-10-12 08:42:35'),(3574,NULL,41,NULL,'37.6
+1.118.71','2025-10-12 08:42:35'),(3575,38,NULL,NULL,'95.8.227.23','2025-10-12 08:42:35'),(3576,NULL,40,NULL,'37.61.118.
+71','2025-10-12 08:42:36'),(3577,NULL,33,NULL,'37.61.118.71','2025-10-12 08:42:37'),(3578,NULL,32,NULL,'37.61.118.71','
+2025-10-12 08:42:37'),(3579,NULL,31,NULL,'37.61.118.71','2025-10-12 08:42:38'),(3580,NULL,30,NULL,'37.61.118.71','2025-
+10-12 08:42:38'),(3581,NULL,29,NULL,'37.61.118.71','2025-10-12 08:42:39'),(3582,38,NULL,NULL,'88.234.227.55','2025-10-1
+2 08:42:40'),(3583,NULL,28,NULL,'37.61.118.71','2025-10-12 08:42:41'),(3585,NULL,27,NULL,'37.61.118.71','2025-10-12 08:
+42:41'),(3586,NULL,26,NULL,'37.61.118.71','2025-10-12 08:42:43'),(3588,NULL,25,NULL,'37.61.118.71','2025-10-12 08:42:43
+'),(3589,NULL,24,NULL,'37.61.118.71','2025-10-12 08:42:44'),(3590,NULL,23,NULL,'37.61.118.71','2025-10-12 08:42:45'),(3
+591,NULL,22,NULL,'37.61.118.71','2025-10-12 08:42:45'),(3593,NULL,48,9,'5.25.16.63','2025-10-12 08:42:45'),(3594,NULL,2
+1,NULL,'37.61.118.71','2025-10-12 08:42:46'),(3595,NULL,20,NULL,'37.61.118.71','2025-10-12 08:42:46'),(3596,NULL,19,NUL
+L,'37.61.118.71','2025-10-12 08:42:46'),(3597,NULL,48,11,'5.25.16.63','2025-10-12 08:42:47'),(3598,NULL,18,NULL,'37.61.
+118.71','2025-10-12 08:42:48'),(3599,NULL,16,NULL,'37.61.118.71','2025-10-12 08:42:48'),(3600,NULL,57,NULL,'31.155.128.
+76','2025-10-12 08:42:51'),(3601,NULL,58,NULL,'78.164.202.105','2025-10-12 08:42:52'),(3602,NULL,18,NULL,'78.174.218.67
+','2025-10-12 08:42:54'),(3603,2,NULL,NULL,'176.237.192.191','2025-10-12 08:42:58'),(3604,38,NULL,NULL,'78.167.92.21','
+2025-10-12 08:42:59'),(3605,38,NULL,NULL,'176.237.192.191','2025-10-12 08:43:01'),(3606,2,NULL,NULL,'78.167.92.21','202
+5-10-12 08:43:01'),(3607,38,NULL,NULL,'95.8.227.23','2025-10-12 08:43:02'),(3610,NULL,58,NULL,'88.234.227.55','2025-10-
+12 08:43:08'),(3611,38,NULL,NULL,'176.216.163.150','2025-10-12 08:43:13'),(3612,38,NULL,NULL,'213.153.175.68','2025-10-
+12 08:43:13'),(3613,NULL,51,NULL,'37.155.171.92','2025-10-12 08:43:24'),(3614,38,NULL,NULL,'176.54.79.254','2025-10-12 
+08:43:29'),(3616,NULL,16,NULL,'88.254.7.159','2025-10-12 08:43:35'),(3617,NULL,18,NULL,'88.254.7.159','2025-10-12 08:43
+:36'),(3618,NULL,19,NULL,'88.254.7.159','2025-10-12 08:43:38'),(3619,NULL,20,NULL,'88.254.7.159','2025-10-12 08:43:39')
+,(3620,NULL,21,NULL,'88.254.7.159','2025-10-12 08:43:40'),(3622,NULL,22,NULL,'88.254.7.159','2025-10-12 08:43:45'),(362
+3,38,NULL,NULL,'176.54.79.254','2025-10-12 08:43:47'),(3624,NULL,58,NULL,'81.214.167.226','2025-10-12 08:43:47'),(3625,
+NULL,23,NULL,'88.254.7.159','2025-10-12 08:43:48'),(3626,NULL,23,NULL,'88.254.7.159','2025-10-12 08:43:49'),(3627,NULL,
+24,NULL,'88.254.7.159','2025-10-12 08:43:50'),(3628,NULL,25,NULL,'88.254.7.159','2025-10-12 08:43:51'),(3629,NULL,26,NU
+LL,'88.254.7.159','2025-10-12 08:43:53'),(3631,NULL,16,NULL,'176.54.79.254','2025-10-12 08:43:55'),(3632,NULL,18,NULL,'
+176.54.79.254','2025-10-12 08:43:56'),(3633,NULL,19,NULL,'176.54.79.254','2025-10-12 08:43:57'),(3635,NULL,20,NULL,'176
+.54.79.254','2025-10-12 08:43:58'),(3636,NULL,28,NULL,'88.254.7.159','2025-10-12 08:43:59'),(3637,NULL,21,NULL,'176.54.
+79.254','2025-10-12 08:43:59'),(3638,NULL,27,NULL,'88.254.7.159','2025-10-12 08:43:59'),(3639,NULL,22,NULL,'176.54.79.2
+54','2025-10-12 08:44:00'),(3640,NULL,23,NULL,'176.54.79.254','2025-10-12 08:44:01'),(3641,38,NULL,NULL,'135.125.181.60
+','2025-10-12 08:44:02'),(3642,NULL,24,NULL,'176.54.79.254','2025-10-12 08:44:02'),(3643,NULL,29,NULL,'88.254.7.159','2
+025-10-12 08:44:02'),(3644,NULL,25,NULL,'176.54.79.254','2025-10-12 08:44:03'),(3645,NULL,29,NULL,'88.254.7.159','2025-
+10-12 08:44:04'),(3646,NULL,30,NULL,'88.254.7.159','2025-10-12 08:44:04'),(3647,NULL,26,NULL,'176.54.79.254','2025-10-1
+2 08:44:05'),(3648,NULL,31,NULL,'88.254.7.159','2025-10-12 08:44:06'),(3649,NULL,32,NULL,'88.254.7.159','2025-10-12 08:
+44:07'),(3650,NULL,27,NULL,'176.54.79.254','2025-10-12 08:44:08'),(3651,NULL,33,NULL,'88.254.7.159','2025-10-12 08:44:0
+9'),(3652,NULL,28,NULL,'176.54.79.254','2025-10-12 08:44:10'),(3653,NULL,40,NULL,'88.254.7.159','2025-10-12 08:44:11'),
+(3654,NULL,29,NULL,'176.54.79.254','2025-10-12 08:44:11'),(3655,NULL,41,NULL,'88.254.7.159','2025-10-12 08:44:12'),(365
+6,NULL,30,NULL,'176.54.79.254','2025-10-12 08:44:13'),(3657,NULL,42,NULL,'88.254.7.159','2025-10-12 08:44:14'),(3658,NU
+LL,31,NULL,'176.54.79.254','2025-10-12 08:44:14'),(3659,NULL,32,NULL,'176.54.79.254','2025-10-12 08:44:16'),(3660,NULL,
+43,NULL,'88.254.7.159','2025-10-12 08:44:16'),(3661,NULL,33,NULL,'176.54.79.254','2025-10-12 08:44:17'),(3662,NULL,44,N
+ULL,'88.254.7.159','2025-10-12 08:44:18'),(3663,NULL,40,NULL,'176.54.79.254','2025-10-12 08:44:18'),(3664,NULL,41,NULL,
+'176.54.79.254','2025-10-12 08:44:19'),(3665,NULL,45,NULL,'88.254.7.159','2025-10-12 08:44:19'),(3666,NULL,42,NULL,'176
+.54.79.254','2025-10-12 08:44:20'),(3667,NULL,46,NULL,'88.254.7.159','2025-10-12 08:44:21'),(3668,38,NULL,NULL,'88.231.
+129.65','2025-10-12 08:44:21'),(3669,NULL,43,NULL,'176.54.79.254','2025-10-12 08:44:21'),(3670,NULL,47,NULL,'88.254.7.1
+59','2025-10-12 08:44:23'),(3671,NULL,44,NULL,'176.54.79.254','2025-10-12 08:44:23'),(3672,2,NULL,NULL,'88.231.129.65',
+'2025-10-12 08:44:23'),(3673,NULL,45,NULL,'176.54.79.254','2025-10-12 08:44:24'),(3674,NULL,48,NULL,'88.254.7.159','202
+5-10-12 08:44:24'),(3675,NULL,46,NULL,'176.54.79.254','2025-10-12 08:44:25'),(3676,NULL,49,NULL,'88.254.7.159','2025-10
+-12 08:44:25'),(3677,NULL,47,NULL,'176.54.79.254','2025-10-12 08:44:26'),(3678,NULL,50,NULL,'88.254.7.159','2025-10-12 
+08:44:27'),(3679,NULL,51,NULL,'88.254.7.159','2025-10-12 08:44:28'),(3680,NULL,48,NULL,'176.54.79.254','2025-10-12 08:4
+4:28'),(3681,NULL,49,NULL,'176.54.79.254','2025-10-12 08:44:29'),(3682,NULL,52,NULL,'88.254.7.159','2025-10-12 08:44:30
+'),(3683,38,NULL,NULL,'95.14.200.181','2025-10-12 08:44:30'),(3684,NULL,50,NULL,'176.54.79.254','2025-10-12 08:44:31'),
+(3685,NULL,48,29,'5.25.16.63','2025-10-12 08:44:31'),(3686,NULL,51,NULL,'176.54.79.254','2025-10-12 08:44:32'),(3687,NU
+LL,52,NULL,'176.54.79.254','2025-10-12 08:44:33'),(3688,NULL,53,NULL,'88.254.7.159','2025-10-12 08:44:34'),(3689,NULL,5
+3,NULL,'176.54.79.254','2025-10-12 08:44:36'),(3690,2,NULL,NULL,'95.14.200.181','2025-10-12 08:44:36'),(3691,NULL,54,NU
+LL,'88.254.7.159','2025-10-12 08:44:36'),(3692,NULL,54,NULL,'176.54.79.254','2025-10-12 08:44:37'),(3693,NULL,55,NULL,'
+88.254.7.159','2025-10-12 08:44:38'),(3694,NULL,55,NULL,'176.54.79.254','2025-10-12 08:44:39'),(3695,NULL,56,NULL,'176.
+54.79.254','2025-10-12 08:44:41'),(3696,38,NULL,NULL,'176.227.25.188','2025-10-12 08:44:41'),(3697,NULL,56,NULL,'88.254
+.7.159','2025-10-12 08:44:42'),(3698,NULL,57,NULL,'176.54.79.254','2025-10-12 08:44:42'),(3699,NULL,58,NULL,'176.54.79.
+254','2025-10-12 08:44:44'),(3702,NULL,58,NULL,'88.254.7.159','2025-10-12 08:44:47'),(3703,38,NULL,NULL,'176.227.25.188
+','2025-10-12 08:44:55'),(3704,38,NULL,NULL,'176.227.25.188','2025-10-12 08:44:55'),(3705,NULL,16,NULL,'88.229.124.148'
+,'2025-10-12 08:45:00'),(3707,2,NULL,NULL,'88.230.149.24','2025-10-12 08:45:08'),(3708,NULL,58,NULL,'37.154.230.148','2
+025-10-12 08:45:09'),(3709,NULL,57,NULL,'37.154.230.148','2025-10-12 08:45:10'),(3710,NULL,56,NULL,'37.154.230.148','20
+25-10-12 08:45:11'),(3711,38,NULL,NULL,'88.230.149.24','2025-10-12 08:45:12'),(3712,NULL,55,NULL,'37.154.230.148','2025
+-10-12 08:45:12'),(3713,NULL,54,NULL,'37.154.230.148','2025-10-12 08:45:13'),(3714,NULL,53,NULL,'37.154.230.148','2025-
+10-12 08:45:13'),(3715,NULL,52,NULL,'37.154.230.148','2025-10-12 08:45:14'),(3716,NULL,51,NULL,'37.154.230.148','2025-1
+0-12 08:45:15'),(3717,NULL,50,NULL,'37.154.230.148','2025-10-12 08:45:16'),(3718,2,NULL,NULL,'5.46.89.115','2025-10-12 
+08:45:16'),(3719,NULL,49,NULL,'37.154.230.148','2025-10-12 08:45:17'),(3720,38,NULL,NULL,'176.216.15.126','2025-10-12 0
+8:45:17'),(3721,NULL,48,NULL,'37.154.230.148','2025-10-12 08:45:17'),(3722,NULL,47,NULL,'37.154.230.148','2025-10-12 08
+:45:18'),(3723,38,NULL,NULL,'5.46.89.115','2025-10-12 08:45:18'),(3724,NULL,46,NULL,'37.154.230.148','2025-10-12 08:45:
+19'),(3725,NULL,45,NULL,'37.154.230.148','2025-10-12 08:45:19'),(3726,NULL,44,NULL,'37.154.230.148','2025-10-12 08:45:2
+0'),(3727,NULL,16,NULL,'95.12.37.76','2025-10-12 08:45:21'),(3729,NULL,43,NULL,'37.154.230.148','2025-10-12 08:45:21'),
+(3730,NULL,42,NULL,'37.154.230.148','2025-10-12 08:45:22'),(3731,NULL,41,NULL,'37.154.230.148','2025-10-12 08:45:23'),(
+3732,NULL,40,NULL,'37.154.230.148','2025-10-12 08:45:24'),(3733,NULL,33,NULL,'37.154.230.148','2025-10-12 08:45:24'),(3
+734,NULL,32,NULL,'37.154.230.148','2025-10-12 08:45:25'),(3736,NULL,31,NULL,'37.154.230.148','2025-10-12 08:45:26'),(37
+37,NULL,30,NULL,'37.154.230.148','2025-10-12 08:45:27'),(3738,NULL,29,NULL,'37.154.230.148','2025-10-12 08:45:27'),(373
+9,NULL,28,NULL,'37.154.230.148','2025-10-12 08:45:27'),(3740,NULL,27,NULL,'37.154.230.148','2025-10-12 08:45:30'),(3741
+,NULL,26,NULL,'37.154.230.148','2025-10-12 08:45:30'),(3743,NULL,25,NULL,'37.154.230.148','2025-10-12 08:45:32'),(3744,
+NULL,24,NULL,'37.154.230.148','2025-10-12 08:45:33'),(3745,NULL,23,NULL,'37.154.230.148','2025-10-12 08:45:33'),(3747,N
+ULL,22,NULL,'37.154.230.148','2025-10-12 08:45:34'),(3748,NULL,58,NULL,'78.167.57.57','2025-10-12 08:45:35'),(3749,NULL
+,21,NULL,'37.154.230.148','2025-10-12 08:45:35'),(3750,38,NULL,NULL,'185.77.3.98','2025-10-12 08:45:36'),(3751,NULL,19,
+NULL,'37.154.230.148','2025-10-12 08:45:37'),(3752,NULL,20,NULL,'37.154.230.148','2025-10-12 08:45:37'),(3753,NULL,18,N
+ULL,'37.154.230.148','2025-10-12 08:45:37'),(3754,NULL,16,NULL,'37.154.230.148','2025-10-12 08:45:38'),(3755,NULL,42,NU
+LL,'37.154.15.206','2025-10-12 08:45:38'),(3756,NULL,42,1,'37.154.15.206','2025-10-12 08:45:45'),(3757,NULL,42,3,'37.15
+4.15.206','2025-10-12 08:45:46'),(3758,2,NULL,NULL,'176.238.231.206','2025-10-12 08:45:52'),(3759,38,NULL,NULL,'159.146
+.43.18','2025-10-12 08:45:53'),(3761,NULL,57,711,'31.155.128.76','2025-10-12 08:45:54'),(3762,NULL,16,50,'176.42.61.170
+','2025-10-12 08:46:00'),(3763,38,NULL,NULL,'176.238.231.206','2025-10-12 08:46:04'),(3764,NULL,16,NULL,'78.181.73.83',
+'2025-10-12 08:46:13'),(3765,38,NULL,NULL,'46.1.50.2','2025-10-12 08:46:14'),(3766,2,NULL,NULL,'78.180.56.225','2025-10
+-12 08:46:14'),(3768,2,NULL,NULL,'46.1.50.2','2025-10-12 08:46:16'),(3769,38,NULL,NULL,'31.171.52.71','2025-10-12 08:46
+:24'),(3770,NULL,16,NULL,'88.254.7.159','2025-10-12 08:46:24'),(3772,2,NULL,NULL,'31.171.52.71','2025-10-12 08:46:27'),
+(3773,2,NULL,NULL,'78.178.149.89','2025-10-12 08:46:27'),(3774,NULL,16,NULL,'88.254.7.159','2025-10-12 08:46:34'),(3775
+,NULL,18,NULL,'88.254.7.159','2025-10-12 08:46:36'),(3776,38,NULL,NULL,'31.171.52.71','2025-10-12 08:46:36'),(3777,2,NU
+LL,NULL,'31.223.44.167','2025-10-12 08:46:37'),(3778,38,NULL,NULL,'31.223.44.167','2025-10-12 08:46:39'),(3779,2,NULL,N
+ULL,'31.171.52.71','2025-10-12 08:46:40'),(3780,NULL,16,NULL,'88.254.7.159','2025-10-12 08:46:44'),(3781,38,NULL,NULL,'
+31.223.50.242','2025-10-12 08:46:44'),(3782,NULL,18,NULL,'88.254.7.159','2025-10-12 08:46:47'),(3783,NULL,19,NULL,'88.2
+54.7.159','2025-10-12 08:46:50'),(3784,38,NULL,NULL,'176.236.180.195','2025-10-12 08:46:50'),(3786,NULL,20,NULL,'88.254
+.7.159','2025-10-12 08:46:50'),(3787,NULL,21,NULL,'88.254.7.159','2025-10-12 08:46:51'),(3788,NULL,22,NULL,'88.254.7.15
+9','2025-10-12 08:46:52'),(3789,NULL,23,NULL,'88.254.7.159','2025-10-12 08:46:53'),(3791,NULL,24,NULL,'88.254.7.159','2
+025-10-12 08:46:54'),(3792,NULL,25,NULL,'88.254.7.159','2025-10-12 08:46:55'),(3793,NULL,26,NULL,'88.254.7.159','2025-1
+0-12 08:46:55'),(3794,NULL,27,NULL,'88.254.7.159','2025-10-12 08:46:58'),(3795,NULL,28,NULL,'88.254.7.159','2025-10-12 
+08:46:58'),(3796,NULL,29,NULL,'88.254.7.159','2025-10-12 08:47:00'),(3797,NULL,30,NULL,'88.254.7.159','2025-10-12 08:47
+:00'),(3798,38,NULL,NULL,'88.236.100.66','2025-10-12 08:47:01'),(3799,NULL,31,NULL,'88.254.7.159','2025-10-12 08:47:01'
+),(3800,NULL,32,NULL,'88.254.7.159','2025-10-12 08:47:02'),(3801,NULL,33,NULL,'88.254.7.159','2025-10-12 08:47:03'),(38
+02,NULL,40,NULL,'88.254.7.159','2025-10-12 08:47:04'),(3803,2,NULL,NULL,'88.236.100.66','2025-10-12 08:47:04'),(3804,38
+,NULL,NULL,'185.195.252.103','2025-10-12 08:47:04'),(3805,NULL,41,NULL,'88.254.7.159','2025-10-12 08:47:05'),(3806,NULL
+,42,NULL,'88.254.7.159','2025-10-12 08:47:07'),(3807,NULL,43,NULL,'88.254.7.159','2025-10-12 08:47:07'),(3808,NULL,44,N
+ULL,'88.254.7.159','2025-10-12 08:47:09'),(3809,NULL,45,NULL,'88.254.7.159','2025-10-12 08:47:10'),(3810,38,NULL,NULL,'
+5.46.8.252','2025-10-12 08:47:10'),(3811,NULL,46,NULL,'88.254.7.159','2025-10-12 08:47:11'),(3812,2,NULL,NULL,'5.46.8.2
+52','2025-10-12 08:47:12'),(3813,38,NULL,NULL,'176.88.146.223','2025-10-12 08:47:12'),(3814,NULL,47,NULL,'88.254.7.159'
+,'2025-10-12 08:47:13'),(3815,NULL,16,NULL,'88.243.64.129','2025-10-12 08:47:14'),(3816,NULL,48,NULL,'88.254.7.159','20
+25-10-12 08:47:14'),(3817,NULL,18,NULL,'88.243.64.129','2025-10-12 08:47:15'),(3818,NULL,49,NULL,'88.254.7.159','2025-1
+0-12 08:47:15'),(3819,NULL,50,NULL,'88.254.7.159','2025-10-12 08:47:16'),(3820,NULL,19,NULL,'88.243.64.129','2025-10-12
+ 08:47:17'),(3821,NULL,51,NULL,'88.254.7.159','2025-10-12 08:47:17'),(3822,NULL,20,NULL,'88.243.64.129','2025-10-12 08:
+47:17'),(3823,NULL,52,NULL,'88.254.7.159','2025-10-12 08:47:18'),(3824,NULL,21,NULL,'88.243.64.129','2025-10-12 08:47:1
+9'),(3825,NULL,22,NULL,'88.243.64.129','2025-10-12 08:47:19'),(3826,NULL,53,NULL,'88.254.7.159','2025-10-12 08:47:19'),
+(3827,38,NULL,NULL,'5.46.8.252','2025-10-12 08:47:20'),(3828,NULL,54,NULL,'88.254.7.159','2025-10-12 08:47:20'),(3829,N
+ULL,23,NULL,'88.243.64.129','2025-10-12 08:47:21'),(3830,NULL,55,NULL,'88.254.7.159','2025-10-12 08:47:21'),(3831,NULL,
+24,NULL,'88.243.64.129','2025-10-12 08:47:22'),(3832,NULL,56,NULL,'88.254.7.159','2025-10-12 08:47:22'),(3833,NULL,16,N
+ULL,'5.46.8.252','2025-10-12 08:47:23'),(3834,NULL,25,NULL,'88.243.64.129','2025-10-12 08:47:23'),(3836,NULL,26,NULL,'8
+8.243.64.129','2025-10-12 08:47:24'),(3837,NULL,58,NULL,'88.254.7.159','2025-10-12 08:47:24'),(3838,NULL,18,NULL,'5.46.
+8.252','2025-10-12 08:47:24'),(3839,NULL,19,NULL,'5.46.8.252','2025-10-12 08:47:25'),(3840,NULL,27,NULL,'88.243.64.129'
+,'2025-10-12 08:47:26'),(3841,NULL,20,NULL,'5.46.8.252','2025-10-12 08:47:26'),(3842,NULL,28,NULL,'88.243.64.129','2025
+-10-12 08:47:27'),(3843,NULL,29,NULL,'88.243.64.129','2025-10-12 08:47:29'),(3845,NULL,30,NULL,'88.243.64.129','2025-10
+-12 08:47:30'),(3846,NULL,31,NULL,'88.243.64.129','2025-10-12 08:47:31'),(3848,38,NULL,NULL,'37.114.156.138','2025-10-1
+2 08:47:32'),(3850,38,NULL,NULL,'85.106.193.18','2025-10-12 08:47:32'),(3851,NULL,32,NULL,'88.243.64.129','2025-10-12 0
+8:47:32'),(3852,2,NULL,NULL,'37.114.156.138','2025-10-12 08:47:33'),(3853,NULL,21,NULL,'5.46.8.252','2025-10-12 08:47:3
+5'),(3854,NULL,33,NULL,'88.243.64.129','2025-10-12 08:47:35'),(3856,NULL,22,NULL,'5.46.8.252','2025-10-12 08:47:37'),(3
+857,38,NULL,NULL,'89.219.48.20','2025-10-12 08:47:37'),(3858,NULL,40,NULL,'88.243.64.129','2025-10-12 08:47:38'),(3859,
+NULL,23,NULL,'5.46.8.252','2025-10-12 08:47:38'),(3860,NULL,24,NULL,'5.46.8.252','2025-10-12 08:47:40'),(3861,NULL,41,N
+ULL,'88.243.64.129','2025-10-12 08:47:40'),(3862,NULL,25,NULL,'5.46.8.252','2025-10-12 08:47:41'),(3863,NULL,42,NULL,'8
+8.243.64.129','2025-10-12 08:47:41'),(3865,NULL,26,NULL,'5.46.8.252','2025-10-12 08:47:42'),(3866,NULL,43,NULL,'88.243.
+64.129','2025-10-12 08:47:44'),(3867,NULL,27,NULL,'5.46.8.252','2025-10-12 08:47:44'),(3868,38,NULL,NULL,'176.89.241.16
+','2025-10-12 08:47:44'),(3869,NULL,57,NULL,'176.236.180.195','2025-10-12 08:47:46'),(3871,NULL,28,NULL,'5.46.8.252','2
+025-10-12 08:47:47'),(3872,2,NULL,NULL,'176.219.34.202','2025-10-12 08:47:48'),(3873,NULL,44,NULL,'88.243.64.129','2025
+-10-12 08:47:48'),(3874,NULL,30,NULL,'5.46.8.252','2025-10-12 08:47:49'),(3875,NULL,29,NULL,'5.46.8.252','2025-10-12 08
+:47:49'),(3876,38,NULL,NULL,'176.219.34.202','2025-10-12 08:47:50'),(3879,NULL,31,NULL,'5.46.8.252','2025-10-12 08:47:5
+1'),(3880,NULL,32,NULL,'5.46.8.252','2025-10-12 08:47:52'),(3881,NULL,33,NULL,'5.46.8.252','2025-10-12 08:47:53'),(3882
+,NULL,45,NULL,'88.243.64.129','2025-10-12 08:47:53'),(3883,38,NULL,NULL,'46.154.101.68','2025-10-12 08:47:54'),(3884,NU
+LL,40,NULL,'5.46.8.252','2025-10-12 08:47:54'),(3885,NULL,16,NULL,'81.8.4.86','2025-10-12 08:47:54'),(3886,NULL,41,NULL
+,'5.46.8.252','2025-10-12 08:47:55'),(3887,NULL,18,NULL,'81.8.4.86','2025-10-12 08:47:56'),(3888,NULL,46,NULL,'88.243.6
+4.129','2025-10-12 08:47:56'),(3889,NULL,42,NULL,'5.46.8.252','2025-10-12 08:47:56'),(3890,NULL,43,NULL,'5.46.8.252','2
+025-10-12 08:47:58'),(3891,NULL,19,NULL,'81.8.4.86','2025-10-12 08:47:58'),(3892,NULL,47,NULL,'88.243.64.129','2025-10-
+12 08:47:58'),(3893,NULL,44,NULL,'5.46.8.252','2025-10-12 08:47:59'),(3894,NULL,20,NULL,'81.8.4.86','2025-10-12 08:47:5
+9'),(3895,38,NULL,NULL,'88.248.44.222','2025-10-12 08:47:59'),(3896,NULL,48,NULL,'88.243.64.129','2025-10-12 08:47:59')
+,(3897,NULL,45,NULL,'5.46.8.252','2025-10-12 08:48:00'),(3898,NULL,21,NULL,'81.8.4.86','2025-10-12 08:48:00'),(3899,NUL
+L,49,NULL,'88.243.64.129','2025-10-12 08:48:00'),(3900,NULL,46,NULL,'5.46.8.252','2025-10-12 08:48:01'),(3902,NULL,22,N
+ULL,'81.8.4.86','2025-10-12 08:48:02'),(3903,NULL,50,NULL,'88.243.64.129','2025-10-12 08:48:02'),(3904,NULL,23,NULL,'81
+.8.4.86','2025-10-12 08:48:03'),(3905,NULL,50,NULL,'88.243.64.129','2025-10-12 08:48:03'),(3906,NULL,47,NULL,'5.46.8.25
+2','2025-10-12 08:48:04'),(3907,NULL,16,NULL,'178.233.112.57','2025-10-12 08:48:04'),(3908,NULL,24,NULL,'81.8.4.86','20
+25-10-12 08:48:04'),(3909,38,NULL,NULL,'78.180.56.225','2025-10-12 08:48:05'),(3910,NULL,18,NULL,'178.233.112.57','2025
+-10-12 08:48:05'),(3911,NULL,25,NULL,'81.8.4.86','2025-10-12 08:48:05'),(3912,NULL,19,NULL,'178.233.112.57','2025-10-12
+ 08:48:07'),(3913,NULL,48,NULL,'5.46.8.252','2025-10-12 08:48:07'),(3914,NULL,26,NULL,'81.8.4.86','2025-10-12 08:48:07'
+),(3915,38,NULL,NULL,'5.176.229.195','2025-10-12 08:48:09'),(3916,NULL,16,NULL,'178.233.112.57','2025-10-12 08:48:09'),
+(3917,NULL,49,NULL,'5.46.8.252','2025-10-12 08:48:10'),(3918,NULL,57,433,'193.143.231.197','2025-10-12 08:48:10'),(3919
+,NULL,18,NULL,'178.233.112.57','2025-10-12 08:48:10'),(3920,NULL,19,NULL,'178.233.112.57','2025-10-12 08:48:11'),(3921,
+38,NULL,NULL,'46.104.59.128','2025-10-12 08:48:11'),(3922,NULL,20,NULL,'178.233.112.57','2025-10-12 08:48:11'),(3923,NU
+LL,16,NULL,'78.179.198.227','2025-10-12 08:48:12'),(3924,NULL,21,NULL,'178.233.112.57','2025-10-12 08:48:13'),(3925,NUL
+L,50,NULL,'5.46.8.252','2025-10-12 08:48:14'),(3926,NULL,51,NULL,'5.46.8.252','2025-10-12 08:48:15'),(3927,NULL,52,NULL
+,'5.46.8.252','2025-10-12 08:48:17'),(3928,NULL,53,NULL,'5.46.8.252','2025-10-12 08:48:18'),(3929,38,NULL,NULL,'78.173.
+84.198','2025-10-12 08:48:18'),(3930,NULL,54,NULL,'5.46.8.252','2025-10-12 08:48:19'),(3931,NULL,55,NULL,'5.46.8.252','
+2025-10-12 08:48:21'),(3932,NULL,56,NULL,'5.46.8.252','2025-10-12 08:48:22'),(3933,NULL,57,NULL,'5.46.8.252','2025-10-1
+2 08:48:23'),(3934,38,NULL,NULL,'88.236.100.66','2025-10-12 08:48:24'),(3935,NULL,58,NULL,'5.46.8.252','2025-10-12 08:4
+8:25'),(3936,NULL,51,NULL,'88.243.64.129','2025-10-12 08:48:27'),(3937,NULL,52,NULL,'88.243.64.129','2025-10-12 08:48:3
+0'),(3938,NULL,53,NULL,'88.243.64.129','2025-10-12 08:48:31'),(3939,NULL,54,NULL,'88.243.64.129','2025-10-12 08:48:32')
+,(3940,NULL,52,NULL,'85.106.193.18','2025-10-12 08:48:34'),(3941,NULL,55,NULL,'88.243.64.129','2025-10-12 08:48:36'),(3
+942,NULL,56,NULL,'88.243.64.129','2025-10-12 08:48:37'),(3943,NULL,57,NULL,'88.243.64.129','2025-10-12 08:48:38'),(3944
+,NULL,58,NULL,'88.243.64.129','2025-10-12 08:48:39'),(3945,NULL,18,1,'81.8.4.86','2025-10-12 08:48:41'),(3946,NULL,57,6
+65,'176.233.31.85','2025-10-12 08:48:46'),(3947,NULL,19,NULL,'78.163.119.82','2025-10-12 08:48:46'),(3948,NULL,18,NULL,
+'78.163.119.82','2025-10-12 08:48:48'),(3949,NULL,20,NULL,'85.98.63.30','2025-10-12 08:48:48'),(3950,NULL,16,NULL,'78.1
+63.119.82','2025-10-12 08:48:48'),(3951,NULL,20,NULL,'78.163.119.82','2025-10-12 08:48:50'),(3952,NULL,21,NULL,'78.163.
+119.82','2025-10-12 08:48:51'),(3953,NULL,22,NULL,'78.163.119.82','2025-10-12 08:48:52'),(3954,NULL,23,NULL,'78.163.119
+.82','2025-10-12 08:48:53'),(3955,NULL,18,655,'81.8.4.86','2025-10-12 08:48:55'),(3956,NULL,24,NULL,'78.163.119.82','20
+25-10-12 08:48:55'),(3957,NULL,25,NULL,'78.163.119.82','2025-10-12 08:48:56'),(3958,NULL,18,657,'81.8.4.86','2025-10-12
+ 08:48:56'),(3959,NULL,26,NULL,'78.163.119.82','2025-10-12 08:48:57'),(3960,NULL,18,659,'81.8.4.86','2025-10-12 08:48:5
+8'),(3961,38,NULL,NULL,'46.155.72.251','2025-10-12 08:49:00'),(3962,NULL,48,35,'5.25.16.63','2025-10-12 08:49:02'),(396
+4,38,NULL,NULL,'78.190.144.57','2025-10-12 08:49:07'),(3965,NULL,46,NULL,'78.173.36.194','2025-10-12 08:49:12'),(3966,N
+ULL,47,NULL,'46.155.72.251','2025-10-12 08:49:22'),(3968,38,NULL,NULL,'176.238.184.127','2025-10-12 08:49:35'),(3969,NU
+LL,48,41,'5.25.16.63','2025-10-12 08:49:37'),(3970,NULL,56,NULL,'78.174.206.225','2025-10-12 08:49:37'),(3971,NULL,58,N
+ULL,'109.228.195.199','2025-10-12 08:49:41'),(3974,NULL,48,43,'5.25.16.63','2025-10-12 08:49:53'),(3976,NULL,17,NULL,'8
+8.244.162.120','2025-10-12 08:49:58'),(3977,38,NULL,NULL,'78.190.196.229','2025-10-12 08:50:04'),(3979,38,NULL,NULL,'17
+6.40.244.214','2025-10-12 08:50:11'),(3981,2,NULL,NULL,'176.40.244.214','2025-10-12 08:50:13'),(3982,NULL,16,72,'88.245
+.206.100','2025-10-12 08:50:13'),(3983,38,NULL,NULL,'160.159.252.0','2025-10-12 08:50:20'),(3985,38,NULL,NULL,'88.234.1
+98.92','2025-10-12 08:50:40'),(3986,2,NULL,NULL,'176.90.158.156','2025-10-12 08:50:42'),(3987,38,NULL,NULL,'95.86.188.2
+09','2025-10-12 08:50:50'),(3988,NULL,57,NULL,'85.106.151.75','2025-10-12 08:50:53'),(3989,NULL,41,563,'78.163.104.187'
+,'2025-10-12 08:50:57'),(3991,NULL,27,NULL,'81.8.4.86','2025-10-12 08:51:00'),(3996,NULL,58,NULL,'160.159.252.0','2025-
+10-12 08:51:06'),(3997,NULL,58,NULL,'5.47.164.175','2025-10-12 08:51:07'),(4001,38,NULL,NULL,'88.240.180.125','2025-10-
+12 08:51:13'),(4002,NULL,41,559,'78.163.104.187','2025-10-12 08:51:13'),(4003,NULL,28,NULL,'81.8.4.86','2025-10-12 08:5
+1:15'),(4004,NULL,41,557,'78.163.104.187','2025-10-12 08:51:15'),(4005,38,NULL,NULL,'85.97.2.245','2025-10-12 08:51:15'
+),(4006,NULL,41,561,'78.163.104.187','2025-10-12 08:51:17'),(4007,NULL,16,NULL,'85.97.2.245','2025-10-12 08:51:24'),(40
+08,NULL,18,NULL,'85.97.2.245','2025-10-12 08:51:25'),(4009,NULL,29,NULL,'81.8.4.86','2025-10-12 08:51:26'),(4010,NULL,1
+9,NULL,'85.97.2.245','2025-10-12 08:51:26'),(4011,NULL,41,565,'78.163.104.187','2025-10-12 08:51:26'),(4012,NULL,20,NUL
+L,'85.97.2.245','2025-10-12 08:51:27'),(4013,NULL,21,NULL,'85.97.2.245','2025-10-12 08:51:29'),(4014,NULL,22,NULL,'85.9
+7.2.245','2025-10-12 08:51:30'),(4015,NULL,23,NULL,'85.97.2.245','2025-10-12 08:51:32'),(4016,NULL,24,NULL,'85.97.2.245
+','2025-10-12 08:51:33'),(4017,NULL,25,NULL,'85.97.2.245','2025-10-12 08:51:34'),(4018,NULL,26,NULL,'85.97.2.245','2025
+-10-12 08:51:36'),(4019,NULL,30,NULL,'81.8.4.86','2025-10-12 08:51:36'),(4020,NULL,27,NULL,'85.97.2.245','2025-10-12 08
+:51:39'),(4021,NULL,28,NULL,'85.97.2.245','2025-10-12 08:51:40'),(4022,NULL,29,NULL,'85.97.2.245','2025-10-12 08:51:43'
+),(4023,NULL,30,NULL,'85.97.2.245','2025-10-12 08:51:45'),(4024,NULL,31,NULL,'85.97.2.245','2025-10-12 08:51:46'),(4025
+,NULL,32,NULL,'85.97.2.245','2025-10-12 08:51:48'),(4026,NULL,33,NULL,'85.97.2.245','2025-10-12 08:51:49'),(4027,38,NUL
+L,NULL,'149.140.80.61','2025-10-12 08:51:50'),(4028,NULL,40,NULL,'85.97.2.245','2025-10-12 08:51:50'),(4029,NULL,41,NUL
+L,'85.97.2.245','2025-10-12 08:51:52'),(4030,NULL,42,NULL,'85.97.2.245','2025-10-12 08:51:53'),(4031,NULL,31,NULL,'81.8
+.4.86','2025-10-12 08:51:54'),(4032,NULL,43,NULL,'85.97.2.245','2025-10-12 08:51:55'),(4033,NULL,44,NULL,'85.97.2.245',
+'2025-10-12 08:51:56'),(4034,38,NULL,NULL,'185.93.91.81','2025-10-12 08:51:56'),(4035,NULL,45,NULL,'85.97.2.245','2025-
+10-12 08:51:58'),(4036,NULL,46,NULL,'85.97.2.245','2025-10-12 08:51:59'),(4037,38,NULL,NULL,'85.106.144.107','2025-10-1
+2 08:51:59'),(4038,NULL,47,NULL,'85.97.2.245','2025-10-12 08:52:00'),(4039,NULL,48,NULL,'85.97.2.245','2025-10-12 08:52
+:01'),(4040,NULL,49,NULL,'85.97.2.245','2025-10-12 08:52:03'),(4041,NULL,50,NULL,'85.97.2.245','2025-10-12 08:52:04'),(
+4042,38,NULL,NULL,'88.242.204.98','2025-10-12 08:52:04'),(4043,NULL,51,NULL,'85.97.2.245','2025-10-12 08:52:05'),(4044,
+NULL,52,NULL,'85.97.2.245','2025-10-12 08:52:07'),(4045,2,NULL,NULL,'88.242.204.98','2025-10-12 08:52:08'),(4046,NULL,5
+3,NULL,'85.97.2.245','2025-10-12 08:52:12'),(4047,NULL,54,NULL,'85.97.2.245','2025-10-12 08:52:14'),(4048,NULL,57,NULL,
+'149.140.80.61','2025-10-12 08:52:15'),(4049,NULL,58,NULL,'149.140.80.61','2025-10-12 08:52:16'),(4050,NULL,32,NULL,'81
+.8.4.86','2025-10-12 08:52:17'),(4051,NULL,56,NULL,'149.140.80.61','2025-10-12 08:52:17'),(4052,38,NULL,NULL,'85.106.14
+4.107','2025-10-12 08:52:18'),(4053,NULL,55,NULL,'149.140.80.61','2025-10-12 08:52:19'),(4054,NULL,41,887,'78.163.104.1
+87','2025-10-12 08:52:19'),(4055,NULL,55,NULL,'85.97.2.245','2025-10-12 08:52:21'),(4057,38,NULL,NULL,'57.129.52.38','2
+025-10-12 08:52:24'),(4058,NULL,56,NULL,'85.97.2.245','2025-10-12 08:52:24'),(4059,38,NULL,NULL,'78.173.12.190','2025-1
+0-12 08:52:26'),(4060,NULL,58,NULL,'85.110.240.94','2025-10-12 08:52:27'),(4061,2,NULL,NULL,'176.216.44.168','2025-10-1
+2 08:52:27'),(4062,NULL,57,NULL,'85.97.2.245','2025-10-12 08:52:28'),(4063,38,NULL,NULL,'176.216.44.168','2025-10-12 08
+:52:29'),(4064,NULL,58,NULL,'85.97.2.245','2025-10-12 08:52:29'),(4065,38,NULL,NULL,'78.187.1.21','2025-10-12 08:52:30'
+),(4066,38,NULL,NULL,'31.206.98.15','2025-10-12 08:52:32'),(4067,2,NULL,NULL,'31.206.98.15','2025-10-12 08:52:35'),(406
+8,NULL,58,NULL,'78.161.76.196','2025-10-12 08:52:37'),(4069,38,NULL,NULL,'78.190.220.136','2025-10-12 08:52:38'),(4070,
+2,NULL,NULL,'37.166.75.21','2025-10-12 08:52:43'),(4071,38,NULL,NULL,'178.245.91.44','2025-10-12 08:52:44'),(4072,NULL,
+41,897,'78.163.104.187','2025-10-12 08:52:53'),(4073,38,NULL,NULL,'94.235.232.244','2025-10-12 08:52:57'),(4074,2,NULL,
+NULL,'94.235.232.244','2025-10-12 08:52:59'),(4075,NULL,58,NULL,'78.187.1.21','2025-10-12 08:53:07'),(4076,NULL,33,NULL
+,'81.8.4.86','2025-10-12 08:53:07'),(4077,NULL,41,909,'78.163.104.187','2025-10-12 08:53:10'),(4079,NULL,18,9,'31.155.1
+22.204','2025-10-12 08:53:23'),(4080,NULL,18,NULL,'31.155.122.204','2025-10-12 08:53:31'),(4081,NULL,17,1,'37.166.75.21
+','2025-10-12 08:53:33'),(4082,NULL,41,929,'78.163.104.187','2025-10-12 08:53:33'),(4083,38,NULL,NULL,'88.236.73.43','2
+025-10-12 08:53:36'),(4084,NULL,16,NULL,'88.236.73.43','2025-10-12 08:53:39'),(4085,NULL,18,NULL,'88.236.73.43','2025-1
+0-12 08:53:40'),(4086,38,NULL,NULL,'88.242.204.98','2025-10-12 08:53:40'),(4087,NULL,19,NULL,'88.236.73.43','2025-10-12
+ 08:53:41'),(4088,NULL,19,NULL,'31.155.122.204','2025-10-12 08:53:43'),(4089,NULL,20,NULL,'88.236.73.43','2025-10-12 08
+:53:43'),(4090,NULL,21,NULL,'88.236.73.43','2025-10-12 08:53:44'),(4091,NULL,22,NULL,'88.236.73.43','2025-10-12 08:53:4
+5'),(4092,NULL,23,NULL,'88.236.73.43','2025-10-12 08:53:45'),(4093,NULL,58,NULL,'176.240.96.116','2025-10-12 08:53:47')
+,(4094,NULL,24,NULL,'88.236.73.43','2025-10-12 08:53:47'),(4095,NULL,25,NULL,'88.236.73.43','2025-10-12 08:53:48'),(409
+6,NULL,26,NULL,'88.236.73.43','2025-10-12 08:53:48'),(4097,NULL,28,NULL,'88.236.73.43','2025-10-12 08:53:51'),(4098,38,
+NULL,NULL,'94.235.247.62','2025-10-12 08:53:52'),(4099,NULL,27,NULL,'88.236.73.43','2025-10-12 08:53:55'),(4100,NULL,16
+,NULL,'85.97.2.245','2025-10-12 08:53:56'),(4101,NULL,29,NULL,'88.236.73.43','2025-10-12 08:53:56'),(4102,NULL,30,NULL,
+'88.236.73.43','2025-10-12 08:53:57'),(4103,NULL,18,NULL,'85.97.2.245','2025-10-12 08:53:57'),(4104,NULL,19,NULL,'85.97
+.2.245','2025-10-12 08:53:58'),(4105,NULL,31,NULL,'88.236.73.43','2025-10-12 08:53:58'),(4106,NULL,32,NULL,'88.236.73.4
+3','2025-10-12 08:54:00'),(4107,NULL,20,NULL,'85.97.2.245','2025-10-12 08:54:00'),(4108,NULL,33,NULL,'88.236.73.43','20
+25-10-12 08:54:01'),(4109,NULL,40,NULL,'81.8.4.86','2025-10-12 08:54:01'),(4110,NULL,40,NULL,'88.236.73.43','2025-10-12
+ 08:54:02'),(4111,NULL,17,37,'88.244.162.120','2025-10-12 08:54:02'),(4112,NULL,21,NULL,'85.97.2.245','2025-10-12 08:54
+:02'),(4113,NULL,41,NULL,'88.236.73.43','2025-10-12 08:54:03'),(4114,NULL,17,39,'88.244.162.120','2025-10-12 08:54:03')
+,(4115,NULL,22,NULL,'85.97.2.245','2025-10-12 08:54:03'),(4116,NULL,42,NULL,'88.236.73.43','2025-10-12 08:54:04'),(4118
+,NULL,43,NULL,'88.236.73.43','2025-10-12 08:54:05'),(4119,NULL,23,NULL,'85.97.2.245','2025-10-12 08:54:05'),(4120,NULL,
+44,NULL,'88.236.73.43','2025-10-12 08:54:06'),(4121,NULL,24,NULL,'85.97.2.245','2025-10-12 08:54:06'),(4122,NULL,17,35,
+'88.244.162.120','2025-10-12 08:54:07'),(4123,NULL,45,NULL,'88.236.73.43','2025-10-12 08:54:07'),(4124,NULL,25,NULL,'85
+.97.2.245','2025-10-12 08:54:08'),(4126,NULL,46,NULL,'88.236.73.43','2025-10-12 08:54:08'),(4127,NULL,17,33,'88.244.162
+.120','2025-10-12 08:54:09'),(4128,NULL,47,NULL,'88.236.73.43','2025-10-12 08:54:09'),(4129,NULL,57,553,'193.143.231.19
+7','2025-10-12 08:54:10'),(4130,NULL,26,NULL,'85.97.2.245','2025-10-12 08:54:10'),(4131,NULL,48,NULL,'88.236.73.43','20
+25-10-12 08:54:11'),(4132,NULL,17,31,'88.244.162.120','2025-10-12 08:54:11'),(4133,NULL,49,NULL,'88.236.73.43','2025-10
+-12 08:54:12'),(4134,NULL,50,NULL,'88.236.73.43','2025-10-12 08:54:13'),(4135,NULL,27,NULL,'85.97.2.245','2025-10-12 08
+:54:13'),(4136,NULL,17,29,'88.244.162.120','2025-10-12 08:54:13'),(4137,NULL,51,NULL,'88.236.73.43','2025-10-12 08:54:1
+4'),(4138,NULL,28,NULL,'85.97.2.245','2025-10-12 08:54:14'),(4139,2,NULL,NULL,'37.166.75.21','2025-10-12 08:54:14'),(41
+40,NULL,52,NULL,'88.236.73.43','2025-10-12 08:54:15'),(4141,NULL,29,NULL,'85.97.2.245','2025-10-12 08:54:15'),(4142,NUL
+L,41,957,'78.163.104.187','2025-10-12 08:54:16'),(4143,NULL,53,NULL,'88.236.73.43','2025-10-12 08:54:16'),(4144,NULL,30
+,NULL,'85.97.2.245','2025-10-12 08:54:17'),(4145,NULL,54,NULL,'88.236.73.43','2025-10-12 08:54:17'),(4146,NULL,17,1,'88
+.244.162.120','2025-10-12 08:54:17'),(4147,NULL,31,NULL,'85.97.2.245','2025-10-12 08:54:17'),(4148,NULL,32,NULL,'85.97.
+2.245','2025-10-12 08:54:18'),(4149,NULL,55,NULL,'88.236.73.43','2025-10-12 08:54:18'),(4150,NULL,33,NULL,'85.97.2.245'
+,'2025-10-12 08:54:18'),(4151,NULL,56,NULL,'88.236.73.43','2025-10-12 08:54:19'),(4152,NULL,40,NULL,'85.97.2.245','2025
+-10-12 08:54:20'),(4153,NULL,57,NULL,'88.236.73.43','2025-10-12 08:54:20'),(4154,NULL,41,NULL,'85.97.2.245','2025-10-12
+ 08:54:21'),(4155,NULL,42,NULL,'85.97.2.245','2025-10-12 08:54:21'),(4156,NULL,58,NULL,'88.236.73.43','2025-10-12 08:54
+:22'),(4157,NULL,43,NULL,'85.97.2.245','2025-10-12 08:54:22'),(4158,NULL,44,NULL,'85.97.2.245','2025-10-12 08:54:23'),(
+4159,NULL,45,NULL,'85.97.2.245','2025-10-12 08:54:24'),(4160,NULL,46,NULL,'85.97.2.245','2025-10-12 08:54:25'),(4161,NU
+LL,47,NULL,'85.97.2.245','2025-10-12 08:54:26'),(4162,NULL,48,NULL,'85.97.2.245','2025-10-12 08:54:27'),(4163,NULL,49,N
+ULL,'85.97.2.245','2025-10-12 08:54:28'),(4164,NULL,41,NULL,'81.8.4.86','2025-10-12 08:54:29'),(4165,NULL,50,NULL,'85.9
+7.2.245','2025-10-12 08:54:29'),(4166,NULL,51,NULL,'85.97.2.245','2025-10-12 08:54:30'),(4167,NULL,52,NULL,'85.97.2.245
+','2025-10-12 08:54:32'),(4168,NULL,53,NULL,'85.97.2.245','2025-10-12 08:54:34'),(4169,NULL,54,NULL,'85.97.2.245','2025
+-10-12 08:54:35'),(4170,NULL,55,NULL,'85.97.2.245','2025-10-12 08:54:37'),(4171,NULL,18,NULL,'95.70.141.37','2025-10-12
+ 08:54:37'),(4173,NULL,56,NULL,'85.97.2.245','2025-10-12 08:54:38'),(4174,NULL,57,NULL,'85.97.2.245','2025-10-12 08:54:
+39'),(4175,38,NULL,NULL,'158.220.88.77','2025-10-12 08:54:40'),(4177,NULL,41,969,'78.163.104.187','2025-10-12 08:54:44'
+),(4179,2,NULL,NULL,'158.220.88.77','2025-10-12 08:54:47'),(4180,NULL,57,569,'193.143.231.197','2025-10-12 08:54:47'),(
+4181,38,NULL,NULL,'46.106.129.94','2025-10-12 08:54:48'),(4182,38,NULL,NULL,'78.166.217.239','2025-10-12 08:54:58'),(41
+83,NULL,42,NULL,'81.8.4.86','2025-10-12 08:55:02'),(4184,NULL,17,3,'88.244.162.120','2025-10-12 08:55:04'),(4185,NULL,1
+7,5,'88.244.162.120','2025-10-12 08:55:05'),(4186,NULL,26,NULL,'31.155.122.204','2025-10-12 08:55:09'),(4187,NULL,17,7,
+'88.244.162.120','2025-10-12 08:55:09'),(4188,NULL,17,9,'88.244.162.120','2025-10-12 08:55:11'),(4189,2,NULL,NULL,'149.
+140.80.61','2025-10-12 08:55:11'),(4190,NULL,17,11,'88.244.162.120','2025-10-12 08:55:12'),(4191,NULL,17,13,'88.244.162
+.120','2025-10-12 08:55:14'),(4192,NULL,17,15,'88.244.162.120','2025-10-12 08:55:16'),(4194,NULL,17,17,'88.244.162.120'
+,'2025-10-12 08:55:18'),(4195,NULL,17,19,'88.244.162.120','2025-10-12 08:55:19'),(4196,NULL,16,NULL,'78.167.92.21','202
+5-10-12 08:55:19'),(4197,NULL,18,NULL,'78.167.92.21','2025-10-12 08:55:20'),(4198,38,NULL,NULL,'46.154.231.150','2025-1
+0-12 08:55:21'),(4199,NULL,17,21,'88.244.162.120','2025-10-12 08:55:21'),(4200,NULL,16,18,'185.47.7.112','2025-10-12 08
+:55:22'),(4201,NULL,19,NULL,'78.167.92.21','2025-10-12 08:55:23'),(4202,NULL,17,23,'88.244.162.120','2025-10-12 08:55:2
+4'),(4203,NULL,20,NULL,'78.167.92.21','2025-10-12 08:55:24'),(4204,NULL,21,NULL,'78.167.92.21','2025-10-12 08:55:26'),(
+4205,NULL,17,25,'88.244.162.120','2025-10-12 08:55:26'),(4206,38,NULL,NULL,'78.173.48.129','2025-10-12 08:55:26'),(4207
+,NULL,22,NULL,'78.167.92.21','2025-10-12 08:55:27'),(4208,NULL,17,27,'88.244.162.120','2025-10-12 08:55:28'),(4209,NULL
+,23,NULL,'78.167.92.21','2025-10-12 08:55:28'),(4210,2,NULL,NULL,'78.173.48.129','2025-10-12 08:55:29'),(4212,NULL,24,N
+ULL,'78.167.92.21','2025-10-12 08:55:33'),(4213,NULL,25,NULL,'78.167.92.21','2025-10-12 08:55:34'),(4214,NULL,17,41,'88
+.244.162.120','2025-10-12 08:55:36'),(4215,NULL,26,NULL,'78.167.92.21','2025-10-12 08:55:36'),(4216,NULL,27,NULL,'78.16
+7.92.21','2025-10-12 08:55:39'),(4217,38,NULL,NULL,'46.154.231.150','2025-10-12 08:55:41'),(4218,2,NULL,NULL,'46.104.28
+.72','2025-10-12 08:55:41'),(4219,NULL,28,NULL,'78.167.92.21','2025-10-12 08:55:41'),(4220,NULL,29,NULL,'78.167.92.21',
+'2025-10-12 08:55:43'),(4221,NULL,30,NULL,'78.167.92.21','2025-10-12 08:55:44'),(4222,NULL,43,NULL,'81.8.4.86','2025-10
+-12 08:55:44'),(4223,NULL,31,NULL,'78.167.92.21','2025-10-12 08:55:45'),(4224,NULL,32,NULL,'78.167.92.21','2025-10-12 0
+8:55:47'),(4225,NULL,17,43,'88.244.162.120','2025-10-12 08:55:48'),(4226,NULL,33,NULL,'78.167.92.21','2025-10-12 08:55:
+48'),(4227,38,NULL,NULL,'78.190.5.100','2025-10-12 08:55:49'),(4228,NULL,40,NULL,'78.167.92.21','2025-10-12 08:55:49'),
+(4229,NULL,16,NULL,'85.103.17.164','2025-10-12 08:55:50'),(4230,NULL,41,NULL,'78.167.92.21','2025-10-12 08:55:51'),(423
+1,NULL,42,NULL,'78.167.92.21','2025-10-12 08:55:53'),(4232,NULL,43,NULL,'78.167.92.21','2025-10-12 08:55:54'),(4233,NUL
+L,44,NULL,'78.167.92.21','2025-10-12 08:55:55'),(4234,NULL,45,NULL,'78.167.92.21','2025-10-12 08:55:56'),(4235,NULL,46,
+NULL,'78.167.92.21','2025-10-12 08:55:58'),(4236,NULL,47,NULL,'78.167.92.21','2025-10-12 08:55:59'),(4237,NULL,48,NULL,
+'78.167.92.21','2025-10-12 08:56:01'),(4238,NULL,17,45,'88.244.162.120','2025-10-12 08:56:01'),(4239,NULL,49,NULL,'78.1
+67.92.21','2025-10-12 08:56:02'),(4240,NULL,50,NULL,'78.167.92.21','2025-10-12 08:56:03'),(4241,NULL,51,NULL,'78.167.92
+.21','2025-10-12 08:56:05'),(4242,NULL,52,NULL,'78.167.92.21','2025-10-12 08:56:07'),(4243,NULL,53,NULL,'78.167.92.21',
+'2025-10-12 08:56:08'),(4244,NULL,33,NULL,'78.166.217.239','2025-10-12 08:56:09'),(4245,NULL,54,NULL,'78.167.92.21','20
+25-10-12 08:56:09'),(4246,NULL,55,NULL,'78.167.92.21','2025-10-12 08:56:11'),(4247,NULL,17,47,'88.244.162.120','2025-10
+-12 08:56:11'),(4248,NULL,56,NULL,'78.167.92.21','2025-10-12 08:56:12'),(4249,38,NULL,NULL,'37.166.75.21','2025-10-12 0
+8:56:12'),(4250,NULL,57,NULL,'78.167.92.21','2025-10-12 08:56:13'),(4251,NULL,58,NULL,'78.167.92.21','2025-10-12 08:56:
+16'),(4252,NULL,17,49,'88.244.162.120','2025-10-12 08:56:20'),(4253,NULL,17,51,'88.244.162.120','2025-10-12 08:56:26'),
+(4254,NULL,17,53,'88.244.162.120','2025-10-12 08:56:47'),(4255,NULL,17,55,'88.244.162.120','2025-10-12 08:56:59'),(4256
+,38,NULL,NULL,'46.104.28.72','2025-10-12 08:57:00'),(4257,38,NULL,NULL,'24.133.92.219','2025-10-12 08:57:05'),(4258,2,N
+ULL,NULL,'78.135.69.129','2025-10-12 08:57:08'),(4259,2,NULL,NULL,'24.133.92.219','2025-10-12 08:57:09'),(4260,38,NULL,
+NULL,'159.146.66.202','2025-10-12 08:57:16'),(4262,38,NULL,NULL,'85.103.148.133','2025-10-12 08:57:22'),(4263,NULL,17,5
+7,'88.244.162.120','2025-10-12 08:57:23'),(4264,2,NULL,NULL,'85.103.148.133','2025-10-12 08:57:24'),(4265,38,NULL,NULL,
+'46.154.157.36','2025-10-12 08:57:26'),(4266,38,NULL,NULL,'95.65.211.231','2025-10-12 08:57:33'),(4267,NULL,16,NULL,'15
+9.146.66.202','2025-10-12 08:57:33'),(4268,NULL,17,59,'88.244.162.120','2025-10-12 08:57:34'),(4269,2,NULL,NULL,'95.65.
+211.231','2025-10-12 08:57:35'),(4270,38,NULL,NULL,'85.103.148.133','2025-10-12 08:57:40'),(4271,NULL,55,NULL,'77.67.17
+0.154','2025-10-12 08:57:40'),(4272,NULL,16,NULL,'85.103.148.133','2025-10-12 08:57:44'),(4273,38,NULL,NULL,'151.250.18
+4.2','2025-10-12 08:57:44'),(4274,NULL,18,NULL,'85.103.148.133','2025-10-12 08:57:45'),(4275,NULL,19,NULL,'85.103.148.1
+33','2025-10-12 08:57:47'),(4276,NULL,20,NULL,'85.103.148.133','2025-10-12 08:57:49'),(4277,NULL,34,NULL,'188.57.53.105
+','2025-10-12 08:57:50'),(4278,NULL,21,NULL,'85.103.148.133','2025-10-12 08:57:51'),(4279,NULL,35,NULL,'188.57.53.105',
+'2025-10-12 08:57:51'),(4280,NULL,58,NULL,'151.250.0.247','2025-10-12 08:57:51'),(4281,NULL,36,NULL,'188.57.53.105','20
+25-10-12 08:57:52'),(4282,NULL,17,61,'88.244.162.120','2025-10-12 08:57:52'),(4283,NULL,22,NULL,'85.103.148.133','2025-
+10-12 08:57:53'),(4284,NULL,37,NULL,'188.57.53.105','2025-10-12 08:57:53'),(4285,NULL,38,NULL,'188.57.53.105','2025-10-
+12 08:57:54'),(4286,NULL,16,NULL,'151.250.184.2','2025-10-12 08:57:54'),(4287,NULL,18,NULL,'151.250.184.2','2025-10-12 
+08:57:55'),(4288,NULL,23,NULL,'85.103.148.133','2025-10-12 08:57:55'),(4289,38,NULL,NULL,'95.13.30.220','2025-10-12 08:
+57:56'),(4290,NULL,19,NULL,'151.250.184.2','2025-10-12 08:57:56'),(4291,NULL,24,NULL,'85.103.148.133','2025-10-12 08:57
+:56'),(4292,NULL,20,NULL,'151.250.184.2','2025-10-12 08:57:57'),(4293,NULL,25,NULL,'85.103.148.133','2025-10-12 08:57:5
+7'),(4294,NULL,16,264,'176.42.61.170','2025-10-12 08:57:57'),(4295,NULL,21,NULL,'151.250.184.2','2025-10-12 08:57:58'),
+(4296,NULL,26,NULL,'85.103.148.133','2025-10-12 08:57:59'),(4297,NULL,22,NULL,'151.250.184.2','2025-10-12 08:58:00'),(4
+298,NULL,23,NULL,'151.250.184.2','2025-10-12 08:58:00'),(4299,NULL,27,NULL,'85.103.148.133','2025-10-12 08:58:01'),(430
+0,NULL,24,NULL,'151.250.184.2','2025-10-12 08:58:02'),(4301,NULL,28,NULL,'85.103.148.133','2025-10-12 08:58:02'),(4302,
+NULL,17,63,'88.244.162.120','2025-10-12 08:58:03'),(4303,NULL,29,NULL,'85.103.148.133','2025-10-12 08:58:04'),(4304,NUL
+L,25,NULL,'151.250.184.2','2025-10-12 08:58:04'),(4305,NULL,26,NULL,'151.250.184.2','2025-10-12 08:58:05'),(4306,NULL,3
+0,NULL,'85.103.148.133','2025-10-12 08:58:05'),(4307,NULL,31,NULL,'85.103.148.133','2025-10-12 08:58:07'),(4308,NULL,32
+,NULL,'85.103.148.133','2025-10-12 08:58:08'),(4309,NULL,27,NULL,'151.250.184.2','2025-10-12 08:58:08'),(4310,NULL,33,N
+ULL,'85.103.148.133','2025-10-12 08:58:09'),(4311,NULL,28,NULL,'151.250.184.2','2025-10-12 08:58:09'),(4312,NULL,40,NUL
+L,'85.103.148.133','2025-10-12 08:58:09'),(4313,NULL,29,NULL,'151.250.184.2','2025-10-12 08:58:11'),(4314,NULL,41,NULL,
+'85.103.148.133','2025-10-12 08:58:11'),(4315,NULL,30,NULL,'151.250.184.2','2025-10-12 08:58:12'),(4316,NULL,42,NULL,'8
+5.103.148.133','2025-10-12 08:58:12'),(4317,NULL,31,NULL,'151.250.184.2','2025-10-12 08:58:12'),(4318,NULL,43,NULL,'85.
+103.148.133','2025-10-12 08:58:13'),(4319,NULL,16,266,'176.42.61.170','2025-10-12 08:58:14'),(4320,NULL,32,NULL,'151.25
+0.184.2','2025-10-12 08:58:14'),(4321,NULL,33,NULL,'151.250.184.2','2025-10-12 08:58:15'),(4322,NULL,40,NULL,'151.250.1
+84.2','2025-10-12 08:58:16'),(4323,NULL,44,NULL,'85.103.148.133','2025-10-12 08:58:16'),(4324,NULL,41,NULL,'151.250.184
+.2','2025-10-12 08:58:16'),(4325,NULL,45,NULL,'85.103.148.133','2025-10-12 08:58:17'),(4326,NULL,42,NULL,'151.250.184.2
+','2025-10-12 08:58:17'),(4327,NULL,46,NULL,'85.103.148.133','2025-10-12 08:58:17'),(4328,NULL,43,NULL,'151.250.184.2',
+'2025-10-12 08:58:19'),(4329,NULL,44,NULL,'151.250.184.2','2025-10-12 08:58:20'),(4330,NULL,47,NULL,'85.103.148.133','2
+025-10-12 08:58:20'),(4331,NULL,48,NULL,'85.103.148.133','2025-10-12 08:58:20'),(4332,NULL,45,NULL,'151.250.184.2','202
+5-10-12 08:58:21'),(4333,NULL,46,NULL,'151.250.184.2','2025-10-12 08:58:22'),(4334,NULL,49,NULL,'85.103.148.133','2025-
+10-12 08:58:22'),(4335,NULL,47,NULL,'151.250.184.2','2025-10-12 08:58:23'),(4336,NULL,50,NULL,'85.103.148.133','2025-10
+-12 08:58:23'),(4337,NULL,58,NULL,'88.236.13.35','2025-10-12 08:58:23'),(4338,NULL,48,NULL,'151.250.184.2','2025-10-12 
+08:58:24'),(4339,NULL,51,NULL,'85.103.148.133','2025-10-12 08:58:24'),(4340,NULL,52,NULL,'85.103.148.133','2025-10-12 0
+8:58:24'),(4341,NULL,49,NULL,'151.250.184.2','2025-10-12 08:58:25'),(4342,NULL,50,NULL,'151.250.184.2','2025-10-12 08:5
+8:25'),(4343,NULL,53,NULL,'85.103.148.133','2025-10-12 08:58:26'),(4344,NULL,54,NULL,'85.103.148.133','2025-10-12 08:58
+:27'),(4345,NULL,52,NULL,'151.250.184.2','2025-10-12 08:58:27'),(4346,NULL,55,NULL,'85.103.148.133','2025-10-12 08:58:2
+8'),(4347,NULL,51,NULL,'151.250.184.2','2025-10-12 08:58:28'),(4348,NULL,53,NULL,'151.250.184.2','2025-10-12 08:58:29')
+,(4349,NULL,54,NULL,'151.250.184.2','2025-10-12 08:58:29'),(4350,NULL,17,65,'88.244.162.120','2025-10-12 08:58:29'),(43
+51,NULL,56,NULL,'85.103.148.133','2025-10-12 08:58:29'),(4352,NULL,55,NULL,'151.250.184.2','2025-10-12 08:58:30'),(4353
+,NULL,57,NULL,'85.103.148.133','2025-10-12 08:58:31'),(4354,NULL,58,NULL,'151.250.184.2','2025-10-12 08:58:31'),(4355,N
+ULL,58,NULL,'85.103.148.133','2025-10-12 08:58:31'),(4356,NULL,57,NULL,'151.250.184.2','2025-10-12 08:58:32'),(4357,NUL
+L,56,NULL,'151.250.184.2','2025-10-12 08:58:32'),(4361,NULL,58,NULL,'176.55.70.243','2025-10-12 08:58:53'),(4362,NULL,1
+7,67,'88.244.162.120','2025-10-12 08:58:57'),(4363,2,NULL,NULL,'37.155.161.92','2025-10-12 08:58:59'),(4364,38,NULL,NUL
+L,'37.155.161.92','2025-10-12 08:59:17'),(4365,NULL,58,NULL,'176.33.111.195','2025-10-12 08:59:20'),(4366,NULL,57,NULL,
+'176.33.111.195','2025-10-12 08:59:21'),(4367,38,NULL,NULL,'195.174.53.237','2025-10-12 08:59:22'),(4368,38,NULL,NULL,'
+176.238.128.119','2025-10-12 08:59:32'),(4369,NULL,58,NULL,'78.162.46.238','2025-10-12 08:59:35'),(4370,38,NULL,NULL,'8
+5.106.14.242','2025-10-12 08:59:45'),(4371,2,NULL,NULL,'85.106.14.242','2025-10-12 08:59:48'),(4372,NULL,58,NULL,'31.20
+6.253.248','2025-10-12 08:59:49'),(4373,38,NULL,NULL,'141.196.51.146','2025-10-12 09:00:01'),(4375,38,NULL,NULL,'37.61.
+113.84','2025-10-12 09:00:05'),(4376,NULL,18,NULL,'5.176.154.135','2025-10-12 09:00:19'),(4377,NULL,16,NULL,'5.176.154.
+135','2025-10-12 09:00:20'),(4378,NULL,19,NULL,'5.176.154.135','2025-10-12 09:00:21'),(4379,NULL,20,NULL,'5.176.154.135
+','2025-10-12 09:00:22'),(4380,NULL,21,NULL,'5.176.154.135','2025-10-12 09:00:23'),(4381,38,NULL,NULL,'37.130.86.218','
+2025-10-12 09:00:24'),(4382,NULL,22,NULL,'5.176.154.135','2025-10-12 09:00:25'),(4383,NULL,23,NULL,'5.176.154.135','202
+5-10-12 09:00:26'),(4384,NULL,24,NULL,'5.176.154.135','2025-10-12 09:00:26'),(4385,NULL,25,NULL,'5.176.154.135','2025-1
+0-12 09:00:27'),(4386,NULL,26,NULL,'5.176.154.135','2025-10-12 09:00:28'),(4387,38,NULL,NULL,'62.217.153.9','2025-10-12
+ 09:00:29'),(4388,NULL,27,NULL,'5.176.154.135','2025-10-12 09:00:31'),(4389,NULL,28,NULL,'5.176.154.135','2025-10-12 09
+:00:31'),(4390,NULL,29,NULL,'5.176.154.135','2025-10-12 09:00:32'),(4391,NULL,30,NULL,'5.176.154.135','2025-10-12 09:00
+:34'),(4392,NULL,31,NULL,'5.176.154.135','2025-10-12 09:00:34'),(4393,NULL,32,NULL,'5.176.154.135','2025-10-12 09:00:35
+'),(4394,NULL,33,NULL,'5.176.154.135','2025-10-12 09:00:35'),(4395,NULL,40,NULL,'5.176.154.135','2025-10-12 09:00:37'),
+(4396,NULL,41,NULL,'5.176.154.135','2025-10-12 09:00:39'),(4397,38,NULL,NULL,'78.179.221.183','2025-10-12 09:00:39'),(4
+398,NULL,42,NULL,'5.176.154.135','2025-10-12 09:00:39'),(4399,NULL,43,NULL,'5.176.154.135','2025-10-12 09:00:40'),(4400
+,NULL,44,NULL,'5.176.154.135','2025-10-12 09:00:40'),(4401,NULL,45,NULL,'5.176.154.135','2025-10-12 09:00:42'),(4402,NU
+LL,46,NULL,'5.176.154.135','2025-10-12 09:00:42'),(4403,NULL,47,NULL,'5.176.154.135','2025-10-12 09:00:43'),(4404,NULL,
+48,NULL,'5.176.154.135','2025-10-12 09:00:44'),(4405,NULL,49,NULL,'5.176.154.135','2025-10-12 09:00:46'),(4406,NULL,50,
+NULL,'5.176.154.135','2025-10-12 09:00:47'),(4407,NULL,51,NULL,'5.176.154.135','2025-10-12 09:00:47'),(4408,NULL,52,NUL
+L,'5.176.154.135','2025-10-12 09:00:48'),(4409,NULL,53,NULL,'5.176.154.135','2025-10-12 09:00:48'),(4410,38,NULL,NULL,'
+176.90.132.127','2025-10-12 09:00:54'),(4411,NULL,58,NULL,'31.223.95.236','2025-10-12 09:01:00'),(4412,NULL,57,NULL,'31
+.223.95.236','2025-10-12 09:01:02'),(4413,NULL,56,NULL,'31.223.95.236','2025-10-12 09:01:03'),(4414,NULL,54,NULL,'5.176
+.154.135','2025-10-12 09:01:04'),(4415,NULL,55,NULL,'31.223.95.236','2025-10-12 09:01:04'),(4416,NULL,55,NULL,'5.176.15
+4.135','2025-10-12 09:01:05'),(4417,NULL,56,NULL,'5.176.154.135','2025-10-12 09:01:05'),(4418,NULL,54,NULL,'31.223.95.2
+36','2025-10-12 09:01:06'),(4419,NULL,57,NULL,'5.176.154.135','2025-10-12 09:01:06'),(4420,NULL,53,NULL,'31.223.95.236'
+,'2025-10-12 09:01:06'),(4421,NULL,58,NULL,'5.176.154.135','2025-10-12 09:01:07'),(4422,NULL,52,NULL,'31.223.95.236','2
+025-10-12 09:01:08'),(4423,NULL,51,NULL,'31.223.95.236','2025-10-12 09:01:09'),(4424,NULL,50,NULL,'31.223.95.236','2025
+-10-12 09:01:10'),(4425,NULL,49,NULL,'31.223.95.236','2025-10-12 09:01:10'),(4426,NULL,48,NULL,'31.223.95.236','2025-10
+-12 09:01:11'),(4427,NULL,47,NULL,'31.223.95.236','2025-10-12 09:01:13'),(4428,NULL,46,NULL,'31.223.95.236','2025-10-12
+ 09:01:13'),(4429,NULL,45,NULL,'31.223.95.236','2025-10-12 09:01:14'),(4430,NULL,44,NULL,'31.223.95.236','2025-10-12 09
+:01:15'),(4431,NULL,43,NULL,'31.223.95.236','2025-10-12 09:01:16'),(4432,NULL,41,NULL,'88.230.255.3','2025-10-12 09:01:
+16'),(4433,NULL,42,NULL,'31.223.95.236','2025-10-12 09:01:18'),(4434,NULL,41,NULL,'31.223.95.236','2025-10-12 09:01:18'
+),(4435,NULL,40,NULL,'31.223.95.236','2025-10-12 09:01:19'),(4436,NULL,33,NULL,'31.223.95.236','2025-10-12 09:01:19'),(
+4437,NULL,32,NULL,'31.223.95.236','2025-10-12 09:01:21'),(4438,NULL,31,NULL,'31.223.95.236','2025-10-12 09:01:21'),(443
+9,NULL,30,NULL,'31.223.95.236','2025-10-12 09:01:22'),(4440,NULL,29,NULL,'31.223.95.236','2025-10-12 09:01:23'),(4441,N
+ULL,28,NULL,'31.223.95.236','2025-10-12 09:01:24'),(4442,NULL,27,NULL,'31.223.95.236','2025-10-12 09:01:25'),(4443,NULL
+,26,NULL,'31.223.95.236','2025-10-12 09:01:26'),(4444,NULL,25,NULL,'31.223.95.236','2025-10-12 09:01:31'),(4445,NULL,24
+,NULL,'31.223.95.236','2025-10-12 09:01:33'),(4446,NULL,23,NULL,'31.223.95.236','2025-10-12 09:01:33'),(4447,NULL,16,NU
+LL,'46.106.13.147','2025-10-12 09:01:34'),(4448,NULL,22,NULL,'31.223.95.236','2025-10-12 09:01:35'),(4449,NULL,21,NULL,
+'31.223.95.236','2025-10-12 09:01:35'),(4450,NULL,20,NULL,'31.223.95.236','2025-10-12 09:01:36'),(4451,NULL,19,NULL,'31
+.223.95.236','2025-10-12 09:01:37'),(4452,NULL,18,NULL,'31.223.95.236','2025-10-12 09:01:38'),(4453,NULL,16,NULL,'31.22
+3.95.236','2025-10-12 09:01:39'),(4454,NULL,58,NULL,'46.106.13.147','2025-10-12 09:01:43'),(4455,2,NULL,NULL,'46.221.11
+7.30','2025-10-12 09:01:50'),(4456,NULL,58,NULL,'78.190.151.247','2025-10-12 09:01:53'),(4458,NULL,44,NULL,'78.175.221.
+224','2025-10-12 09:02:39'),(4459,2,NULL,NULL,'37.61.114.71','2025-10-12 09:02:46'),(4460,38,NULL,NULL,'37.61.114.71','
+2025-10-12 09:02:50'),(4461,2,NULL,NULL,'37.61.123.21','2025-10-12 09:03:03'),(4462,NULL,19,NULL,'37.61.114.71','2025-1
+0-12 09:03:05'),(4463,NULL,18,NULL,'37.61.114.71','2025-10-12 09:03:06'),(4464,38,NULL,NULL,'38.114.120.191','2025-10-1
+2 09:03:40'),(4465,38,NULL,NULL,'31.143.124.229','2025-10-12 09:03:40'),(4466,38,NULL,NULL,'78.171.173.111','2025-10-12
+ 09:03:40'),(4467,2,NULL,NULL,'78.171.173.111','2025-10-12 09:03:43'),(4468,38,NULL,NULL,'5.25.17.191','2025-10-12 09:0
+3:47'),(4470,2,NULL,NULL,'31.143.124.229','2025-10-12 09:04:03'),(4471,38,NULL,NULL,'46.196.144.143','2025-10-12 09:04:
+11'),(4472,38,NULL,NULL,'31.145.83.58','2025-10-12 09:04:13'),(4473,2,NULL,NULL,'31.145.83.58','2025-10-12 09:04:14'),(
+4474,NULL,42,NULL,'151.250.79.29','2025-10-12 09:04:33'),(4476,NULL,41,NULL,'151.250.79.29','2025-10-12 09:04:34'),(447
+7,NULL,43,NULL,'151.250.79.29','2025-10-12 09:04:36'),(4478,NULL,44,NULL,'151.250.79.29','2025-10-12 09:04:37'),(4479,N
+ULL,45,NULL,'151.250.79.29','2025-10-12 09:04:38'),(4480,NULL,46,NULL,'151.250.79.29','2025-10-12 09:04:40'),(4481,2,NU
+LL,NULL,'78.190.99.11','2025-10-12 09:04:41'),(4482,NULL,47,NULL,'151.250.79.29','2025-10-12 09:04:41'),(4483,NULL,58,N
+ULL,'176.219.38.47','2025-10-12 09:04:41'),(4485,38,NULL,NULL,'78.190.99.11','2025-10-12 09:04:43'),(4486,NULL,48,NULL,
+'151.250.79.29','2025-10-12 09:04:44'),(4488,NULL,49,NULL,'151.250.79.29','2025-10-12 09:04:45'),(4490,NULL,50,NULL,'15
+1.250.79.29','2025-10-12 09:04:46'),(4491,NULL,51,NULL,'151.250.79.29','2025-10-12 09:04:48'),(4492,38,NULL,NULL,'212.4
+7.128.8','2025-10-12 09:04:48'),(4493,NULL,52,NULL,'151.250.79.29','2025-10-12 09:04:51'),(4494,NULL,53,NULL,'151.250.7
+9.29','2025-10-12 09:04:52'),(4495,NULL,54,NULL,'151.250.79.29','2025-10-12 09:04:54'),(4496,NULL,55,NULL,'151.250.79.2
+9','2025-10-12 09:04:56'),(4497,NULL,56,NULL,'151.250.79.29','2025-10-12 09:04:57'),(4498,38,NULL,NULL,'178.240.58.36',
+'2025-10-12 09:04:58'),(4499,NULL,19,NULL,'5.176.49.35','2025-10-12 09:04:58'),(4500,NULL,57,NULL,'151.250.79.29','2025
+-10-12 09:04:59'),(4501,NULL,18,NULL,'5.176.49.35','2025-10-12 09:05:00'),(4502,NULL,58,NULL,'151.250.79.29','2025-10-1
+2 09:05:00'),(4503,NULL,16,NULL,'5.176.49.35','2025-10-12 09:05:01'),(4504,NULL,20,NULL,'5.176.49.35','2025-10-12 09:05
+:03'),(4505,NULL,21,NULL,'5.176.49.35','2025-10-12 09:05:04'),(4506,NULL,22,NULL,'5.176.49.35','2025-10-12 09:05:06'),(
+4507,NULL,23,NULL,'5.176.49.35','2025-10-12 09:05:07'),(4509,NULL,24,NULL,'5.176.49.35','2025-10-12 09:05:08'),(4510,NU
+LL,25,NULL,'5.176.49.35','2025-10-12 09:05:09'),(4511,NULL,26,NULL,'5.176.49.35','2025-10-12 09:05:11'),(4512,NULL,38,1
+7,'88.230.253.84','2025-10-12 09:05:19'),(4513,NULL,58,NULL,'212.47.128.8','2025-10-12 09:05:22'),(4514,38,NULL,NULL,'1
+59.146.73.83','2025-10-12 09:05:24'),(4516,NULL,16,NULL,'78.161.197.131','2025-10-12 09:05:29'),(4517,NULL,58,NULL,'78.
+161.197.131','2025-10-12 09:05:36'),(4518,38,NULL,NULL,'5.25.157.114','2025-10-12 09:05:45'),(4519,38,NULL,NULL,'92.210
+.204.39','2025-10-12 09:05:49'),(4520,2,NULL,NULL,'5.25.157.114','2025-10-12 09:05:51'),(4521,38,NULL,NULL,'88.230.1.19
+1','2025-10-12 09:06:00'),(4523,38,NULL,NULL,'92.210.204.39','2025-10-12 09:06:19'),(4524,38,NULL,NULL,'188.57.9.142','
+2025-10-12 09:06:24'),(4525,38,NULL,NULL,'5.176.84.14','2025-10-12 09:06:25'),(4527,38,NULL,NULL,'31.145.83.58','2025-1
+0-12 09:06:37'),(4528,38,NULL,NULL,'5.176.84.14','2025-10-12 09:06:39'),(4529,NULL,16,NULL,'5.176.84.14','2025-10-12 09
+:06:42'),(4530,NULL,18,NULL,'5.176.84.14','2025-10-12 09:06:43'),(4531,NULL,19,NULL,'5.176.84.14','2025-10-12 09:06:44'
+),(4532,NULL,20,NULL,'5.176.84.14','2025-10-12 09:06:49'),(4533,NULL,21,NULL,'5.176.84.14','2025-10-12 09:06:50'),(4534
+,NULL,22,NULL,'5.176.84.14','2025-10-12 09:06:52'),(4535,NULL,23,NULL,'5.176.84.14','2025-10-12 09:06:53'),(4536,NULL,2
+4,NULL,'5.176.84.14','2025-10-12 09:06:54'),(4537,NULL,25,NULL,'5.176.84.14','2025-10-12 09:06:56'),(4538,NULL,26,NULL,
+'5.176.84.14','2025-10-12 09:06:57'),(4539,2,NULL,NULL,'176.219.123.23','2025-10-12 09:06:59'),(4540,38,NULL,NULL,'188.
+58.109.193','2025-10-12 09:07:01'),(4541,NULL,16,NULL,'78.190.214.239','2025-10-12 09:07:01'),(4542,38,NULL,NULL,'176.2
+19.123.23','2025-10-12 09:07:01'),(4543,NULL,27,NULL,'5.176.84.14','2025-10-12 09:07:03'),(4544,NULL,28,NULL,'5.176.84.
+14','2025-10-12 09:07:04'),(4545,NULL,29,NULL,'5.176.84.14','2025-10-12 09:07:06'),(4546,NULL,30,NULL,'5.176.84.14','20
+25-10-12 09:07:07'),(4547,NULL,31,NULL,'5.176.84.14','2025-10-12 09:07:08'),(4548,NULL,58,NULL,'178.240.58.36','2025-10
+-12 09:07:08'),(4549,NULL,32,NULL,'5.176.84.14','2025-10-12 09:07:09'),(4550,NULL,26,NULL,'92.210.204.39','2025-10-12 0
+9:07:11'),(4552,NULL,25,NULL,'92.210.204.39','2025-10-12 09:07:12'),(4553,NULL,33,NULL,'5.176.84.14','2025-10-12 09:07:
+12'),(4554,NULL,24,NULL,'92.210.204.39','2025-10-12 09:07:13'),(4555,NULL,40,NULL,'5.176.84.14','2025-10-12 09:07:14'),
+(4556,NULL,16,NULL,'78.180.33.113','2025-10-12 09:07:14'),(4558,NULL,41,NULL,'5.176.84.14','2025-10-12 09:07:15'),(4559
+,NULL,18,NULL,'78.180.33.113','2025-10-12 09:07:16'),(4560,NULL,23,NULL,'92.210.204.39','2025-10-12 09:07:16'),(4561,NU
+LL,22,NULL,'92.210.204.39','2025-10-12 09:07:17'),(4562,NULL,42,NULL,'5.176.84.14','2025-10-12 09:07:17'),(4563,NULL,19
+,NULL,'78.180.33.113','2025-10-12 09:07:17'),(4565,NULL,43,NULL,'5.176.84.14','2025-10-12 09:07:18'),(4566,NULL,20,NULL
+,'78.180.33.113','2025-10-12 09:07:19'),(4567,NULL,21,NULL,'92.210.204.39','2025-10-12 09:07:19'),(4568,NULL,20,NULL,'9
+2.210.204.39','2025-10-12 09:07:20'),(4569,NULL,44,NULL,'5.176.84.14','2025-10-12 09:07:20'),(4570,NULL,21,NULL,'78.180
+.33.113','2025-10-12 09:07:21'),(4571,NULL,19,NULL,'92.210.204.39','2025-10-12 09:07:21'),(4572,NULL,18,NULL,'92.210.20
+4.39','2025-10-12 09:07:21'),(4573,NULL,45,NULL,'5.176.84.14','2025-10-12 09:07:22'),(4574,NULL,22,NULL,'78.180.33.113'
+,'2025-10-12 09:07:22'),(4575,NULL,16,NULL,'92.210.204.39','2025-10-12 09:07:23'),(4576,NULL,46,NULL,'5.176.84.14','202
+5-10-12 09:07:23'),(4577,38,NULL,NULL,'46.155.249.164','2025-10-12 09:07:23'),(4578,NULL,23,NULL,'78.180.33.113','2025-
+10-12 09:07:23'),(4579,NULL,47,NULL,'5.176.84.14','2025-10-12 09:07:25'),(4580,NULL,24,NULL,'78.180.33.113','2025-10-12
+ 09:07:25'),(4581,NULL,27,NULL,'92.210.204.39','2025-10-12 09:07:25'),(4582,NULL,48,NULL,'5.176.84.14','2025-10-12 09:0
+7:26'),(4583,NULL,25,NULL,'78.180.33.113','2025-10-12 09:07:26'),(4584,NULL,28,NULL,'92.210.204.39','2025-10-12 09:07:2
+7'),(4585,NULL,29,NULL,'92.210.204.39','2025-10-12 09:07:27'),(4586,NULL,26,NULL,'78.180.33.113','2025-10-12 09:07:27')
+,(4587,NULL,49,NULL,'5.176.84.14','2025-10-12 09:07:28'),(4588,NULL,30,NULL,'92.210.204.39','2025-10-12 09:07:28'),(458
+9,NULL,31,NULL,'92.210.204.39','2025-10-12 09:07:29'),(4590,NULL,50,NULL,'5.176.84.14','2025-10-12 09:07:29'),(4591,NUL
+L,27,NULL,'78.180.33.113','2025-10-12 09:07:30'),(4592,NULL,32,NULL,'92.210.204.39','2025-10-12 09:07:30'),(4593,NULL,5
+1,NULL,'5.176.84.14','2025-10-12 09:07:30'),(4594,NULL,33,NULL,'92.210.204.39','2025-10-12 09:07:31'),(4595,NULL,28,NUL
+L,'78.180.33.113','2025-10-12 09:07:31'),(4596,NULL,40,NULL,'92.210.204.39','2025-10-12 09:07:31'),(4597,NULL,41,NULL,'
+92.210.204.39','2025-10-12 09:07:32'),(4598,NULL,29,NULL,'78.180.33.113','2025-10-12 09:07:32'),(4599,NULL,52,NULL,'5.1
+76.84.14','2025-10-12 09:07:32'),(4600,NULL,42,NULL,'92.210.204.39','2025-10-12 09:07:33'),(4601,NULL,30,NULL,'78.180.3
+3.113','2025-10-12 09:07:33'),(4602,NULL,53,NULL,'5.176.84.14','2025-10-12 09:07:33'),(4603,NULL,43,NULL,'92.210.204.39
+','2025-10-12 09:07:34'),(4604,NULL,31,NULL,'78.180.33.113','2025-10-12 09:07:34'),(4605,NULL,54,NULL,'5.176.84.14','20
+25-10-12 09:07:35'),(4606,NULL,44,NULL,'92.210.204.39','2025-10-12 09:07:35'),(4607,NULL,45,NULL,'92.210.204.39','2025-
+10-12 09:07:35'),(4608,NULL,32,NULL,'78.180.33.113','2025-10-12 09:07:36'),(4609,NULL,55,NULL,'5.176.84.14','2025-10-12
+ 09:07:36'),(4610,NULL,46,NULL,'92.210.204.39','2025-10-12 09:07:36'),(4611,NULL,47,NULL,'92.210.204.39','2025-10-12 09
+:07:37'),(4612,NULL,48,NULL,'92.210.204.39','2025-10-12 09:07:38'),(4613,NULL,56,NULL,'5.176.84.14','2025-10-12 09:07:3
+8'),(4614,NULL,49,NULL,'92.210.204.39','2025-10-12 09:07:39'),(4615,NULL,50,NULL,'92.210.204.39','2025-10-12 09:07:39')
+,(4616,NULL,57,NULL,'5.176.84.14','2025-10-12 09:07:39'),(4617,NULL,51,NULL,'92.210.204.39','2025-10-12 09:07:40'),(461
+8,NULL,58,NULL,'5.176.84.14','2025-10-12 09:07:41'),(4619,NULL,33,NULL,'78.180.33.113','2025-10-12 09:07:41'),(4620,NUL
+L,52,NULL,'92.210.204.39','2025-10-12 09:07:41'),(4621,NULL,53,NULL,'92.210.204.39','2025-10-12 09:07:42'),(4622,NULL,4
+0,NULL,'78.180.33.113','2025-10-12 09:07:42'),(4623,NULL,54,NULL,'92.210.204.39','2025-10-12 09:07:43'),(4624,NULL,41,N
+ULL,'78.180.33.113','2025-10-12 09:07:43'),(4625,NULL,55,NULL,'92.210.204.39','2025-10-12 09:07:43'),(4626,NULL,56,NULL
+,'92.210.204.39','2025-10-12 09:07:44'),(4627,NULL,42,NULL,'78.180.33.113','2025-10-12 09:07:45'),(4628,NULL,57,NULL,'9
+2.210.204.39','2025-10-12 09:07:45'),(4629,NULL,58,NULL,'92.210.204.39','2025-10-12 09:07:46'),(4630,NULL,43,NULL,'78.1
+80.33.113','2025-10-12 09:07:47'),(4631,NULL,44,NULL,'78.180.33.113','2025-10-12 09:07:49'),(4632,NULL,45,NULL,'78.180.
+33.113','2025-10-12 09:07:52'),(4633,NULL,58,NULL,'78.190.55.12','2025-10-12 09:07:53'),(4634,NULL,46,NULL,'78.180.33.1
+13','2025-10-12 09:07:54'),(4635,NULL,58,NULL,'46.155.78.212','2025-10-12 09:07:55'),(4636,2,NULL,NULL,'88.230.1.191','
+2025-10-12 09:07:56'),(4637,NULL,47,NULL,'78.180.33.113','2025-10-12 09:07:57'),(4638,NULL,48,NULL,'78.180.33.113','202
+5-10-12 09:07:59'),(4639,NULL,49,NULL,'78.180.33.113','2025-10-12 09:08:00'),(4641,NULL,50,NULL,'78.180.33.113','2025-1
+0-12 09:08:02'),(4642,NULL,51,NULL,'78.180.33.113','2025-10-12 09:08:08'),(4643,NULL,52,NULL,'78.180.33.113','2025-10-1
+2 09:08:10'),(4644,NULL,53,NULL,'78.180.33.113','2025-10-12 09:08:12'),(4645,NULL,54,NULL,'78.180.33.113','2025-10-12 0
+9:08:13'),(4646,NULL,55,NULL,'78.180.33.113','2025-10-12 09:08:16'),(4647,NULL,56,NULL,'78.180.33.113','2025-10-12 09:0
+8:18'),(4648,NULL,57,NULL,'78.180.33.113','2025-10-12 09:08:19'),(4649,NULL,58,NULL,'78.180.33.113','2025-10-12 09:08:2
+1'),(4650,NULL,19,NULL,'5.176.126.87','2025-10-12 09:08:25'),(4651,NULL,18,NULL,'5.176.126.87','2025-10-12 09:08:27'),(
+4652,NULL,16,NULL,'5.176.126.87','2025-10-12 09:08:28'),(4654,38,NULL,NULL,'85.99.16.172','2025-10-12 09:08:29'),(4655,
+NULL,18,NULL,'5.176.126.87','2025-10-12 09:08:29'),(4657,NULL,19,NULL,'5.176.126.87','2025-10-12 09:08:31'),(4658,NULL,
+20,NULL,'5.176.126.87','2025-10-12 09:08:32'),(4659,NULL,21,NULL,'5.176.126.87','2025-10-12 09:08:33'),(4660,NULL,51,27
+,'46.106.168.41','2025-10-12 09:08:34'),(4661,NULL,22,NULL,'5.176.126.87','2025-10-12 09:08:35'),(4662,NULL,23,NULL,'5.
+176.126.87','2025-10-12 09:08:35'),(4663,NULL,24,NULL,'5.176.126.87','2025-10-12 09:08:36'),(4664,NULL,25,NULL,'5.176.1
+26.87','2025-10-12 09:08:37'),(4665,NULL,26,NULL,'5.176.126.87','2025-10-12 09:08:38'),(4666,NULL,27,NULL,'5.176.126.87
+','2025-10-12 09:08:41'),(4667,NULL,28,NULL,'5.176.126.87','2025-10-12 09:08:42'),(4668,38,NULL,NULL,'85.98.63.30','202
+5-10-12 09:08:42'),(4669,NULL,29,NULL,'5.176.126.87','2025-10-12 09:08:43'),(4670,NULL,30,NULL,'5.176.126.87','2025-10-
+12 09:08:44'),(4671,NULL,31,NULL,'5.176.126.87','2025-10-12 09:08:45'),(4672,NULL,32,NULL,'5.176.126.87','2025-10-12 09
+:08:46'),(4673,NULL,33,NULL,'5.176.126.87','2025-10-12 09:08:47'),(4674,NULL,40,NULL,'5.176.126.87','2025-10-12 09:08:4
+8'),(4675,NULL,41,NULL,'5.176.126.87','2025-10-12 09:08:49'),(4676,NULL,42,NULL,'5.176.126.87','2025-10-12 09:08:51'),(
+4677,NULL,43,NULL,'5.176.126.87','2025-10-12 09:08:52'),(4678,NULL,44,NULL,'5.176.126.87','2025-10-12 09:08:53'),(4679,
+NULL,45,NULL,'5.176.126.87','2025-10-12 09:08:54'),(4680,NULL,46,NULL,'5.176.126.87','2025-10-12 09:08:55'),(4681,NULL,
+47,NULL,'5.176.126.87','2025-10-12 09:08:57'),(4682,38,NULL,NULL,'78.180.33.113','2025-10-12 09:08:57'),(4684,NULL,48,N
+ULL,'5.176.126.87','2025-10-12 09:08:58'),(4685,NULL,49,NULL,'5.176.126.87','2025-10-12 09:08:59'),(4686,NULL,50,NULL,'
+5.176.126.87','2025-10-12 09:09:00'),(4687,NULL,51,NULL,'5.176.126.87','2025-10-12 09:09:01'),(4688,NULL,57,NULL,'46.10
+6.161.226','2025-10-12 09:09:02'),(4689,NULL,52,NULL,'5.176.126.87','2025-10-12 09:09:02'),(4690,NULL,53,NULL,'5.176.12
+6.87','2025-10-12 09:09:03'),(4691,NULL,16,NULL,'88.236.105.83','2025-10-12 09:09:03'),(4692,NULL,54,NULL,'5.176.126.87
+','2025-10-12 09:09:04'),(4693,NULL,16,NULL,'85.98.63.30','2025-10-12 09:09:04'),(4694,NULL,55,NULL,'5.176.126.87','202
+5-10-12 09:09:05'),(4695,NULL,56,NULL,'5.176.126.87','2025-10-12 09:09:06'),(4696,NULL,57,NULL,'5.176.126.87','2025-10-
+12 09:09:07'),(4697,NULL,58,NULL,'5.176.126.87','2025-10-12 09:09:08'),(4698,38,NULL,NULL,'85.106.99.34','2025-10-12 09
+:09:14'),(4699,NULL,29,NULL,'85.106.99.34','2025-10-12 09:09:32'),(4700,NULL,30,NULL,'85.106.99.34','2025-10-12 09:09:3
+3'),(4701,NULL,28,NULL,'85.106.99.34','2025-10-12 09:09:34'),(4702,NULL,27,NULL,'85.106.99.34','2025-10-12 09:09:35'),(
+4703,38,NULL,NULL,'82.194.22.248','2025-10-12 09:09:36'),(4704,38,NULL,NULL,'5.176.126.87','2025-10-12 09:09:38'),(4705
+,NULL,58,NULL,'176.233.26.130','2025-10-12 09:09:42'),(4706,38,NULL,NULL,'78.181.161.35','2025-10-12 09:09:44'),(4707,N
+ULL,58,NULL,'85.106.99.34','2025-10-12 09:09:45'),(4708,NULL,57,NULL,'85.106.99.34','2025-10-12 09:09:45'),(4709,NULL,5
+6,NULL,'85.106.99.34','2025-10-12 09:09:46'),(4711,NULL,55,NULL,'85.106.99.34','2025-10-12 09:09:47'),(4712,NULL,54,NUL
+L,'85.106.99.34','2025-10-12 09:09:47'),(4713,NULL,51,37,'46.106.168.41','2025-10-12 09:09:49'),(4714,NULL,51,39,'46.10
+6.168.41','2025-10-12 09:09:59'),(4715,38,NULL,NULL,'176.227.12.43','2025-10-12 09:10:33'),(4716,NULL,58,NULL,'88.230.8
+5.7','2025-10-12 09:10:47'),(4717,38,NULL,NULL,'85.153.232.139','2025-10-12 09:10:47'),(4718,38,NULL,NULL,'5.47.246.63'
+,'2025-10-12 09:10:48'),(4719,NULL,57,NULL,'88.230.85.7','2025-10-12 09:10:49'),(4720,NULL,16,NULL,'85.153.232.139','20
+25-10-12 09:10:50'),(4721,NULL,56,NULL,'88.230.85.7','2025-10-12 09:10:50'),(4722,NULL,55,NULL,'88.230.85.7','2025-10-1
+2 09:10:50'),(4723,NULL,18,NULL,'85.153.232.139','2025-10-12 09:10:51'),(4724,NULL,54,NULL,'88.230.85.7','2025-10-12 09
+:10:52'),(4725,NULL,19,NULL,'85.153.232.139','2025-10-12 09:10:52'),(4726,NULL,53,NULL,'88.230.85.7','2025-10-12 09:10:
+52'),(4727,NULL,57,NULL,'88.230.255.3','2025-10-12 09:10:53'),(4728,NULL,20,NULL,'85.153.232.139','2025-10-12 09:10:53'
+),(4729,NULL,52,NULL,'88.230.85.7','2025-10-12 09:10:53'),(4730,NULL,21,NULL,'85.153.232.139','2025-10-12 09:10:54'),(4
+731,NULL,51,NULL,'88.230.85.7','2025-10-12 09:10:54'),(4732,NULL,50,NULL,'88.230.85.7','2025-10-12 09:10:55'),(4733,NUL
+L,49,NULL,'88.230.85.7','2025-10-12 09:10:55'),(4734,NULL,22,NULL,'85.153.232.139','2025-10-12 09:10:55'),(4735,NULL,48
+,NULL,'88.230.85.7','2025-10-12 09:10:56'),(4736,NULL,23,NULL,'85.153.232.139','2025-10-12 09:10:56'),(4737,NULL,47,NUL
+L,'88.230.85.7','2025-10-12 09:10:57'),(4738,NULL,46,NULL,'88.230.85.7','2025-10-12 09:10:57'),(4739,NULL,24,NULL,'85.1
+53.232.139','2025-10-12 09:10:57'),(4740,NULL,25,NULL,'85.153.232.139','2025-10-12 09:10:58'),(4741,NULL,45,NULL,'88.23
+0.85.7','2025-10-12 09:10:58'),(4742,NULL,44,NULL,'88.230.85.7','2025-10-12 09:10:58'),(4743,NULL,26,NULL,'85.153.232.1
+39','2025-10-12 09:10:59'),(4744,NULL,43,NULL,'88.230.85.7','2025-10-12 09:10:59'),(4745,NULL,42,NULL,'88.230.85.7','20
+25-10-12 09:10:59'),(4746,NULL,41,NULL,'88.230.85.7','2025-10-12 09:11:00'),(4747,NULL,16,NULL,'5.47.246.63','2025-10-1
+2 09:11:01'),(4748,NULL,40,NULL,'88.230.85.7','2025-10-12 09:11:01'),(4749,NULL,27,NULL,'85.153.232.139','2025-10-12 09
+:11:02'),(4750,NULL,32,NULL,'88.230.85.7','2025-10-12 09:11:02'),(4752,NULL,31,NULL,'88.230.85.7','2025-10-12 09:11:02'
+),(4753,NULL,28,NULL,'85.153.232.139','2025-10-12 09:11:03'),(4754,NULL,29,NULL,'85.153.232.139','2025-10-12 09:11:04')
+,(4755,NULL,30,NULL,'85.153.232.139','2025-10-12 09:11:05'),(4756,NULL,31,NULL,'85.153.232.139','2025-10-12 09:11:05'),
+(4757,NULL,32,NULL,'85.153.232.139','2025-10-12 09:11:07'),(4758,NULL,30,NULL,'88.230.85.7','2025-10-12 09:11:07'),(475
+9,NULL,33,NULL,'85.153.232.139','2025-10-12 09:11:08'),(4760,NULL,40,NULL,'85.153.232.139','2025-10-12 09:11:08'),(4761
+,NULL,29,NULL,'88.230.85.7','2025-10-12 09:11:08'),(4762,38,NULL,NULL,'5.176.124.62','2025-10-12 09:11:09'),(4763,NULL,
+28,NULL,'88.230.85.7','2025-10-12 09:11:09'),(4764,NULL,41,NULL,'85.153.232.139','2025-10-12 09:11:10'),(4765,NULL,27,N
+ULL,'88.230.85.7','2025-10-12 09:11:10'),(4766,NULL,42,NULL,'85.153.232.139','2025-10-12 09:11:10'),(4767,NULL,38,NULL,
+'88.235.232.223','2025-10-12 09:11:11'),(4768,NULL,26,NULL,'88.230.85.7','2025-10-12 09:11:11'),(4769,NULL,25,NULL,'88.
+230.85.7','2025-10-12 09:11:12'),(4770,NULL,58,NULL,'159.146.38.33','2025-10-12 09:11:12'),(4771,NULL,43,NULL,'85.153.2
+32.139','2025-10-12 09:11:12'),(4772,NULL,24,NULL,'88.230.85.7','2025-10-12 09:11:13'),(4773,NULL,44,NULL,'85.153.232.1
+39','2025-10-12 09:11:13'),(4774,NULL,23,NULL,'88.230.85.7','2025-10-12 09:11:13'),(4775,NULL,45,NULL,'85.153.232.139',
+'2025-10-12 09:11:14'),(4776,NULL,22,NULL,'88.230.85.7','2025-10-12 09:11:14'),(4777,NULL,21,NULL,'88.230.85.7','2025-1
+0-12 09:11:14'),(4778,NULL,20,NULL,'88.230.85.7','2025-10-12 09:11:15'),(4779,NULL,46,NULL,'85.153.232.139','2025-10-12
+ 09:11:15'),(4780,NULL,19,NULL,'88.230.85.7','2025-10-12 09:11:15'),(4781,38,NULL,NULL,'88.236.187.49','2025-10-12 09:1
+1:16'),(4782,NULL,18,NULL,'88.230.85.7','2025-10-12 09:11:16'),(4783,NULL,47,NULL,'85.153.232.139','2025-10-12 09:11:16
+'),(4784,NULL,16,NULL,'88.230.85.7','2025-10-12 09:11:17'),(4785,NULL,48,NULL,'85.153.232.139','2025-10-12 09:11:18'),(
+4786,38,NULL,NULL,'88.241.45.199','2025-10-12 09:11:19'),(4787,NULL,49,NULL,'85.153.232.139','2025-10-12 09:11:20'),(47
+88,NULL,50,NULL,'85.153.232.139','2025-10-12 09:11:20'),(4789,NULL,51,NULL,'85.153.232.139','2025-10-12 09:11:21'),(479
+0,NULL,52,NULL,'85.153.232.139','2025-10-12 09:11:22'),(4791,NULL,53,NULL,'85.153.232.139','2025-10-12 09:11:23'),(4792
+,NULL,54,NULL,'85.153.232.139','2025-10-12 09:11:23'),(4793,NULL,55,NULL,'85.153.232.139','2025-10-12 09:11:24'),(4794,
+NULL,56,NULL,'85.153.232.139','2025-10-12 09:11:25'),(4795,NULL,57,NULL,'85.153.232.139','2025-10-12 09:11:25'),(4796,N
+ULL,58,NULL,'85.153.232.139','2025-10-12 09:11:26'),(4797,38,NULL,NULL,'88.254.2.183','2025-10-12 09:11:26'),(4798,NULL
+,18,NULL,'5.47.246.63','2025-10-12 09:11:29'),(4799,2,NULL,NULL,'85.153.232.139','2025-10-12 09:11:35'),(4800,NULL,19,N
+ULL,'5.47.246.63','2025-10-12 09:11:45'),(4802,NULL,20,NULL,'5.47.246.63','2025-10-12 09:12:00'),(4803,NULL,38,NULL,'85
+.153.232.139','2025-10-12 09:12:08'),(4804,NULL,37,NULL,'85.153.232.139','2025-10-12 09:12:09'),(4805,NULL,36,NULL,'85.
+153.232.139','2025-10-12 09:12:10'),(4806,NULL,35,NULL,'85.153.232.139','2025-10-12 09:12:11'),(4807,NULL,34,NULL,'85.1
+53.232.139','2025-10-12 09:12:12'),(4808,NULL,17,NULL,'85.153.232.139','2025-10-12 09:12:13'),(4809,38,NULL,NULL,'37.15
+4.175.49','2025-10-12 09:12:19'),(4810,2,NULL,NULL,'85.153.232.139','2025-10-12 09:12:20'),(4811,2,NULL,NULL,'37.154.17
+5.49','2025-10-12 09:12:24'),(4812,38,NULL,NULL,'5.24.18.55','2025-10-12 09:12:32'),(4813,NULL,16,2,'45.11.43.97','2025
+-10-12 09:12:37'),(4814,NULL,16,4,'45.11.43.97','2025-10-12 09:12:39'),(4815,38,NULL,NULL,'85.153.232.139','2025-10-12 
+09:12:41'),(4816,NULL,16,1,'45.11.43.97','2025-10-12 09:12:42'),(4817,NULL,18,NULL,'85.153.232.139','2025-10-12 09:12:4
+3'),(4818,NULL,16,NULL,'85.153.232.139','2025-10-12 09:12:44'),(4819,NULL,18,NULL,'85.153.232.139','2025-10-12 09:12:46
+'),(4820,NULL,19,NULL,'85.153.232.139','2025-10-12 09:12:47'),(4821,NULL,16,8,'45.11.43.97','2025-10-12 09:12:48'),(482
+2,NULL,20,NULL,'85.153.232.139','2025-10-12 09:12:49'),(4823,NULL,21,NULL,'85.153.232.139','2025-10-12 09:12:49'),(4824
+,NULL,16,10,'45.11.43.97','2025-10-12 09:12:51'),(4825,NULL,22,NULL,'85.153.232.139','2025-10-12 09:12:51'),(4826,NULL,
+23,NULL,'85.153.232.139','2025-10-12 09:12:51'),(4827,NULL,24,NULL,'85.153.232.139','2025-10-12 09:12:52'),(4828,NULL,2
+5,NULL,'85.153.232.139','2025-10-12 09:12:53'),(4829,NULL,26,NULL,'85.153.232.139','2025-10-12 09:12:54'),(4830,NULL,27
+,NULL,'85.153.232.139','2025-10-12 09:12:56'),(4831,NULL,28,NULL,'85.153.232.139','2025-10-12 09:12:56'),(4832,NULL,29,
+NULL,'85.153.232.139','2025-10-12 09:12:57'),(4833,NULL,30,NULL,'85.153.232.139','2025-10-12 09:12:58'),(4834,NULL,31,N
+ULL,'85.153.232.139','2025-10-12 09:12:59'),(4835,NULL,32,NULL,'85.153.232.139','2025-10-12 09:12:59'),(4836,NULL,33,NU
+LL,'85.153.232.139','2025-10-12 09:13:00'),(4837,NULL,40,NULL,'85.153.232.139','2025-10-12 09:13:00'),(4838,NULL,41,NUL
+L,'85.153.232.139','2025-10-12 09:13:01'),(4839,NULL,42,NULL,'85.153.232.139','2025-10-12 09:13:02'),(4840,NULL,43,NULL
+,'85.153.232.139','2025-10-12 09:13:03'),(4841,NULL,44,NULL,'85.153.232.139','2025-10-12 09:13:03'),(4842,NULL,45,NULL,
+'85.153.232.139','2025-10-12 09:13:06'),(4843,NULL,46,NULL,'85.153.232.139','2025-10-12 09:13:06'),(4844,NULL,47,NULL,'
+85.153.232.139','2025-10-12 09:13:07'),(4845,38,NULL,NULL,'31.145.218.16','2025-10-12 09:13:07'),(4846,NULL,48,NULL,'85
+.153.232.139','2025-10-12 09:13:07'),(4847,NULL,49,NULL,'85.153.232.139','2025-10-12 09:13:08'),(4848,2,NULL,NULL,'31.1
+45.218.16','2025-10-12 09:13:09'),(4849,NULL,50,NULL,'85.153.232.139','2025-10-12 09:13:10'),(4850,NULL,51,NULL,'85.153
+.232.139','2025-10-12 09:13:10'),(4851,NULL,52,NULL,'85.153.232.139','2025-10-12 09:13:10'),(4852,NULL,53,NULL,'85.153.
+232.139','2025-10-12 09:13:12'),(4853,NULL,54,NULL,'85.153.232.139','2025-10-12 09:13:12'),(4854,NULL,55,NULL,'85.153.2
+32.139','2025-10-12 09:13:12'),(4855,38,NULL,NULL,'5.25.171.31','2025-10-12 09:13:13'),(4856,2,NULL,NULL,'5.25.171.31',
+'2025-10-12 09:13:15'),(4857,NULL,56,NULL,'85.153.232.139','2025-10-12 09:13:16'),(4858,NULL,57,NULL,'85.153.232.139','
+2025-10-12 09:13:17'),(4859,NULL,58,NULL,'85.153.232.139','2025-10-12 09:13:18'),(4860,NULL,42,NULL,'188.3.235.114','20
+25-10-12 09:13:20'),(4861,NULL,21,NULL,'5.47.246.63','2025-10-12 09:13:21'),(4862,38,NULL,NULL,'78.173.10.175','2025-10
+-12 09:13:30'),(4863,NULL,22,NULL,'5.47.246.63','2025-10-12 09:13:34'),(4864,38,NULL,NULL,'88.233.175.61','2025-10-12 0
+9:13:38'),(4865,NULL,16,NULL,'37.130.86.218','2025-10-12 09:13:45'),(4866,NULL,18,NULL,'37.130.86.218','2025-10-12 09:1
+3:46'),(4867,NULL,19,NULL,'37.130.86.218','2025-10-12 09:13:47'),(4868,NULL,20,NULL,'37.130.86.218','2025-10-12 09:13:4
+8'),(4869,NULL,21,NULL,'37.130.86.218','2025-10-12 09:13:49'),(4870,38,NULL,NULL,'95.5.68.136','2025-10-12 09:13:55'),(
+4871,NULL,23,NULL,'5.47.246.63','2025-10-12 09:13:57'),(4872,NULL,16,NULL,'94.120.195.218','2025-10-12 09:14:05'),(4873
+,NULL,18,NULL,'94.120.195.218','2025-10-12 09:14:06'),(4874,NULL,19,NULL,'94.120.195.218','2025-10-12 09:14:08'),(4875,
+NULL,58,NULL,'141.196.26.27','2025-10-12 09:14:09'),(4876,NULL,20,NULL,'94.120.195.218','2025-10-12 09:14:09'),(4877,NU
+LL,21,NULL,'94.120.195.218','2025-10-12 09:14:10'),(4878,NULL,22,NULL,'94.120.195.218','2025-10-12 09:14:12'),(4879,NUL
+L,23,NULL,'94.120.195.218','2025-10-12 09:14:13'),(4880,38,NULL,NULL,'46.106.168.41','2025-10-12 09:14:14'),(4881,NULL,
+24,NULL,'94.120.195.218','2025-10-12 09:14:14'),(4883,NULL,24,NULL,'5.47.246.63','2025-10-12 09:14:15'),(4885,38,NULL,N
+ULL,'212.175.61.105','2025-10-12 09:14:17'),(4886,NULL,25,NULL,'94.120.195.218','2025-10-12 09:14:18'),(4887,NULL,26,NU
+LL,'94.120.195.218','2025-10-12 09:14:19'),(4888,NULL,27,NULL,'94.120.195.218','2025-10-12 09:14:22'),(4889,NULL,28,NUL
+L,'94.120.195.218','2025-10-12 09:14:24'),(4890,NULL,29,NULL,'94.120.195.218','2025-10-12 09:14:25'),(4891,NULL,30,NULL
+,'94.120.195.218','2025-10-12 09:14:26'),(4892,NULL,31,NULL,'94.120.195.218','2025-10-12 09:14:27'),(4893,NULL,32,NULL,
+'94.120.195.218','2025-10-12 09:14:28'),(4894,NULL,33,NULL,'94.120.195.218','2025-10-12 09:14:29'),(4895,NULL,40,NULL,'
+94.120.195.218','2025-10-12 09:14:31'),(4896,38,NULL,NULL,'31.155.128.250','2025-10-12 09:14:31'),(4897,NULL,41,NULL,'9
+4.120.195.218','2025-10-12 09:14:32'),(4898,NULL,42,NULL,'94.120.195.218','2025-10-12 09:14:33'),(4899,NULL,43,NULL,'94
+.120.195.218','2025-10-12 09:14:34'),(4900,NULL,44,NULL,'94.120.195.218','2025-10-12 09:14:35'),(4901,NULL,45,NULL,'94.
+120.195.218','2025-10-12 09:14:36'),(4902,NULL,25,NULL,'5.47.246.63','2025-10-12 09:14:37'),(4903,NULL,46,NULL,'94.120.
+195.218','2025-10-12 09:14:38'),(4904,NULL,47,NULL,'94.120.195.218','2025-10-12 09:14:39'),(4905,NULL,48,NULL,'94.120.1
+95.218','2025-10-12 09:14:40'),(4906,NULL,49,NULL,'94.120.195.218','2025-10-12 09:14:42'),(4907,NULL,50,NULL,'94.120.19
+5.218','2025-10-12 09:14:43'),(4908,NULL,51,NULL,'94.120.195.218','2025-10-12 09:14:44'),(4909,NULL,52,NULL,'94.120.195
+.218','2025-10-12 09:14:46'),(4910,NULL,58,NULL,'31.155.128.250','2025-10-12 09:14:46'),(4911,NULL,53,NULL,'94.120.195.
+218','2025-10-12 09:14:47'),(4912,NULL,58,NULL,'176.88.37.21','2025-10-12 09:14:48'),(4913,NULL,54,NULL,'94.120.195.218
+','2025-10-12 09:14:48'),(4914,NULL,55,NULL,'94.120.195.218','2025-10-12 09:14:50'),(4915,NULL,26,NULL,'5.47.246.63','2
+025-10-12 09:14:51'),(4916,NULL,56,NULL,'94.120.195.218','2025-10-12 09:14:51'),(4917,NULL,57,NULL,'94.120.195.218','20
+25-10-12 09:14:53'),(4919,NULL,58,NULL,'94.120.195.218','2025-10-12 09:14:54'),(4920,2,NULL,NULL,'176.237.214.160','202
+5-10-12 09:14:58'),(4921,38,NULL,NULL,'178.233.132.231','2025-10-12 09:14:59'),(4922,NULL,27,NULL,'5.47.246.63','2025-1
+0-12 09:15:04'),(4923,2,NULL,NULL,'188.119.20.101','2025-10-12 09:15:04'),(4925,2,NULL,NULL,'176.237.214.160','2025-10-
+12 09:15:10'),(4926,38,NULL,NULL,'178.233.132.231','2025-10-12 09:15:15'),(4931,2,NULL,NULL,'176.237.247.76','2025-10-1
+2 09:15:24'),(4933,NULL,33,NULL,'46.106.168.41','2025-10-12 09:15:40'),(4934,NULL,16,NULL,'46.106.168.41','2025-10-12 0
+9:15:43'),(4935,NULL,18,NULL,'46.106.168.41','2025-10-12 09:15:44'),(4936,NULL,19,NULL,'46.106.168.41','2025-10-12 09:1
+5:44'),(4937,NULL,30,NULL,'5.47.246.63','2025-10-12 09:15:45'),(4938,NULL,20,NULL,'46.106.168.41','2025-10-12 09:15:45'
+),(4939,NULL,21,NULL,'46.106.168.41','2025-10-12 09:15:46'),(4940,NULL,22,NULL,'46.106.168.41','2025-10-12 09:15:46'),(
+4941,NULL,23,NULL,'46.106.168.41','2025-10-12 09:15:48'),(4942,NULL,24,NULL,'46.106.168.41','2025-10-12 09:15:48'),(494
+3,NULL,25,NULL,'46.106.168.41','2025-10-12 09:15:49'),(4944,NULL,26,NULL,'46.106.168.41','2025-10-12 09:15:50'),(4945,N
+ULL,27,NULL,'46.106.168.41','2025-10-12 09:15:53'),(4946,NULL,28,NULL,'46.106.168.41','2025-10-12 09:15:55'),(4947,38,N
+ULL,NULL,'188.3.232.211','2025-10-12 09:15:55'),(4948,NULL,29,NULL,'46.106.168.41','2025-10-12 09:15:56'),(4949,NULL,30
+,NULL,'46.106.168.41','2025-10-12 09:15:56'),(4950,2,NULL,NULL,'178.233.17.4','2025-10-12 09:15:58'),(4951,2,NULL,NULL,
+'178.233.17.4','2025-10-12 09:15:58'),(4952,2,NULL,NULL,'178.233.17.4','2025-10-12 09:15:58'),(4953,2,NULL,NULL,'178.23
+3.17.4','2025-10-12 09:15:58'),(4954,2,NULL,NULL,'178.233.17.4','2025-10-12 09:15:58'),(4955,2,NULL,NULL,'188.3.232.211
+','2025-10-12 09:15:58'),(4956,NULL,31,NULL,'46.106.168.41','2025-10-12 09:15:58'),(4958,38,NULL,NULL,'176.237.247.76',
+'2025-10-12 09:15:59'),(4959,NULL,32,NULL,'46.106.168.41','2025-10-12 09:16:00'),(4960,NULL,31,NULL,'5.47.246.63','2025
+-10-12 09:16:00'),(4962,NULL,40,NULL,'46.106.168.41','2025-10-12 09:16:03'),(4963,NULL,41,NULL,'46.106.168.41','2025-10
+-12 09:16:04'),(4964,NULL,42,NULL,'46.106.168.41','2025-10-12 09:16:04'),(4965,NULL,43,NULL,'46.106.168.41','2025-10-12
+ 09:16:05'),(4966,NULL,44,NULL,'46.106.168.41','2025-10-12 09:16:06'),(4967,NULL,45,NULL,'46.106.168.41','2025-10-12 09
+:16:07'),(4968,NULL,46,NULL,'46.106.168.41','2025-10-12 09:16:08'),(4969,NULL,47,NULL,'46.106.168.41','2025-10-12 09:16
+:09'),(4970,NULL,48,NULL,'46.106.168.41','2025-10-12 09:16:10'),(4971,NULL,49,NULL,'46.106.168.41','2025-10-12 09:16:10
+'),(4972,NULL,50,NULL,'46.106.168.41','2025-10-12 09:16:11'),(4973,NULL,51,NULL,'46.106.168.41','2025-10-12 09:16:12'),
+(4974,NULL,52,NULL,'46.106.168.41','2025-10-12 09:16:13'),(4975,NULL,32,NULL,'5.47.246.63','2025-10-12 09:16:13'),(4976
+,NULL,53,NULL,'46.106.168.41','2025-10-12 09:16:14'),(4977,NULL,54,NULL,'46.106.168.41','2025-10-12 09:16:14'),(4978,NU
+LL,58,NULL,'46.106.168.41','2025-10-12 09:16:17'),(4979,NULL,57,NULL,'46.106.168.41','2025-10-12 09:16:18'),(4980,NULL,
+56,NULL,'46.106.168.41','2025-10-12 09:16:18'),(4981,NULL,55,NULL,'46.106.168.41','2025-10-12 09:16:19'),(4982,38,NULL,
+NULL,'185.179.100.144','2025-10-12 09:16:20'),(4983,NULL,33,NULL,'5.47.246.63','2025-10-12 09:16:25'),(4984,NULL,40,NUL
+L,'5.47.246.63','2025-10-12 09:16:38'),(4985,NULL,41,NULL,'5.47.246.63','2025-10-12 09:16:53'),(4986,38,NULL,NULL,'78.1
+63.150.41','2025-10-12 09:16:54'),(4987,38,NULL,NULL,'151.135.176.73','2025-10-12 09:16:57'),(4988,38,NULL,NULL,'78.176
+.65.251','2025-10-12 09:16:59'),(4989,38,NULL,NULL,'62.217.141.47','2025-10-12 09:17:00'),(4992,NULL,42,NULL,'5.47.246.
+63','2025-10-12 09:17:16'),(4993,38,NULL,NULL,'88.241.88.24','2025-10-12 09:17:24'),(4994,38,NULL,NULL,'31.145.216.10',
+'2025-10-12 09:17:28'),(4995,NULL,43,NULL,'5.47.246.63','2025-10-12 09:17:29'),(4996,NULL,38,NULL,'46.106.168.41','2025
+-10-12 09:17:34'),(4997,NULL,37,NULL,'46.106.168.41','2025-10-12 09:17:34'),(4998,NULL,36,NULL,'46.106.168.41','2025-10
+-12 09:17:35'),(4999,NULL,35,NULL,'46.106.168.41','2025-10-12 09:17:36'),(5000,NULL,34,NULL,'46.106.168.41','2025-10-12
+ 09:17:36'),(5001,NULL,17,NULL,'46.106.168.41','2025-10-12 09:17:37'),(5002,38,NULL,NULL,'176.240.142.73','2025-10-12 0
+9:17:39'),(5003,NULL,44,NULL,'5.47.246.63','2025-10-12 09:17:43'),(5004,38,NULL,NULL,'88.234.237.171','2025-10-12 09:17
+:46'),(5005,38,NULL,NULL,'213.186.152.92','2025-10-12 09:17:56'),(5006,NULL,45,NULL,'5.47.246.63','2025-10-12 09:17:57'
+),(5007,2,NULL,NULL,'213.186.152.92','2025-10-12 09:17:57'),(5008,38,NULL,NULL,'178.233.132.231','2025-10-12 09:18:04')
+,(5009,NULL,46,NULL,'5.47.246.63','2025-10-12 09:18:09'),(5011,NULL,38,NULL,'95.70.185.20','2025-10-12 09:18:17'),(5012
+,38,NULL,NULL,'31.155.252.193','2025-10-12 09:18:22'),(5013,NULL,47,NULL,'5.47.246.63','2025-10-12 09:18:23'),(5015,2,N
+ULL,NULL,'31.155.252.193','2025-10-12 09:18:26'),(5016,38,NULL,NULL,'85.107.108.131','2025-10-12 09:18:32'),(5017,NULL,
+48,NULL,'31.145.216.10','2025-10-12 09:18:33'),(5018,NULL,48,NULL,'5.47.246.63','2025-10-12 09:18:38'),(5019,38,NULL,NU
+LL,'78.163.111.249','2025-10-12 09:18:43'),(5020,NULL,49,NULL,'5.47.246.63','2025-10-12 09:18:52'),(5021,38,NULL,NULL,'
+78.173.91.83','2025-10-12 09:18:54'),(5022,2,NULL,NULL,'78.173.91.83','2025-10-12 09:18:58'),(5023,2,NULL,NULL,'188.253
+.217.74','2025-10-12 09:19:01'),(5024,38,NULL,NULL,'188.253.217.74','2025-10-12 09:19:03'),(5025,NULL,28,NULL,'5.47.246
+.63','2025-10-12 09:19:08'),(5026,38,NULL,NULL,'149.140.204.80','2025-10-12 09:19:10'),(5027,38,NULL,NULL,'31.155.252.1
+93','2025-10-12 09:19:25'),(5028,NULL,29,NULL,'5.47.246.63','2025-10-12 09:19:27'),(5030,38,NULL,NULL,'94.121.174.136',
+'2025-10-12 09:19:29'),(5031,38,NULL,NULL,'88.249.140.222','2025-10-12 09:19:32'),(5032,38,NULL,NULL,'89.200.219.31','2
+025-10-12 09:19:36'),(5033,38,NULL,NULL,'176.54.166.57','2025-10-12 09:19:42'),(5034,2,NULL,NULL,'176.220.157.162','202
+5-10-12 09:19:47'),(5035,38,NULL,NULL,'176.220.157.162','2025-10-12 09:19:49'),(5036,2,NULL,NULL,'62.217.141.47','2025-
+10-12 09:20:01'),(5037,2,NULL,NULL,'176.54.166.57','2025-10-12 09:20:24'),(5038,2,NULL,NULL,'5.47.246.63','2025-10-12 0
+9:20:25'),(5039,38,NULL,NULL,'24.133.212.113','2025-10-12 09:20:38'),(5040,38,NULL,NULL,'5.24.27.104','2025-10-12 09:20
+:53'),(5041,38,NULL,NULL,'46.106.150.218','2025-10-12 09:20:54'),(5042,2,NULL,NULL,'5.24.27.104','2025-10-12 09:20:56')
+,(5045,38,NULL,NULL,'51.15.67.107','2025-10-12 09:21:17'),(5046,2,NULL,NULL,'51.15.67.107','2025-10-12 09:21:19'),(5047
+,2,NULL,NULL,'31.155.229.228','2025-10-12 09:21:31'),(5048,38,NULL,NULL,'31.155.229.228','2025-10-12 09:21:34'),(5049,2
+,NULL,NULL,'130.0.13.14','2025-10-12 09:22:14'),(5050,NULL,58,NULL,'51.15.67.107','2025-10-12 09:22:14'),(5051,NULL,57,
+NULL,'51.15.67.107','2025-10-12 09:22:15'),(5052,38,NULL,NULL,'5.176.156.243','2025-10-12 09:22:15'),(5053,NULL,56,NULL
+,'51.15.67.107','2025-10-12 09:22:16'),(5054,NULL,55,NULL,'51.15.67.107','2025-10-12 09:22:17'),(5055,NULL,54,NULL,'51.
+15.67.107','2025-10-12 09:22:18'),(5056,NULL,53,NULL,'51.15.67.107','2025-10-12 09:22:19'),(5057,NULL,52,NULL,'51.15.67
+.107','2025-10-12 09:22:20'),(5058,NULL,51,NULL,'51.15.67.107','2025-10-12 09:22:21'),(5059,2,NULL,NULL,'188.132.145.22
+1','2025-10-12 09:22:21'),(5060,NULL,50,NULL,'51.15.67.107','2025-10-12 09:22:22'),(5061,NULL,49,NULL,'51.15.67.107','2
+025-10-12 09:22:23'),(5062,38,NULL,NULL,'188.132.145.221','2025-10-12 09:22:23'),(5063,NULL,48,NULL,'51.15.67.107','202
+5-10-12 09:22:24'),(5064,NULL,47,NULL,'51.15.67.107','2025-10-12 09:22:24'),(5065,NULL,46,NULL,'51.15.67.107','2025-10-
+12 09:22:26'),(5066,NULL,45,NULL,'51.15.67.107','2025-10-12 09:22:27'),(5067,NULL,44,NULL,'51.15.67.107','2025-10-12 09
+:22:28'),(5068,NULL,43,NULL,'51.15.67.107','2025-10-12 09:22:29'),(5069,NULL,42,NULL,'51.15.67.107','2025-10-12 09:22:3
+0'),(5070,NULL,41,NULL,'51.15.67.107','2025-10-12 09:22:31'),(5071,NULL,40,NULL,'51.15.67.107','2025-10-12 09:22:31'),(
+5072,NULL,33,NULL,'51.15.67.107','2025-10-12 09:22:32'),(5073,NULL,32,NULL,'51.15.67.107','2025-10-12 09:22:34'),(5074,
+NULL,31,NULL,'51.15.67.107','2025-10-12 09:22:34'),(5075,NULL,30,NULL,'51.15.67.107','2025-10-12 09:22:35'),(5076,NULL,
+29,NULL,'51.15.67.107','2025-10-12 09:22:36'),(5077,NULL,28,NULL,'51.15.67.107','2025-10-12 09:22:37'),(5078,NULL,27,NU
+LL,'51.15.67.107','2025-10-12 09:22:38'),(5079,NULL,26,NULL,'51.15.67.107','2025-10-12 09:22:39'),(5080,NULL,25,NULL,'5
+1.15.67.107','2025-10-12 09:22:40'),(5081,NULL,24,NULL,'51.15.67.107','2025-10-12 09:22:42'),(5082,NULL,23,NULL,'51.15.
+67.107','2025-10-12 09:22:43'),(5083,NULL,22,NULL,'51.15.67.107','2025-10-12 09:22:44'),(5084,NULL,21,NULL,'51.15.67.10
+7','2025-10-12 09:22:44'),(5085,NULL,20,NULL,'51.15.67.107','2025-10-12 09:22:46'),(5086,NULL,19,NULL,'51.15.67.107','2
+025-10-12 09:22:46'),(5087,NULL,18,NULL,'51.15.67.107','2025-10-12 09:22:48'),(5088,NULL,16,NULL,'51.15.67.107','2025-1
+0-12 09:22:48'),(5089,NULL,16,NULL,'130.0.13.14','2025-10-12 09:22:49'),(5090,38,NULL,NULL,'78.172.210.174','2025-10-12
+ 09:22:55'),(5091,38,NULL,NULL,'85.153.227.227','2025-10-12 09:22:56'),(5092,2,NULL,NULL,'85.153.227.227','2025-10-12 0
+9:23:00'),(5093,38,NULL,NULL,'92.44.24.141','2025-10-12 09:23:21'),(5094,NULL,58,NULL,'88.243.188.47','2025-10-12 09:23
+:38'),(5095,38,NULL,NULL,'151.135.201.3','2025-10-12 09:24:05'),(5097,NULL,58,NULL,'78.161.248.236','2025-10-12 09:24:1
+1'),(5098,NULL,16,NULL,'78.173.53.135','2025-10-12 09:24:27'),(5099,38,NULL,NULL,'78.185.26.180','2025-10-12 09:24:46')
+,(5100,NULL,16,NULL,'78.173.53.135','2025-10-12 09:24:51'),(5101,NULL,18,NULL,'78.173.53.135','2025-10-12 09:24:52'),(5
+102,NULL,19,NULL,'78.173.53.135','2025-10-12 09:24:53'),(5103,NULL,21,NULL,'78.173.53.135','2025-10-12 09:24:56'),(5104
+,NULL,20,NULL,'78.173.53.135','2025-10-12 09:24:56'),(5105,NULL,22,NULL,'78.173.53.135','2025-10-12 09:24:58'),(5106,NU
+LL,23,NULL,'78.173.53.135','2025-10-12 09:24:59'),(5107,NULL,24,NULL,'78.173.53.135','2025-10-12 09:25:00'),(5108,NULL,
+25,NULL,'78.173.53.135','2025-10-12 09:25:01'),(5109,NULL,26,NULL,'78.173.53.135','2025-10-12 09:25:02'),(5110,NULL,51,
+NULL,'188.3.124.194','2025-10-12 09:25:37'),(5111,2,NULL,NULL,'78.173.53.135','2025-10-12 09:25:39'),(5112,NULL,58,NULL
+,'95.70.244.21','2025-10-12 09:25:49'),(5114,38,NULL,NULL,'37.114.164.195','2025-10-12 09:25:57'),(5115,NULL,24,NULL,'5
+.176.156.243','2025-10-12 09:26:02'),(5116,38,NULL,NULL,'78.179.137.88','2025-10-12 09:26:13'),(5117,38,NULL,NULL,'149.
+50.224.12','2025-10-12 09:26:21'),(5119,NULL,58,NULL,'78.178.131.13','2025-10-12 09:26:23'),(5120,NULL,58,NULL,'78.179.
+137.88','2025-10-12 09:26:28'),(5121,NULL,16,NULL,'212.253.130.160','2025-10-12 09:26:33'),(5123,38,NULL,NULL,'88.241.1
+70.56','2025-10-12 09:26:42'),(5124,2,NULL,NULL,'88.241.170.56','2025-10-12 09:26:43'),(5125,NULL,16,NULL,'85.106.174.8
+3','2025-10-12 09:26:46'),(5126,NULL,18,NULL,'85.106.174.83','2025-10-12 09:26:47'),(5127,NULL,19,NULL,'85.106.174.83',
+'2025-10-12 09:26:47'),(5128,NULL,20,NULL,'85.106.174.83','2025-10-12 09:26:48'),(5130,NULL,21,NULL,'85.106.174.83','20
+25-10-12 09:26:49'),(5131,NULL,22,NULL,'85.106.174.83','2025-10-12 09:26:50'),(5132,NULL,23,NULL,'85.106.174.83','2025-
+10-12 09:26:51'),(5133,NULL,24,NULL,'85.106.174.83','2025-10-12 09:26:52'),(5135,NULL,25,NULL,'85.106.174.83','2025-10-
+12 09:26:54'),(5136,NULL,26,NULL,'85.106.174.83','2025-10-12 09:26:55'),(5137,38,NULL,NULL,'78.175.21.172','2025-10-12 
+09:26:55'),(5138,2,NULL,NULL,'46.221.102.124','2025-10-12 09:26:56'),(5139,NULL,27,NULL,'85.106.174.83','2025-10-12 09:
+26:57'),(5140,NULL,28,NULL,'85.106.174.83','2025-10-12 09:26:57'),(5141,NULL,29,NULL,'85.106.174.83','2025-10-12 09:27:
+00'),(5142,NULL,30,NULL,'85.106.174.83','2025-10-12 09:27:01'),(5143,2,NULL,NULL,'78.179.137.88','2025-10-12 09:27:02')
+,(5144,NULL,31,NULL,'85.106.174.83','2025-10-12 09:27:03'),(5145,NULL,32,NULL,'85.106.174.83','2025-10-12 09:27:03'),(5
+146,NULL,33,NULL,'85.106.174.83','2025-10-12 09:27:04'),(5149,NULL,40,NULL,'85.106.174.83','2025-10-12 09:27:07'),(5152
+,NULL,41,NULL,'85.106.174.83','2025-10-12 09:27:08'),(5153,NULL,42,NULL,'85.106.174.83','2025-10-12 09:27:09'),(5154,NU
+LL,43,NULL,'85.106.174.83','2025-10-12 09:27:11'),(5155,NULL,44,NULL,'85.106.174.83','2025-10-12 09:27:11'),(5156,NULL,
+45,NULL,'85.106.174.83','2025-10-12 09:27:13'),(5157,NULL,46,NULL,'85.106.174.83','2025-10-12 09:27:14'),(5158,NULL,47,
+NULL,'85.106.174.83','2025-10-12 09:27:14'),(5159,NULL,48,NULL,'85.106.174.83','2025-10-12 09:27:16'),(5160,NULL,49,NUL
+L,'85.106.174.83','2025-10-12 09:27:17'),(5161,NULL,50,NULL,'85.106.174.83','2025-10-12 09:27:18'),(5162,NULL,51,NULL,'
+85.106.174.83','2025-10-12 09:27:19'),(5163,NULL,52,NULL,'85.106.174.83','2025-10-12 09:27:20'),(5164,38,NULL,NULL,'88.
+238.62.150','2025-10-12 09:27:21'),(5165,NULL,53,NULL,'85.106.174.83','2025-10-12 09:27:21'),(5166,38,NULL,NULL,'46.196
+.220.175','2025-10-12 09:27:21'),(5167,NULL,54,NULL,'85.106.174.83','2025-10-12 09:27:24'),(5168,NULL,55,NULL,'85.106.1
+74.83','2025-10-12 09:27:25'),(5169,NULL,56,NULL,'85.106.174.83','2025-10-12 09:27:26'),(5170,NULL,57,NULL,'85.106.174.
+83','2025-10-12 09:27:27'),(5171,NULL,16,NULL,'88.238.62.150','2025-10-12 09:27:31'),(5172,NULL,58,NULL,'85.106.174.83'
+,'2025-10-12 09:27:31'),(5174,NULL,56,NULL,'37.154.73.94','2025-10-12 09:27:38'),(5175,NULL,17,NULL,'85.106.174.83','20
+25-10-12 09:28:02'),(5176,NULL,34,NULL,'85.106.174.83','2025-10-12 09:28:03'),(5177,NULL,35,NULL,'85.106.174.83','2025-
+10-12 09:28:05'),(5178,NULL,36,NULL,'85.106.174.83','2025-10-12 09:28:05'),(5179,NULL,37,NULL,'85.106.174.83','2025-10-
+12 09:28:06'),(5180,38,NULL,NULL,'88.227.91.61','2025-10-12 09:28:07'),(5181,NULL,38,NULL,'85.106.174.83','2025-10-12 0
+9:28:08'),(5182,38,NULL,NULL,'185.84.71.181','2025-10-12 09:28:21'),(5184,NULL,16,NULL,'151.250.203.4','2025-10-12 09:2
+8:26'),(5185,NULL,18,NULL,'85.107.108.131','2025-10-12 09:28:35'),(5186,NULL,58,NULL,'88.238.62.150','2025-10-12 09:28:
+38'),(5187,NULL,16,NULL,'85.107.108.131','2025-10-12 09:28:53'),(5188,2,NULL,NULL,'191.96.72.6','2025-10-12 09:29:00'),
+(5189,38,NULL,NULL,'45.15.43.197','2025-10-12 09:29:20'),(5190,NULL,52,NULL,'185.84.71.181','2025-10-12 09:29:23'),(519
+1,NULL,58,845,'85.101.205.105','2025-10-12 09:29:23'),(5192,NULL,58,NULL,'5.229.157.0','2025-10-12 09:29:27'),(5193,NUL
+L,18,139,'176.42.61.170','2025-10-12 09:29:39'),(5196,38,NULL,NULL,'85.98.207.245','2025-10-12 09:29:59'),(5197,38,NULL
+,NULL,'78.183.243.175','2025-10-12 09:30:10'),(5198,2,NULL,NULL,'78.183.243.175','2025-10-12 09:30:11'),(5199,38,NULL,N
+ULL,'176.234.220.251','2025-10-12 09:30:19'),(5200,38,NULL,NULL,'89.39.107.197','2025-10-12 09:30:19'),(5201,38,NULL,NU
+LL,'37.154.243.224','2025-10-12 09:30:21'),(5202,2,NULL,NULL,'37.154.243.224','2025-10-12 09:30:23'),(5204,2,NULL,NULL,
+'5.25.25.86','2025-10-12 09:30:32'),(5205,NULL,47,NULL,'149.140.223.152','2025-10-12 09:30:37'),(5206,NULL,46,NULL,'149
+.140.223.152','2025-10-12 09:30:39'),(5207,NULL,45,NULL,'149.140.223.152','2025-10-12 09:30:40'),(5208,NULL,44,NULL,'14
+9.140.223.152','2025-10-12 09:30:41'),(5210,NULL,43,NULL,'149.140.223.152','2025-10-12 09:30:42'),(5211,NULL,42,NULL,'1
+49.140.223.152','2025-10-12 09:30:43'),(5212,38,NULL,NULL,'5.25.25.86','2025-10-12 09:30:43'),(5213,NULL,41,NULL,'149.1
+40.223.152','2025-10-12 09:30:44'),(5214,NULL,40,NULL,'149.140.223.152','2025-10-12 09:30:44'),(5215,NULL,33,NULL,'149.
+140.223.152','2025-10-12 09:30:45'),(5216,NULL,32,NULL,'149.140.223.152','2025-10-12 09:30:45'),(5217,NULL,31,NULL,'149
+.140.223.152','2025-10-12 09:30:46'),(5218,NULL,30,NULL,'149.140.223.152','2025-10-12 09:30:47'),(5219,NULL,29,NULL,'14
+9.140.223.152','2025-10-12 09:30:47'),(5220,NULL,28,NULL,'149.140.223.152','2025-10-12 09:30:48'),(5221,NULL,27,NULL,'1
+49.140.223.152','2025-10-12 09:30:49'),(5222,NULL,17,NULL,'95.70.215.178','2025-10-12 09:30:49'),(5223,NULL,26,NULL,'14
+9.140.223.152','2025-10-12 09:30:50'),(5224,NULL,25,NULL,'149.140.223.152','2025-10-12 09:30:50'),(5225,NULL,24,NULL,'1
+49.140.223.152','2025-10-12 09:30:51'),(5227,NULL,23,NULL,'149.140.223.152','2025-10-12 09:30:51'),(5228,38,NULL,NULL,'
+46.155.34.96','2025-10-12 09:30:52'),(5229,NULL,22,NULL,'149.140.223.152','2025-10-12 09:30:52'),(5230,NULL,21,NULL,'14
+9.140.223.152','2025-10-12 09:30:53'),(5231,NULL,20,NULL,'149.140.223.152','2025-10-12 09:30:53'),(5233,NULL,19,NULL,'1
+49.140.223.152','2025-10-12 09:30:54'),(5234,2,NULL,NULL,'88.238.62.150','2025-10-12 09:30:54'),(5235,NULL,18,NULL,'149
+.140.223.152','2025-10-12 09:30:54'),(5237,NULL,16,NULL,'149.140.223.152','2025-10-12 09:30:55'),(5238,NULL,16,1,'212.2
+53.222.173','2025-10-12 09:30:55'),(5239,2,NULL,NULL,'46.155.34.96','2025-10-12 09:30:55'),(5240,NULL,48,NULL,'149.140.
+223.152','2025-10-12 09:30:58'),(5241,NULL,49,NULL,'149.140.223.152','2025-10-12 09:30:59'),(5242,NULL,50,NULL,'149.140
+.223.152','2025-10-12 09:31:00'),(5243,NULL,51,NULL,'149.140.223.152','2025-10-12 09:31:00'),(5244,NULL,52,NULL,'149.14
+0.223.152','2025-10-12 09:31:02'),(5245,NULL,53,NULL,'149.140.223.152','2025-10-12 09:31:04'),(5246,NULL,54,NULL,'149.1
+40.223.152','2025-10-12 09:31:05'),(5247,NULL,55,NULL,'149.140.223.152','2025-10-12 09:31:06'),(5248,NULL,56,NULL,'149.
+140.223.152','2025-10-12 09:31:07'),(5249,NULL,57,NULL,'149.140.223.152','2025-10-12 09:31:09'),(5250,NULL,58,NULL,'149
+.140.223.152','2025-10-12 09:31:10'),(5251,38,NULL,NULL,'85.97.158.137','2025-10-12 09:31:10'),(5252,2,NULL,NULL,'85.97
+.158.137','2025-10-12 09:31:12'),(5253,38,NULL,NULL,'85.101.205.105','2025-10-12 09:31:21'),(5254,NULL,19,NULL,'85.101.
+205.105','2025-10-12 09:31:29'),(5255,NULL,18,NULL,'85.101.205.105','2025-10-12 09:31:30'),(5256,NULL,16,NULL,'85.101.2
+05.105','2025-10-12 09:31:30'),(5257,NULL,20,NULL,'85.101.205.105','2025-10-12 09:31:31'),(5258,NULL,21,NULL,'85.101.20
+5.105','2025-10-12 09:31:32'),(5259,NULL,22,NULL,'85.101.205.105','2025-10-12 09:31:33'),(5260,NULL,23,NULL,'85.101.205
+.105','2025-10-12 09:31:33'),(5261,NULL,24,NULL,'85.101.205.105','2025-10-12 09:31:34'),(5262,NULL,25,NULL,'85.101.205.
+105','2025-10-12 09:31:35'),(5263,NULL,26,NULL,'85.101.205.105','2025-10-12 09:31:37'),(5264,2,NULL,NULL,'176.33.57.21'
+,'2025-10-12 09:31:38'),(5265,NULL,27,NULL,'85.101.205.105','2025-10-12 09:31:40'),(5266,38,NULL,NULL,'176.33.57.21','2
+025-10-12 09:31:40'),(5267,NULL,28,NULL,'85.101.205.105','2025-10-12 09:31:40'),(5268,NULL,29,NULL,'85.101.205.105','20
+25-10-12 09:31:45'),(5269,NULL,30,NULL,'85.101.205.105','2025-10-12 09:31:46'),(5270,NULL,31,NULL,'85.101.205.105','202
+5-10-12 09:31:47'),(5271,NULL,32,NULL,'85.101.205.105','2025-10-12 09:31:47'),(5272,NULL,33,NULL,'85.101.205.105','2025
+-10-12 09:31:49'),(5273,NULL,40,NULL,'85.101.205.105','2025-10-12 09:31:49'),(5274,NULL,41,NULL,'85.101.205.105','2025-
+10-12 09:31:55'),(5275,NULL,42,NULL,'85.101.205.105','2025-10-12 09:31:55'),(5277,NULL,43,NULL,'85.101.205.105','2025-1
+0-12 09:31:56'),(5278,NULL,44,NULL,'85.101.205.105','2025-10-12 09:31:58'),(5279,NULL,45,NULL,'85.101.205.105','2025-10
+-12 09:31:59'),(5280,NULL,46,NULL,'85.101.205.105','2025-10-12 09:32:00'),(5281,NULL,47,NULL,'85.101.205.105','2025-10-
+12 09:32:05'),(5282,NULL,48,NULL,'85.101.205.105','2025-10-12 09:32:06'),(5283,NULL,49,NULL,'85.101.205.105','2025-10-1
+2 09:32:07'),(5284,NULL,50,NULL,'85.101.205.105','2025-10-12 09:32:08'),(5285,NULL,51,NULL,'85.101.205.105','2025-10-12
+ 09:32:09'),(5286,NULL,52,NULL,'85.101.205.105','2025-10-12 09:32:10'),(5287,NULL,53,NULL,'85.101.205.105','2025-10-12 
+09:32:14'),(5288,NULL,54,NULL,'85.101.205.105','2025-10-12 09:32:14'),(5289,NULL,55,NULL,'85.101.205.105','2025-10-12 0
+9:32:15'),(5290,NULL,56,NULL,'85.101.205.105','2025-10-12 09:32:16'),(5291,NULL,57,NULL,'85.101.205.105','2025-10-12 09
+:32:17'),(5292,NULL,45,NULL,'85.107.124.35','2025-10-12 09:32:19'),(5293,38,NULL,NULL,'46.106.74.107','2025-10-12 09:32
+:19'),(5294,NULL,58,NULL,'85.101.205.105','2025-10-12 09:32:20'),(5295,38,NULL,NULL,'31.145.210.116','2025-10-12 09:32:
+34'),(5296,38,NULL,NULL,'46.1.83.71','2025-10-12 09:32:36'),(5297,38,NULL,NULL,'88.243.136.163','2025-10-12 09:32:43'),
+(5298,38,NULL,NULL,'151.250.20.184','2025-10-12 09:33:26'),(5299,38,NULL,NULL,'176.237.214.160','2025-10-12 09:33:31'),
+(5300,NULL,22,NULL,'95.7.252.82','2025-10-12 09:33:36'),(5306,38,NULL,NULL,'88.237.231.26','2025-10-12 09:33:48'),(5307
+,NULL,20,NULL,'176.237.214.160','2025-10-12 09:33:52'),(5308,NULL,21,NULL,'176.237.214.160','2025-10-12 09:33:53'),(530
+9,38,NULL,NULL,'176.90.166.18','2025-10-12 09:33:53'),(5310,2,NULL,NULL,'88.237.231.26','2025-10-12 09:33:53'),(5311,NU
+LL,19,NULL,'176.237.214.160','2025-10-12 09:33:54'),(5312,38,NULL,NULL,'176.42.169.121','2025-10-12 09:33:54'),(5313,NU
+LL,18,NULL,'176.237.214.160','2025-10-12 09:33:55'),(5314,NULL,16,NULL,'176.237.214.160','2025-10-12 09:33:56'),(5315,2
+,NULL,NULL,'176.90.166.18','2025-10-12 09:33:56'),(5316,NULL,22,NULL,'176.237.214.160','2025-10-12 09:33:59'),(5317,NUL
+L,23,NULL,'176.237.214.160','2025-10-12 09:33:59'),(5318,NULL,24,NULL,'176.237.214.160','2025-10-12 09:34:00'),(5319,NU
+LL,25,NULL,'176.237.214.160','2025-10-12 09:34:01'),(5320,NULL,26,NULL,'176.237.214.160','2025-10-12 09:34:02'),(5321,N
+ULL,27,NULL,'176.237.214.160','2025-10-12 09:34:04'),(5322,NULL,28,NULL,'176.237.214.160','2025-10-12 09:34:06'),(5323,
+NULL,29,NULL,'176.237.214.160','2025-10-12 09:34:08'),(5324,NULL,31,NULL,'176.237.214.160','2025-10-12 09:34:12'),(5325
+,NULL,30,NULL,'176.237.214.160','2025-10-12 09:34:13'),(5326,NULL,32,NULL,'176.237.214.160','2025-10-12 09:34:15'),(532
+7,NULL,33,NULL,'176.237.214.160','2025-10-12 09:34:18'),(5328,NULL,40,NULL,'176.237.214.160','2025-10-12 09:34:20'),(53
+29,NULL,41,NULL,'176.237.214.160','2025-10-12 09:34:22'),(5330,NULL,42,NULL,'176.237.214.160','2025-10-12 09:34:24'),(5
+331,NULL,43,NULL,'176.237.214.160','2025-10-12 09:34:25'),(5332,NULL,44,NULL,'176.237.214.160','2025-10-12 09:34:28'),(
+5333,NULL,45,NULL,'176.237.214.160','2025-10-12 09:34:30'),(5334,38,NULL,NULL,'95.7.148.34','2025-10-12 09:34:30'),(533
+5,NULL,46,NULL,'176.237.214.160','2025-10-12 09:34:32'),(5336,NULL,48,NULL,'176.237.214.160','2025-10-12 09:34:34'),(53
+37,2,NULL,NULL,'95.7.148.34','2025-10-12 09:34:34'),(5338,NULL,49,NULL,'176.237.214.160','2025-10-12 09:34:35'),(5339,N
+ULL,50,NULL,'176.237.214.160','2025-10-12 09:34:37'),(5340,NULL,51,NULL,'176.237.214.160','2025-10-12 09:34:39'),(5341,
+NULL,52,NULL,'176.237.214.160','2025-10-12 09:34:40'),(5342,NULL,53,NULL,'176.237.214.160','2025-10-12 09:34:42'),(5343
+,NULL,54,NULL,'176.237.214.160','2025-10-12 09:34:43'),(5344,NULL,55,NULL,'176.237.214.160','2025-10-12 09:34:45'),(534
+5,NULL,56,NULL,'176.237.214.160','2025-10-12 09:34:48'),(5346,NULL,57,NULL,'176.237.214.160','2025-10-12 09:34:50'),(53
+47,38,NULL,NULL,'78.184.104.147','2025-10-12 09:34:50'),(5348,NULL,58,NULL,'176.237.214.160','2025-10-12 09:34:51'),(53
+50,2,NULL,NULL,'77.244.119.22','2025-10-12 09:34:55'),(5351,38,NULL,NULL,'77.244.119.22','2025-10-12 09:34:58'),(5352,3
+8,NULL,NULL,'78.182.135.116','2025-10-12 09:35:02'),(5353,NULL,17,NULL,'176.237.214.160','2025-10-12 09:35:11'),(5354,N
+ULL,34,NULL,'176.237.214.160','2025-10-12 09:35:12'),(5356,NULL,35,NULL,'176.237.214.160','2025-10-12 09:35:14'),(5357,
+NULL,36,NULL,'176.237.214.160','2025-10-12 09:35:15'),(5358,2,NULL,NULL,'176.54.153.152','2025-10-12 09:35:17'),(5359,N
+ULL,37,NULL,'176.237.214.160','2025-10-12 09:35:18'),(5360,38,NULL,NULL,'176.54.153.152','2025-10-12 09:35:19'),(5361,N
+ULL,38,NULL,'176.237.214.160','2025-10-12 09:35:21'),(5363,38,NULL,NULL,'185.177.229.232','2025-10-12 09:36:11'),(5364,
+2,NULL,NULL,'185.177.229.232','2025-10-12 09:36:14'),(5365,NULL,16,NULL,'178.247.47.37','2025-10-12 09:36:23'),(5366,38
+,NULL,NULL,'151.135.96.28','2025-10-12 09:36:27'),(5367,NULL,58,NULL,'151.135.96.28','2025-10-12 09:36:42'),(5368,38,NU
+LL,NULL,'78.184.239.125','2025-10-12 09:36:53'),(5369,NULL,41,NULL,'5.229.174.114','2025-10-12 09:36:56'),(5370,38,NULL
+,NULL,'95.15.19.70','2025-10-12 09:36:58'),(5371,2,NULL,NULL,'95.15.19.70','2025-10-12 09:37:12'),(5373,2,NULL,NULL,'18
+5.177.229.232','2025-10-12 09:38:13'),(5377,NULL,57,NULL,'31.143.77.139','2025-10-12 09:38:43'),(5378,38,NULL,NULL,'78.
+178.149.89','2025-10-12 09:38:46'),(5381,NULL,31,NULL,'188.3.238.108','2025-10-12 09:39:05'),(5382,38,NULL,NULL,'176.55
+.181.191','2025-10-12 09:39:23'),(5383,38,NULL,NULL,'176.55.181.191','2025-10-12 09:39:32'),(5384,NULL,16,NULL,'176.55.
+181.191','2025-10-12 09:39:36'),(5385,NULL,18,NULL,'176.55.181.191','2025-10-12 09:39:37'),(5386,NULL,19,NULL,'176.55.1
+81.191','2025-10-12 09:39:39'),(5387,NULL,20,NULL,'176.55.181.191','2025-10-12 09:39:40'),(5388,NULL,21,NULL,'176.55.18
+1.191','2025-10-12 09:39:40'),(5389,38,NULL,NULL,'88.242.78.13','2025-10-12 09:39:42'),(5390,NULL,22,NULL,'176.55.181.1
+91','2025-10-12 09:39:42'),(5391,NULL,23,NULL,'176.55.181.191','2025-10-12 09:39:43'),(5392,NULL,24,NULL,'176.55.181.19
+1','2025-10-12 09:39:44'),(5393,NULL,25,NULL,'176.55.181.191','2025-10-12 09:39:45'),(5394,NULL,26,NULL,'176.55.181.191
+','2025-10-12 09:39:46'),(5395,NULL,27,NULL,'176.55.181.191','2025-10-12 09:39:48'),(5396,NULL,28,NULL,'176.55.181.191'
+,'2025-10-12 09:39:49'),(5397,NULL,29,NULL,'176.55.181.191','2025-10-12 09:39:50'),(5398,NULL,30,NULL,'176.55.181.191',
+'2025-10-12 09:39:51'),(5399,NULL,31,NULL,'176.55.181.191','2025-10-12 09:39:52'),(5400,NULL,32,NULL,'176.55.181.191','
+2025-10-12 09:39:53'),(5401,NULL,16,NULL,'88.242.78.13','2025-10-12 09:39:54'),(5402,NULL,33,NULL,'176.55.181.191','202
+5-10-12 09:39:54'),(5403,NULL,40,NULL,'176.55.181.191','2025-10-12 09:39:54'),(5404,NULL,16,NULL,'88.242.78.13','2025-1
+0-12 09:39:55'),(5406,NULL,18,NULL,'88.242.78.13','2025-10-12 09:39:55'),(5407,NULL,19,NULL,'88.242.78.13','2025-10-12 
+09:39:56'),(5408,NULL,42,NULL,'176.55.181.191','2025-10-12 09:39:56'),(5409,NULL,20,NULL,'88.242.78.13','2025-10-12 09:
+39:57'),(5410,NULL,43,NULL,'176.55.181.191','2025-10-12 09:39:57'),(5411,NULL,44,NULL,'176.55.181.191','2025-10-12 09:3
+9:58'),(5412,NULL,21,NULL,'88.242.78.13','2025-10-12 09:39:58'),(5413,NULL,45,NULL,'176.55.181.191','2025-10-12 09:39:5
+8'),(5414,NULL,22,NULL,'88.242.78.13','2025-10-12 09:39:59'),(5415,NULL,46,NULL,'176.55.181.191','2025-10-12 09:39:59')
+,(5416,NULL,47,NULL,'176.55.181.191','2025-10-12 09:40:00'),(5417,NULL,23,NULL,'88.242.78.13','2025-10-12 09:40:00'),(5
+418,NULL,24,NULL,'88.242.78.13','2025-10-12 09:40:01'),(5419,NULL,48,NULL,'176.55.181.191','2025-10-12 09:40:01'),(5420
+,NULL,25,NULL,'88.242.78.13','2025-10-12 09:40:02'),(5421,NULL,49,NULL,'176.55.181.191','2025-10-12 09:40:02'),(5422,NU
+LL,26,NULL,'88.242.78.13','2025-10-12 09:40:03'),(5423,NULL,50,NULL,'176.55.181.191','2025-10-12 09:40:03'),(5424,NULL,
+51,NULL,'176.55.181.191','2025-10-12 09:40:04'),(5425,NULL,52,NULL,'176.55.181.191','2025-10-12 09:40:04'),(5427,NULL,5
+3,NULL,'176.55.181.191','2025-10-12 09:40:05'),(5428,NULL,27,NULL,'88.242.78.13','2025-10-12 09:40:05'),(5429,NULL,28,N
+ULL,'88.242.78.13','2025-10-12 09:40:06'),(5430,NULL,54,NULL,'176.55.181.191','2025-10-12 09:40:07'),(5431,NULL,55,NULL
+,'176.55.181.191','2025-10-12 09:40:08'),(5432,NULL,29,NULL,'88.242.78.13','2025-10-12 09:40:08'),(5433,NULL,56,NULL,'1
+76.55.181.191','2025-10-12 09:40:09'),(5434,NULL,30,NULL,'88.242.78.13','2025-10-12 09:40:09'),(5435,NULL,57,NULL,'176.
+55.181.191','2025-10-12 09:40:09'),(5436,NULL,31,NULL,'88.242.78.13','2025-10-12 09:40:10'),(5437,NULL,58,NULL,'176.55.
+181.191','2025-10-12 09:40:10'),(5438,NULL,32,NULL,'88.242.78.13','2025-10-12 09:40:11'),(5439,NULL,33,NULL,'88.242.78.
+13','2025-10-12 09:40:12'),(5440,38,NULL,NULL,'78.177.187.88','2025-10-12 09:40:14'),(5441,NULL,40,NULL,'88.242.78.13',
+'2025-10-12 09:40:14'),(5443,NULL,41,NULL,'88.242.78.13','2025-10-12 09:40:15'),(5444,NULL,42,NULL,'88.242.78.13','2025
+-10-12 09:40:17'),(5445,NULL,43,NULL,'88.242.78.13','2025-10-12 09:40:17'),(5446,NULL,44,NULL,'88.242.78.13','2025-10-1
+2 09:40:19'),(5447,NULL,45,NULL,'88.242.78.13','2025-10-12 09:40:21'),(5448,NULL,46,NULL,'88.242.78.13','2025-10-12 09:
+40:22'),(5449,NULL,16,NULL,'94.120.195.218','2025-10-12 09:40:23'),(5450,NULL,47,NULL,'88.242.78.13','2025-10-12 09:40:
+23'),(5451,NULL,18,NULL,'94.120.195.218','2025-10-12 09:40:24'),(5452,38,NULL,NULL,'5.178.13.87','2025-10-12 09:40:24')
+,(5453,NULL,19,NULL,'94.120.195.218','2025-10-12 09:40:25'),(5454,NULL,48,NULL,'88.242.78.13','2025-10-12 09:40:25'),(5
+455,NULL,20,NULL,'94.120.195.218','2025-10-12 09:40:26'),(5456,NULL,49,NULL,'88.242.78.13','2025-10-12 09:40:26'),(5457
+,NULL,18,NULL,'94.120.195.218','2025-10-12 09:40:27'),(5458,NULL,50,NULL,'88.242.78.13','2025-10-12 09:40:27'),(5459,NU
+LL,16,NULL,'94.120.195.218','2025-10-12 09:40:28'),(5460,NULL,16,NULL,'5.178.13.87','2025-10-12 09:40:28'),(5461,NULL,1
+8,NULL,'5.178.13.87','2025-10-12 09:40:29'),(5462,NULL,51,NULL,'88.242.78.13','2025-10-12 09:40:29'),(5463,NULL,21,NULL
+,'94.120.195.218','2025-10-12 09:40:29'),(5464,NULL,52,NULL,'88.242.78.13','2025-10-12 09:40:30'),(5465,NULL,22,NULL,'9
+4.120.195.218','2025-10-12 09:40:30'),(5466,NULL,53,NULL,'88.242.78.13','2025-10-12 09:40:31'),(5467,NULL,23,NULL,'94.1
+20.195.218','2025-10-12 09:40:31'),(5468,NULL,54,NULL,'88.242.78.13','2025-10-12 09:40:32'),(5469,38,NULL,NULL,'78.177.
+162.142','2025-10-12 09:40:32'),(5470,NULL,24,NULL,'94.120.195.218','2025-10-12 09:40:32'),(5471,NULL,55,NULL,'88.242.7
+8.13','2025-10-12 09:40:32'),(5472,NULL,25,NULL,'94.120.195.218','2025-10-12 09:40:33'),(5473,NULL,26,NULL,'94.120.195.
+218','2025-10-12 09:40:34'),(5474,NULL,56,NULL,'88.242.78.13','2025-10-12 09:40:35'),(5475,NULL,57,NULL,'88.242.78.13',
+'2025-10-12 09:40:36'),(5476,NULL,27,NULL,'94.120.195.218','2025-10-12 09:40:36'),(5477,NULL,58,NULL,'88.242.78.13','20
+25-10-12 09:40:37'),(5478,NULL,28,NULL,'94.120.195.218','2025-10-12 09:40:38'),(5480,NULL,30,NULL,'94.120.195.218','202
+5-10-12 09:40:39'),(5481,NULL,31,NULL,'94.120.195.218','2025-10-12 09:40:40'),(5482,NULL,32,NULL,'94.120.195.218','2025
+-10-12 09:40:42'),(5483,NULL,33,NULL,'94.120.195.218','2025-10-12 09:40:42'),(5484,NULL,40,NULL,'94.120.195.218','2025-
+10-12 09:40:43'),(5485,NULL,41,NULL,'94.120.195.218','2025-10-12 09:40:44'),(5486,38,NULL,NULL,'78.174.202.218','2025-1
+0-12 09:40:45'),(5487,NULL,42,NULL,'94.120.195.218','2025-10-12 09:40:45'),(5488,NULL,43,NULL,'94.120.195.218','2025-10
+-12 09:40:46'),(5489,NULL,44,NULL,'94.120.195.218','2025-10-12 09:40:47'),(5490,NULL,45,NULL,'94.120.195.218','2025-10-
+12 09:40:48'),(5491,NULL,46,NULL,'94.120.195.218','2025-10-12 09:40:49'),(5492,NULL,47,NULL,'94.120.195.218','2025-10-1
+2 09:40:51'),(5493,NULL,48,NULL,'94.120.195.218','2025-10-12 09:40:52'),(5494,NULL,49,NULL,'94.120.195.218','2025-10-12
+ 09:40:53'),(5495,NULL,50,NULL,'94.120.195.218','2025-10-12 09:40:54'),(5496,NULL,51,NULL,'94.120.195.218','2025-10-12 
+09:40:55'),(5497,NULL,52,NULL,'94.120.195.218','2025-10-12 09:40:56'),(5498,38,NULL,NULL,'176.40.224.112','2025-10-12 0
+9:40:56'),(5499,NULL,53,NULL,'94.120.195.218','2025-10-12 09:40:57'),(5500,NULL,54,NULL,'94.120.195.218','2025-10-12 09
+:40:57'),(5501,NULL,55,NULL,'94.120.195.218','2025-10-12 09:40:58'),(5502,NULL,56,NULL,'94.120.195.218','2025-10-12 09:
+40:59'),(5503,NULL,57,NULL,'94.120.195.218','2025-10-12 09:41:00'),(5504,NULL,58,NULL,'94.120.195.218','2025-10-12 09:4
+1:00'),(5505,38,NULL,NULL,'176.55.181.191','2025-10-12 09:41:05'),(5506,NULL,16,NULL,'176.55.181.191','2025-10-12 09:41
+:11'),(5507,NULL,18,NULL,'176.55.181.191','2025-10-12 09:41:12'),(5508,NULL,19,NULL,'176.55.181.191','2025-10-12 09:41:
+13'),(5509,NULL,20,NULL,'176.55.181.191','2025-10-12 09:41:14'),(5510,NULL,21,NULL,'176.55.181.191','2025-10-12 09:41:1
+4'),(5511,NULL,22,NULL,'176.55.181.191','2025-10-12 09:41:16'),(5512,NULL,23,NULL,'176.55.181.191','2025-10-12 09:41:17
+'),(5513,NULL,24,NULL,'176.55.181.191','2025-10-12 09:41:17'),(5514,NULL,25,NULL,'176.55.181.191','2025-10-12 09:41:18'
+),(5515,NULL,26,NULL,'176.55.181.191','2025-10-12 09:41:19'),(5516,NULL,27,NULL,'176.55.181.191','2025-10-12 09:41:21')
+,(5517,NULL,28,NULL,'176.55.181.191','2025-10-12 09:41:21'),(5518,NULL,29,NULL,'176.55.181.191','2025-10-12 09:41:23'),
+(5519,NULL,30,NULL,'176.55.181.191','2025-10-12 09:41:23'),(5520,NULL,31,NULL,'176.55.181.191','2025-10-12 09:41:25'),(
+5521,NULL,32,NULL,'176.55.181.191','2025-10-12 09:41:25'),(5522,NULL,33,NULL,'176.55.181.191','2025-10-12 09:41:26'),(5
+523,NULL,40,NULL,'176.55.181.191','2025-10-12 09:41:27'),(5525,NULL,41,NULL,'176.55.181.191','2025-10-12 09:41:30'),(55
+26,NULL,42,NULL,'176.55.181.191','2025-10-12 09:41:30'),(5527,NULL,43,NULL,'176.55.181.191','2025-10-12 09:41:31'),(552
+8,NULL,44,NULL,'176.55.181.191','2025-10-12 09:41:32'),(5529,38,NULL,NULL,'31.192.56.243','2025-10-12 09:41:34'),(5530,
+NULL,45,NULL,'176.55.181.191','2025-10-12 09:41:35'),(5531,NULL,46,NULL,'176.55.181.191','2025-10-12 09:41:36'),(5532,N
+ULL,47,NULL,'176.55.181.191','2025-10-12 09:41:37'),(5533,NULL,48,NULL,'176.55.181.191','2025-10-12 09:41:37'),(5534,2,
+NULL,NULL,'176.54.66.31','2025-10-12 09:41:38'),(5535,NULL,49,NULL,'176.55.181.191','2025-10-12 09:41:38'),(5536,NULL,5
+0,NULL,'176.55.181.191','2025-10-12 09:41:39'),(5537,NULL,51,NULL,'176.55.181.191','2025-10-12 09:41:40'),(5538,38,NULL
+,NULL,'176.54.66.31','2025-10-12 09:41:41'),(5539,NULL,52,NULL,'176.55.181.191','2025-10-12 09:41:41'),(5540,NULL,48,77
+,'5.25.16.63','2025-10-12 09:41:42'),(5541,NULL,53,NULL,'176.55.181.191','2025-10-12 09:41:42'),(5542,NULL,54,NULL,'176
+.55.181.191','2025-10-12 09:41:43'),(5543,2,NULL,NULL,'46.1.0.32','2025-10-12 09:41:44'),(5544,38,NULL,NULL,'78.180.26.
+131','2025-10-12 09:41:44'),(5545,NULL,55,NULL,'176.55.181.191','2025-10-12 09:41:44'),(5546,NULL,56,NULL,'176.55.181.1
+91','2025-10-12 09:41:45'),(5547,NULL,57,NULL,'176.55.181.191','2025-10-12 09:41:46'),(5548,NULL,58,NULL,'176.55.181.19
+1','2025-10-12 09:41:47'),(5549,NULL,58,NULL,'176.236.214.82','2025-10-12 09:41:49'),(5550,NULL,48,79,'5.25.16.63','202
+5-10-12 09:41:53'),(5551,38,NULL,NULL,'88.230.196.110','2025-10-12 09:42:03'),(5552,NULL,16,NULL,'176.41.51.134','2025-
+10-12 09:42:18'),(5555,NULL,48,81,'5.25.16.63','2025-10-12 09:42:25'),(5558,NULL,24,NULL,'195.155.170.168','2025-10-12 
+09:42:49'),(5559,38,NULL,NULL,'88.236.33.173','2025-10-12 09:42:51'),(5560,NULL,48,83,'5.25.16.63','2025-10-12 09:42:55
+'),(5561,NULL,48,85,'5.25.16.63','2025-10-12 09:43:03'),(5564,NULL,43,NULL,'78.163.179.90','2025-10-12 09:43:25'),(5565
+,38,NULL,NULL,'178.243.66.219','2025-10-12 09:43:36'),(5566,38,NULL,NULL,'176.216.98.220','2025-10-12 09:43:41'),(5567,
+2,NULL,NULL,'176.216.98.220','2025-10-12 09:43:49'),(5569,NULL,56,NULL,'94.235.125.156','2025-10-12 09:43:57'),(5570,38
+,NULL,NULL,'188.3.126.50','2025-10-12 09:44:25'),(5571,NULL,23,NULL,'88.240.186.157','2025-10-12 09:44:37'),(5573,38,NU
+LL,NULL,'217.131.126.204','2025-10-12 09:44:40'),(5574,38,NULL,NULL,'176.88.135.236','2025-10-12 09:44:47'),(5575,NULL,
+46,NULL,'78.176.100.232','2025-10-12 09:44:55'),(5576,38,NULL,NULL,'94.123.193.181','2025-10-12 09:45:02'),(5577,NULL,1
+6,NULL,'94.20.42.199','2025-10-12 09:45:09'),(5578,NULL,18,NULL,'94.20.42.199','2025-10-12 09:45:10'),(5580,NULL,19,NUL
+L,'94.20.42.199','2025-10-12 09:45:12'),(5581,NULL,20,NULL,'94.20.42.199','2025-10-12 09:45:12'),(5582,NULL,21,NULL,'94
+.20.42.199','2025-10-12 09:45:14'),(5583,NULL,22,NULL,'94.20.42.199','2025-10-12 09:45:15'),(5584,NULL,23,NULL,'94.20.4
+2.199','2025-10-12 09:45:16'),(5586,NULL,16,NULL,'94.123.193.181','2025-10-12 09:45:17'),(5587,NULL,18,NULL,'94.123.193
+.181','2025-10-12 09:45:18'),(5588,2,NULL,NULL,'212.47.149.94','2025-10-12 09:45:18'),(5589,NULL,19,NULL,'94.123.193.18
+1','2025-10-12 09:45:19'),(5590,NULL,24,NULL,'94.20.42.199','2025-10-12 09:45:19'),(5591,NULL,25,NULL,'94.20.42.199','2
+025-10-12 09:45:20'),(5592,NULL,20,NULL,'94.123.193.181','2025-10-12 09:45:20'),(5593,NULL,21,NULL,'94.123.193.181','20
+25-10-12 09:45:22'),(5594,NULL,26,NULL,'94.20.42.199','2025-10-12 09:45:22'),(5596,NULL,22,NULL,'94.123.193.181','2025-
+10-12 09:45:23'),(5597,NULL,27,NULL,'94.20.42.199','2025-10-12 09:45:25'),(5598,NULL,23,NULL,'94.123.193.181','2025-10-
+12 09:45:25'),(5599,NULL,28,NULL,'94.20.42.199','2025-10-12 09:45:26'),(5600,NULL,24,NULL,'94.123.193.181','2025-10-12 
+09:45:27'),(5601,NULL,25,NULL,'94.123.193.181','2025-10-12 09:45:28'),(5602,NULL,29,NULL,'94.20.42.199','2025-10-12 09:
+45:29'),(5603,NULL,26,NULL,'94.123.193.181','2025-10-12 09:45:29'),(5604,NULL,30,NULL,'94.20.42.199','2025-10-12 09:45:
+30'),(5605,NULL,31,NULL,'94.20.42.199','2025-10-12 09:45:31'),(5606,NULL,27,NULL,'94.123.193.181','2025-10-12 09:45:33'
+),(5607,NULL,32,NULL,'94.20.42.199','2025-10-12 09:45:34'),(5608,NULL,28,NULL,'94.123.193.181','2025-10-12 09:45:34'),(
+5609,NULL,29,NULL,'94.123.193.181','2025-10-12 09:45:36'),(5610,NULL,33,NULL,'94.20.42.199','2025-10-12 09:45:36'),(561
+1,NULL,40,NULL,'94.20.42.199','2025-10-12 09:45:37'),(5612,NULL,30,NULL,'94.123.193.181','2025-10-12 09:45:38'),(5613,N
+ULL,41,NULL,'94.20.42.199','2025-10-12 09:45:39'),(5614,NULL,31,NULL,'94.123.193.181','2025-10-12 09:45:40'),(5615,NULL
+,32,NULL,'94.123.193.181','2025-10-12 09:45:41'),(5616,NULL,42,NULL,'94.20.42.199','2025-10-12 09:45:43'),(5617,NULL,33
+,NULL,'94.123.193.181','2025-10-12 09:45:43'),(5618,NULL,40,NULL,'94.123.193.181','2025-10-12 09:45:46'),(5619,NULL,41,
+NULL,'94.123.193.181','2025-10-12 09:45:48'),(5620,NULL,43,NULL,'94.20.42.199','2025-10-12 09:45:48'),(5621,NULL,44,NUL
+L,'94.20.42.199','2025-10-12 09:45:50'),(5622,NULL,42,NULL,'94.123.193.181','2025-10-12 09:45:50'),(5623,NULL,45,NULL,'
+94.20.42.199','2025-10-12 09:45:50'),(5624,NULL,43,NULL,'94.123.193.181','2025-10-12 09:45:51'),(5625,NULL,46,NULL,'94.
+20.42.199','2025-10-12 09:45:53'),(5626,NULL,47,NULL,'94.20.42.199','2025-10-12 09:45:55'),(5627,NULL,44,NULL,'94.123.1
+93.181','2025-10-12 09:45:55'),(5628,NULL,48,NULL,'94.20.42.199','2025-10-12 09:45:56'),(5629,NULL,45,NULL,'94.123.193.
+181','2025-10-12 09:45:56'),(5630,NULL,46,NULL,'94.123.193.181','2025-10-12 09:45:59'),(5631,NULL,47,NULL,'94.123.193.1
+81','2025-10-12 09:46:01'),(5632,NULL,48,NULL,'94.123.193.181','2025-10-12 09:46:02'),(5633,NULL,49,NULL,'94.123.193.18
+1','2025-10-12 09:46:04'),(5634,NULL,50,NULL,'94.123.193.181','2025-10-12 09:46:05'),(5635,NULL,51,NULL,'94.123.193.181
+','2025-10-12 09:46:07'),(5636,NULL,52,NULL,'94.123.193.181','2025-10-12 09:46:09'),(5637,NULL,53,NULL,'94.123.193.181'
+,'2025-10-12 09:46:11'),(5638,NULL,54,NULL,'94.123.193.181','2025-10-12 09:46:13'),(5639,NULL,55,NULL,'94.123.193.181',
+'2025-10-12 09:46:14'),(5640,NULL,56,NULL,'94.123.193.181','2025-10-12 09:46:16'),(5642,NULL,57,NULL,'94.123.193.181','
+2025-10-12 09:46:21'),(5643,NULL,58,NULL,'94.123.193.181','2025-10-12 09:46:23'),(5644,NULL,58,1,'94.123.193.181','2025
+-10-12 09:46:37'),(5647,NULL,33,NULL,'78.180.4.29','2025-10-12 09:47:17'),(5648,38,NULL,NULL,'159.146.48.185','2025-10-
+12 09:47:20'),(5649,2,NULL,NULL,'159.146.48.185','2025-10-12 09:47:21'),(5651,38,NULL,NULL,'195.46.149.161','2025-10-12
+ 09:47:25'),(5652,38,NULL,NULL,'37.155.144.74','2025-10-12 09:47:54'),(5653,2,NULL,NULL,'37.155.144.74','2025-10-12 09:
+47:56'),(5655,NULL,48,91,'5.25.16.63','2025-10-12 09:48:05'),(5656,NULL,57,NULL,'5.25.153.36','2025-10-12 09:48:32'),(5
+657,NULL,58,NULL,'5.25.153.36','2025-10-12 09:48:33'),(5658,NULL,56,NULL,'5.25.153.36','2025-10-12 09:48:34'),(5660,NUL
+L,55,NULL,'5.25.153.36','2025-10-12 09:48:36'),(5661,NULL,54,NULL,'5.25.153.36','2025-10-12 09:48:36'),(5662,NULL,53,NU
+LL,'5.25.153.36','2025-10-12 09:48:37'),(5663,NULL,52,NULL,'5.25.153.36','2025-10-12 09:48:37'),(5664,NULL,51,NULL,'5.2
+5.153.36','2025-10-12 09:48:39'),(5665,NULL,58,NULL,'188.246.249.89','2025-10-12 09:48:39'),(5666,NULL,50,NULL,'5.25.15
+3.36','2025-10-12 09:48:39'),(5667,38,NULL,NULL,'92.44.146.166','2025-10-12 09:48:40'),(5668,NULL,49,NULL,'5.25.153.36'
+,'2025-10-12 09:48:40'),(5669,NULL,48,NULL,'5.25.153.36','2025-10-12 09:48:41'),(5670,NULL,47,NULL,'5.25.153.36','2025-
+10-12 09:48:42'),(5671,NULL,58,NULL,'85.102.233.224','2025-10-12 09:48:42'),(5672,NULL,46,NULL,'5.25.153.36','2025-10-1
+2 09:48:42'),(5673,NULL,45,NULL,'5.25.153.36','2025-10-12 09:48:43'),(5674,NULL,44,NULL,'5.25.153.36','2025-10-12 09:48
+:44'),(5675,NULL,19,NULL,'92.44.146.166','2025-10-12 09:48:44'),(5676,NULL,43,NULL,'5.25.153.36','2025-10-12 09:48:45')
+,(5677,NULL,42,NULL,'5.25.153.36','2025-10-12 09:48:45'),(5678,NULL,18,NULL,'92.44.146.166','2025-10-12 09:48:45'),(567
+9,NULL,16,NULL,'92.44.146.166','2025-10-12 09:48:46'),(5680,NULL,41,NULL,'5.25.153.36','2025-10-12 09:48:46'),(5681,NUL
+L,40,NULL,'5.25.153.36','2025-10-12 09:48:47'),(5682,NULL,20,NULL,'92.44.146.166','2025-10-12 09:48:47'),(5683,NULL,33,
+NULL,'5.25.153.36','2025-10-12 09:48:47'),(5684,NULL,16,NULL,'31.143.196.244','2025-10-12 09:48:48'),(5685,NULL,32,NULL
+,'5.25.153.36','2025-10-12 09:48:48'),(5686,NULL,21,NULL,'92.44.146.166','2025-10-12 09:48:48'),(5687,NULL,18,NULL,'31.
+143.196.244','2025-10-12 09:48:49'),(5688,NULL,31,NULL,'5.25.153.36','2025-10-12 09:48:49'),(5689,NULL,22,NULL,'92.44.1
+46.166','2025-10-12 09:48:49'),(5690,NULL,19,NULL,'31.143.196.244','2025-10-12 09:48:50'),(5691,NULL,23,NULL,'92.44.146
+.166','2025-10-12 09:48:50'),(5692,NULL,30,NULL,'5.25.153.36','2025-10-12 09:48:50'),(5693,NULL,20,NULL,'31.143.196.244
+','2025-10-12 09:48:51'),(5694,NULL,29,NULL,'5.25.153.36','2025-10-12 09:48:51'),(5695,NULL,28,NULL,'5.25.153.36','2025
+-10-12 09:48:51'),(5696,NULL,24,NULL,'92.44.146.166','2025-10-12 09:48:52'),(5697,NULL,21,NULL,'31.143.196.244','2025-1
+0-12 09:48:52'),(5698,38,NULL,NULL,'178.249.211.204','2025-10-12 09:48:52'),(5699,NULL,25,NULL,'92.44.146.166','2025-10
+-12 09:48:53'),(5700,NULL,27,NULL,'5.25.153.36','2025-10-12 09:48:53'),(5701,NULL,22,NULL,'31.143.196.244','2025-10-12 
+09:48:53'),(5702,NULL,26,NULL,'5.25.153.36','2025-10-12 09:48:54'),(5703,NULL,25,NULL,'5.25.153.36','2025-10-12 09:48:5
+4'),(5704,NULL,26,NULL,'92.44.146.166','2025-10-12 09:48:54'),(5705,NULL,23,NULL,'31.143.196.244','2025-10-12 09:48:54'
+),(5706,NULL,24,NULL,'31.143.196.244','2025-10-12 09:48:55'),(5707,NULL,24,NULL,'5.25.153.36','2025-10-12 09:48:55'),(5
+708,NULL,23,NULL,'5.25.153.36','2025-10-12 09:48:56'),(5709,NULL,25,NULL,'31.143.196.244','2025-10-12 09:48:56'),(5710,
+NULL,27,NULL,'92.44.146.166','2025-10-12 09:48:57'),(5711,NULL,22,NULL,'5.25.153.36','2025-10-12 09:48:57'),(5712,NULL,
+26,NULL,'31.143.196.244','2025-10-12 09:48:57'),(5713,NULL,21,NULL,'5.25.153.36','2025-10-12 09:48:57'),(5714,NULL,20,N
+ULL,'5.25.153.36','2025-10-12 09:48:57'),(5715,NULL,19,NULL,'5.25.153.36','2025-10-12 09:48:59'),(5716,NULL,28,NULL,'92
+.44.146.166','2025-10-12 09:48:59'),(5717,38,NULL,NULL,'188.57.18.185','2025-10-12 09:48:59'),(5718,NULL,27,NULL,'31.14
+3.196.244','2025-10-12 09:48:59'),(5719,NULL,18,NULL,'5.25.153.36','2025-10-12 09:48:59'),(5720,NULL,29,NULL,'92.44.146
+.166','2025-10-12 09:48:59'),(5721,NULL,28,NULL,'31.143.196.244','2025-10-12 09:49:00'),(5722,NULL,16,NULL,'5.25.153.36
+','2025-10-12 09:49:00'),(5723,NULL,30,NULL,'92.44.146.166','2025-10-12 09:49:01'),(5724,NULL,16,NULL,'88.228.110.92','
+2025-10-12 09:49:01'),(5725,NULL,30,NULL,'31.143.196.244','2025-10-12 09:49:01'),(5726,NULL,31,NULL,'92.44.146.166','20
+25-10-12 09:49:02'),(5727,38,NULL,NULL,'178.246.0.195','2025-10-12 09:49:02'),(5728,NULL,31,NULL,'31.143.196.244','2025
+-10-12 09:49:02'),(5729,NULL,18,NULL,'88.228.110.92','2025-10-12 09:49:02'),(5730,NULL,18,NULL,'5.47.169.1','2025-10-12
+ 09:49:02'),(5731,NULL,32,NULL,'31.143.196.244','2025-10-12 09:49:03'),(5732,NULL,32,NULL,'92.44.146.166','2025-10-12 0
+9:49:03'),(5733,NULL,33,NULL,'92.44.146.166','2025-10-12 09:49:04'),(5734,NULL,33,NULL,'31.143.196.244','2025-10-12 09:
+49:04'),(5735,NULL,19,NULL,'88.228.110.92','2025-10-12 09:49:04'),(5736,NULL,16,NULL,'188.57.18.185','2025-10-12 09:49:
+04'),(5737,38,NULL,NULL,'176.89.145.185','2025-10-12 09:49:04'),(5738,NULL,18,NULL,'188.57.18.185','2025-10-12 09:49:05
+'),(5739,NULL,40,NULL,'31.143.196.244','2025-10-12 09:49:05'),(5740,NULL,20,NULL,'88.228.110.92','2025-10-12 09:49:05')
+,(5741,NULL,40,NULL,'92.44.146.166','2025-10-12 09:49:06'),(5742,NULL,19,NULL,'188.57.18.185','2025-10-12 09:49:06'),(5
+743,NULL,41,NULL,'31.143.196.244','2025-10-12 09:49:06'),(5744,NULL,41,NULL,'92.44.146.166','2025-10-12 09:49:06'),(574
+5,NULL,20,NULL,'188.57.18.185','2025-10-12 09:49:06'),(5746,NULL,21,NULL,'88.228.110.92','2025-10-12 09:49:07'),(5747,N
+ULL,42,NULL,'31.143.196.244','2025-10-12 09:49:07'),(5748,NULL,21,NULL,'188.57.18.185','2025-10-12 09:49:08'),(5749,NUL
+L,42,NULL,'92.44.146.166','2025-10-12 09:49:08'),(5750,NULL,22,NULL,'88.228.110.92','2025-10-12 09:49:08'),(5751,NULL,2
+2,NULL,'188.57.18.185','2025-10-12 09:49:08'),(5752,NULL,43,NULL,'92.44.146.166','2025-10-12 09:49:08'),(5753,NULL,43,N
+ULL,'31.143.196.244','2025-10-12 09:49:08'),(5754,NULL,23,NULL,'188.57.18.185','2025-10-12 09:49:09'),(5755,NULL,23,NUL
+L,'88.228.110.92','2025-10-12 09:49:09'),(5756,NULL,44,NULL,'31.143.196.244','2025-10-12 09:49:10'),(5757,NULL,44,NULL,
+'92.44.146.166','2025-10-12 09:49:10'),(5758,38,NULL,NULL,'78.177.26.245','2025-10-12 09:49:10'),(5759,NULL,24,NULL,'88
+.228.110.92','2025-10-12 09:49:10'),(5760,NULL,45,NULL,'92.44.146.166','2025-10-12 09:49:10'),(5761,NULL,45,NULL,'31.14
+3.196.244','2025-10-12 09:49:11'),(5762,NULL,25,NULL,'188.57.18.185','2025-10-12 09:49:11'),(5763,NULL,25,NULL,'88.228.
+110.92','2025-10-12 09:49:12'),(5764,NULL,46,NULL,'31.143.196.244','2025-10-12 09:49:12'),(5765,NULL,24,NULL,'188.57.18
+.185','2025-10-12 09:49:12'),(5766,NULL,46,NULL,'92.44.146.166','2025-10-12 09:49:13'),(5767,NULL,47,NULL,'31.143.196.2
+44','2025-10-12 09:49:13'),(5768,NULL,26,NULL,'88.228.110.92','2025-10-12 09:49:13'),(5769,NULL,47,NULL,'92.44.146.166'
+,'2025-10-12 09:49:13'),(5770,NULL,48,NULL,'31.143.196.244','2025-10-12 09:49:14'),(5771,NULL,26,NULL,'188.57.18.185','
+2025-10-12 09:49:14'),(5772,NULL,27,NULL,'88.228.110.92','2025-10-12 09:49:14'),(5773,2,NULL,NULL,'78.187.197.83','2025
+-10-12 09:49:14'),(5774,38,NULL,NULL,'188.3.238.131','2025-10-12 09:49:14'),(5775,NULL,49,NULL,'31.143.196.244','2025-1
+0-12 09:49:14'),(5776,NULL,48,NULL,'92.44.146.166','2025-10-12 09:49:15'),(5777,NULL,28,NULL,'88.228.110.92','2025-10-1
+2 09:49:15'),(5778,NULL,27,NULL,'188.57.18.185','2025-10-12 09:49:15'),(5779,NULL,50,NULL,'31.143.196.244','2025-10-12 
+09:49:15'),(5780,NULL,49,NULL,'92.44.146.166','2025-10-12 09:49:16'),(5781,NULL,29,NULL,'88.228.110.92','2025-10-12 09:
+49:16'),(5782,38,NULL,NULL,'78.187.197.83','2025-10-12 09:49:16'),(5783,NULL,51,NULL,'31.143.196.244','2025-10-12 09:49
+:16'),(5784,NULL,28,NULL,'188.57.18.185','2025-10-12 09:49:16'),(5785,NULL,29,NULL,'188.57.18.185','2025-10-12 09:49:17
+'),(5786,NULL,50,NULL,'92.44.146.166','2025-10-12 09:49:17'),(5787,NULL,30,NULL,'88.228.110.92','2025-10-12 09:49:17'),
+(5788,NULL,52,NULL,'31.143.196.244','2025-10-12 09:49:17'),(5789,NULL,51,NULL,'92.44.146.166','2025-10-12 09:49:18'),(5
+790,NULL,30,NULL,'188.57.18.185','2025-10-12 09:49:18'),(5791,2,NULL,NULL,'188.3.238.131','2025-10-12 09:49:18'),(5792,
+NULL,19,NULL,'85.107.108.131','2025-10-12 09:49:18'),(5793,NULL,31,NULL,'88.228.110.92','2025-10-12 09:49:18'),(5794,NU
+LL,31,NULL,'188.57.18.185','2025-10-12 09:49:18'),(5795,NULL,32,NULL,'188.57.18.185','2025-10-12 09:49:19'),(5796,38,NU
+LL,NULL,'176.54.243.6','2025-10-12 09:49:19'),(5797,NULL,32,NULL,'88.228.110.92','2025-10-12 09:49:19'),(5798,NULL,52,N
+ULL,'92.44.146.166','2025-10-12 09:49:19'),(5799,NULL,33,NULL,'188.57.18.185','2025-10-12 09:49:20'),(5800,NULL,33,NULL
+,'88.228.110.92','2025-10-12 09:49:20'),(5801,NULL,53,NULL,'92.44.146.166','2025-10-12 09:49:21'),(5802,NULL,40,NULL,'1
+88.57.18.185','2025-10-12 09:49:21'),(5803,NULL,54,NULL,'92.44.146.166','2025-10-12 09:49:22'),(5805,NULL,40,NULL,'88.2
+28.110.92','2025-10-12 09:49:22'),(5806,NULL,41,NULL,'188.57.18.185','2025-10-12 09:49:23'),(5807,NULL,42,NULL,'188.57.
+18.185','2025-10-12 09:49:23'),(5808,NULL,55,NULL,'92.44.146.166','2025-10-12 09:49:23'),(5809,NULL,41,NULL,'88.228.110
+.92','2025-10-12 09:49:24'),(5810,NULL,43,NULL,'188.57.18.185','2025-10-12 09:49:24'),(5811,NULL,44,NULL,'188.57.18.185
+','2025-10-12 09:49:24'),(5812,NULL,56,NULL,'92.44.146.166','2025-10-12 09:49:25'),(5813,NULL,45,NULL,'188.57.18.185','
+2025-10-12 09:49:25'),(5814,NULL,42,NULL,'88.228.110.92','2025-10-12 09:49:25'),(5815,NULL,57,NULL,'92.44.146.166','202
+5-10-12 09:49:26'),(5816,NULL,43,NULL,'88.228.110.92','2025-10-12 09:49:26'),(5817,NULL,46,NULL,'188.57.18.185','2025-1
+0-12 09:49:27'),(5818,NULL,47,NULL,'188.57.18.185','2025-10-12 09:49:27'),(5819,NULL,44,NULL,'88.228.110.92','2025-10-1
+2 09:49:27'),(5820,NULL,48,NULL,'188.57.18.185','2025-10-12 09:49:28'),(5821,NULL,58,NULL,'92.44.146.166','2025-10-12 0
+9:49:28'),(5822,NULL,49,NULL,'188.57.18.185','2025-10-12 09:49:28'),(5823,NULL,45,NULL,'88.228.110.92','2025-10-12 09:4
+9:29'),(5824,NULL,50,NULL,'188.57.18.185','2025-10-12 09:49:30'),(5825,NULL,51,NULL,'188.57.18.185','2025-10-12 09:49:3
+0'),(5826,NULL,58,NULL,'88.224.164.115','2025-10-12 09:49:31'),(5827,NULL,46,NULL,'88.228.110.92','2025-10-12 09:49:31'
+),(5828,NULL,52,NULL,'188.57.18.185','2025-10-12 09:49:31'),(5829,NULL,53,NULL,'188.57.18.185','2025-10-12 09:49:32'),(
+5830,NULL,54,NULL,'188.57.18.185','2025-10-12 09:49:33'),(5831,NULL,47,NULL,'88.228.110.92','2025-10-12 09:49:33'),(583
+2,NULL,55,NULL,'188.57.18.185','2025-10-12 09:49:34'),(5833,NULL,48,NULL,'88.228.110.92','2025-10-12 09:49:34'),(5837,N
+ULL,58,NULL,'188.57.18.185','2025-10-12 09:49:37'),(5838,NULL,49,NULL,'88.228.110.92','2025-10-12 09:49:38'),(5839,NULL
+,50,NULL,'88.228.110.92','2025-10-12 09:49:40'),(5840,NULL,56,NULL,'188.57.18.185','2025-10-12 09:49:40'),(5841,NULL,51
+,NULL,'88.228.110.92','2025-10-12 09:49:41'),(5842,NULL,57,NULL,'188.57.18.185','2025-10-12 09:49:42'),(5843,NULL,52,NU
+LL,'88.228.110.92','2025-10-12 09:49:42'),(5844,NULL,53,NULL,'88.228.110.92','2025-10-12 09:49:44'),(5845,NULL,54,NULL,
+'88.228.110.92','2025-10-12 09:49:46'),(5846,NULL,55,NULL,'88.228.110.92','2025-10-12 09:49:48'),(5848,NULL,57,NULL,'88
+.228.110.92','2025-10-12 09:49:51'),(5849,2,NULL,NULL,'176.88.132.133','2025-10-12 09:49:53'),(5850,38,NULL,NULL,'176.8
+8.132.133','2025-10-12 09:49:56'),(5851,NULL,58,NULL,'176.89.145.185','2025-10-12 09:50:44'),(5852,NULL,58,NULL,'88.243
+.194.128','2025-10-12 09:51:14'),(5853,NULL,16,NULL,'88.228.110.92','2025-10-12 09:51:16'),(5854,NULL,18,NULL,'88.228.1
+10.92','2025-10-12 09:51:17'),(5855,NULL,19,NULL,'88.228.110.92','2025-10-12 09:51:18'),(5856,NULL,20,NULL,'88.228.110.
+92','2025-10-12 09:51:19'),(5857,NULL,21,NULL,'88.228.110.92','2025-10-12 09:51:20'),(5858,NULL,22,NULL,'88.228.110.92'
+,'2025-10-12 09:51:21'),(5859,NULL,23,NULL,'88.228.110.92','2025-10-12 09:51:22'),(5860,NULL,24,NULL,'88.228.110.92','2
+025-10-12 09:51:23'),(5861,NULL,25,NULL,'88.228.110.92','2025-10-12 09:51:24'),(5862,NULL,26,NULL,'88.228.110.92','2025
+-10-12 09:51:25'),(5863,NULL,27,NULL,'88.228.110.92','2025-10-12 09:51:27'),(5864,NULL,28,NULL,'88.228.110.92','2025-10
+-12 09:51:27'),(5865,NULL,58,NULL,'88.230.78.154','2025-10-12 09:51:28'),(5866,NULL,29,NULL,'88.228.110.92','2025-10-12
+ 09:51:29'),(5867,NULL,57,NULL,'88.230.78.154','2025-10-12 09:51:29'),(5868,NULL,30,NULL,'88.228.110.92','2025-10-12 09
+:51:29'),(5869,NULL,31,NULL,'88.228.110.92','2025-10-12 09:51:30'),(5870,NULL,56,NULL,'88.230.78.154','2025-10-12 09:51
+:31'),(5871,NULL,55,NULL,'88.230.78.154','2025-10-12 09:51:31'),(5872,NULL,32,NULL,'88.228.110.92','2025-10-12 09:51:31
+'),(5873,NULL,33,NULL,'88.228.110.92','2025-10-12 09:51:32'),(5874,NULL,54,NULL,'88.230.78.154','2025-10-12 09:51:33'),
+(5875,NULL,53,NULL,'88.230.78.154','2025-10-12 09:51:33'),(5876,NULL,40,NULL,'88.228.110.92','2025-10-12 09:51:33'),(58
+78,NULL,41,NULL,'88.228.110.92','2025-10-12 09:51:34'),(5879,NULL,52,NULL,'88.230.78.154','2025-10-12 09:51:34'),(5880,
+NULL,42,NULL,'88.228.110.92','2025-10-12 09:51:35'),(5881,NULL,51,NULL,'88.230.78.154','2025-10-12 09:51:35'),(5882,NUL
+L,43,NULL,'88.228.110.92','2025-10-12 09:51:35'),(5883,NULL,50,NULL,'88.230.78.154','2025-10-12 09:51:36'),(5884,NULL,4
+4,NULL,'88.228.110.92','2025-10-12 09:51:36'),(5885,NULL,45,NULL,'88.228.110.92','2025-10-12 09:51:37'),(5886,NULL,49,N
+ULL,'88.230.78.154','2025-10-12 09:51:37'),(5887,NULL,46,NULL,'88.228.110.92','2025-10-12 09:51:38'),(5888,NULL,47,NULL
+,'88.228.110.92','2025-10-12 09:51:39'),(5889,NULL,48,NULL,'88.230.78.154','2025-10-12 09:51:39'),(5890,NULL,47,NULL,'8
+8.230.78.154','2025-10-12 09:51:39'),(5891,NULL,48,NULL,'88.228.110.92','2025-10-12 09:51:40'),(5892,NULL,49,NULL,'88.2
+28.110.92','2025-10-12 09:51:40'),(5893,NULL,46,NULL,'88.230.78.154','2025-10-12 09:51:40'),(5894,NULL,50,NULL,'88.228.
+110.92','2025-10-12 09:51:41'),(5895,NULL,51,NULL,'88.228.110.92','2025-10-12 09:51:42'),(5896,NULL,45,NULL,'88.230.78.
+154','2025-10-12 09:51:42'),(5897,NULL,44,NULL,'88.230.78.154','2025-10-12 09:51:43'),(5898,NULL,52,NULL,'88.228.110.92
+','2025-10-12 09:51:43'),(5899,NULL,53,NULL,'88.228.110.92','2025-10-12 09:51:43'),(5900,NULL,43,NULL,'88.230.78.154','
+2025-10-12 09:51:44'),(5901,NULL,54,NULL,'88.228.110.92','2025-10-12 09:51:45'),(5902,NULL,55,NULL,'88.228.110.92','202
+5-10-12 09:51:45'),(5903,NULL,42,NULL,'88.230.78.154','2025-10-12 09:51:45'),(5905,NULL,57,NULL,'88.228.110.92','2025-1
+0-12 09:51:47'),(5906,NULL,41,NULL,'88.230.78.154','2025-10-12 09:51:47'),(5907,NULL,40,NULL,'88.230.78.154','2025-10-1
+2 09:51:47'),(5908,NULL,58,NULL,'88.228.110.92','2025-10-12 09:51:48'),(5909,NULL,33,NULL,'88.230.78.154','2025-10-12 0
+9:51:48'),(5910,NULL,32,NULL,'88.230.78.154','2025-10-12 09:51:49'),(5911,NULL,31,NULL,'88.230.78.154','2025-10-12 09:5
+1:50'),(5912,NULL,30,NULL,'88.230.78.154','2025-10-12 09:51:50'),(5913,38,NULL,NULL,'212.47.141.12','2025-10-12 09:52:0
+7'),(5914,2,NULL,NULL,'212.47.141.12','2025-10-12 09:52:11'),(5915,NULL,29,NULL,'88.230.78.154','2025-10-12 09:52:13'),
+(5916,NULL,28,NULL,'88.230.78.154','2025-10-12 09:52:15'),(5917,NULL,27,NULL,'88.230.78.154','2025-10-12 09:52:17'),(59
+18,NULL,26,NULL,'88.230.78.154','2025-10-12 09:52:19'),(5919,NULL,25,NULL,'88.230.78.154','2025-10-12 09:52:20'),(5920,
+NULL,24,NULL,'88.230.78.154','2025-10-12 09:52:21'),(5921,NULL,23,NULL,'88.230.78.154','2025-10-12 09:52:22'),(5922,NUL
+L,22,NULL,'88.230.78.154','2025-10-12 09:52:24'),(5923,NULL,21,NULL,'88.230.78.154','2025-10-12 09:52:24'),(5924,38,NUL
+L,NULL,'88.234.65.160','2025-10-12 09:52:25'),(5925,NULL,20,NULL,'88.230.78.154','2025-10-12 09:52:25'),(5926,2,NULL,NU
+LL,'88.234.65.160','2025-10-12 09:52:26'),(5927,NULL,19,NULL,'88.230.78.154','2025-10-12 09:52:27'),(5928,NULL,18,NULL,
+'88.230.78.154','2025-10-12 09:52:28'),(5929,NULL,16,NULL,'88.230.78.154','2025-10-12 09:52:29'),(5930,NULL,18,389,'178
+.240.154.244','2025-10-12 09:52:40'),(5932,38,NULL,NULL,'88.235.212.96','2025-10-12 09:52:44'),(5934,38,NULL,NULL,'88.2
+36.118.37','2025-10-12 09:52:49'),(5935,2,NULL,NULL,'88.236.118.37','2025-10-12 09:52:51'),(5936,NULL,17,NULL,'94.120.1
+95.218','2025-10-12 09:52:59'),(5937,NULL,34,NULL,'94.120.195.218','2025-10-12 09:53:01'),(5938,NULL,35,NULL,'94.120.19
+5.218','2025-10-12 09:53:02'),(5939,NULL,36,NULL,'94.120.195.218','2025-10-12 09:53:02'),(5940,NULL,37,NULL,'94.120.195
+.218','2025-10-12 09:53:03'),(5941,NULL,38,NULL,'94.120.195.218','2025-10-12 09:53:04'),(5942,38,NULL,NULL,'88.236.185.
+210','2025-10-12 09:53:14'),(5943,NULL,47,389,'109.228.250.177','2025-10-12 09:53:30'),(5944,38,NULL,NULL,'5.176.121.83
+','2025-10-12 09:53:35'),(5945,NULL,58,NULL,'5.24.44.30','2025-10-12 09:53:49'),(5946,38,NULL,NULL,'88.240.177.32','202
+5-10-12 09:53:54'),(5947,NULL,16,NULL,'62.248.106.50','2025-10-12 09:54:25'),(5948,NULL,16,NULL,'88.228.110.92','2025-1
+0-12 09:54:28'),(5949,NULL,18,NULL,'88.228.110.92','2025-10-12 09:54:30'),(5950,NULL,19,NULL,'88.228.110.92','2025-10-1
+2 09:54:31'),(5951,38,NULL,NULL,'176.88.121.89','2025-10-12 09:54:39'),(5952,38,NULL,NULL,'5.229.23.192','2025-10-12 09
+:54:39'),(5953,38,NULL,NULL,'176.238.211.104','2025-10-12 09:54:45'),(5956,38,NULL,NULL,'151.245.198.4','2025-10-12 09:
+54:55'),(5957,38,NULL,NULL,'78.174.44.228','2025-10-12 09:54:55'),(5958,38,NULL,NULL,'94.235.250.228','2025-10-12 09:55
+:06'),(5959,2,NULL,NULL,'94.235.250.228','2025-10-12 09:55:12'),(5961,38,NULL,NULL,'79.127.141.119','2025-10-12 09:55:1
+8'),(5962,NULL,58,NULL,'88.228.110.92','2025-10-12 09:55:18'),(5963,NULL,57,NULL,'88.228.110.92','2025-10-12 09:55:18')
+,(5965,38,NULL,NULL,'5.229.23.192','2025-10-12 09:55:20'),(5967,38,NULL,NULL,'88.230.251.169','2025-10-12 09:55:23'),(5
+968,NULL,56,NULL,'88.228.110.92','2025-10-12 09:55:24'),(5969,NULL,58,NULL,'85.100.70.22','2025-10-12 09:55:24'),(5970,
+NULL,22,NULL,'78.167.62.253','2025-10-12 09:55:25'),(5971,NULL,55,NULL,'88.228.110.92','2025-10-12 09:55:25'),(5972,NUL
+L,54,NULL,'88.228.110.92','2025-10-12 09:55:26'),(5973,NULL,53,NULL,'88.228.110.92','2025-10-12 09:55:28'),(5974,NULL,4
+8,145,'5.25.16.63','2025-10-12 09:55:28'),(5975,NULL,52,NULL,'88.228.110.92','2025-10-12 09:55:29'),(5976,NULL,51,NULL,
+'88.228.110.92','2025-10-12 09:55:30'),(5977,NULL,50,NULL,'88.228.110.92','2025-10-12 09:55:31'),(5978,NULL,49,NULL,'88
+.228.110.92','2025-10-12 09:55:32'),(5979,NULL,48,143,'5.25.16.63','2025-10-12 09:55:32'),(5980,NULL,48,NULL,'88.228.11
+0.92','2025-10-12 09:55:33'),(5981,NULL,47,NULL,'88.228.110.92','2025-10-12 09:55:34'),(5982,NULL,46,NULL,'88.228.110.9
+2','2025-10-12 09:55:35'),(5983,NULL,45,NULL,'88.228.110.92','2025-10-12 09:55:36'),(5984,NULL,44,NULL,'88.228.110.92',
+'2025-10-12 09:55:37'),(5985,NULL,43,NULL,'88.228.110.92','2025-10-12 09:55:37'),(5986,NULL,42,NULL,'88.228.110.92','20
+25-10-12 09:55:39'),(5987,NULL,41,NULL,'88.228.110.92','2025-10-12 09:55:39'),(5989,NULL,48,147,'5.25.16.63','2025-10-1
+2 09:55:48'),(5990,NULL,58,NULL,'88.230.251.169','2025-10-12 09:55:49'),(5991,NULL,57,NULL,'88.230.251.169','2025-10-12
+ 09:55:50'),(5992,NULL,56,NULL,'88.230.251.169','2025-10-12 09:55:51'),(5993,NULL,55,NULL,'88.230.251.169','2025-10-12 
+09:55:52'),(5994,NULL,54,NULL,'88.230.251.169','2025-10-12 09:55:53'),(5995,2,NULL,NULL,'51.210.149.192','2025-10-12 09
+:55:53'),(5996,NULL,53,NULL,'88.230.251.169','2025-10-12 09:55:54'),(5997,NULL,52,NULL,'88.230.251.169','2025-10-12 09:
+55:54'),(5998,NULL,51,NULL,'88.230.251.169','2025-10-12 09:55:56'),(5999,NULL,50,NULL,'88.230.251.169','2025-10-12 09:5
+5:57'),(6000,NULL,49,NULL,'88.230.251.169','2025-10-12 09:55:58'),(6001,NULL,48,NULL,'88.230.251.169','2025-10-12 09:55
+:59'),(6002,NULL,47,NULL,'88.230.251.169','2025-10-12 09:56:00'),(6003,NULL,46,NULL,'88.230.251.169','2025-10-12 09:56:
+01'),(6004,NULL,45,NULL,'88.230.251.169','2025-10-12 09:56:02'),(6005,NULL,44,NULL,'88.230.251.169','2025-10-12 09:56:0
+3'),(6006,NULL,43,NULL,'88.230.251.169','2025-10-12 09:56:04'),(6007,NULL,42,NULL,'88.230.251.169','2025-10-12 09:56:05
+'),(6008,NULL,41,NULL,'88.230.251.169','2025-10-12 09:56:06'),(6009,NULL,40,NULL,'88.230.251.169','2025-10-12 09:56:07'
+),(6010,NULL,33,NULL,'88.230.251.169','2025-10-12 09:56:08'),(6011,NULL,32,NULL,'88.230.251.169','2025-10-12 09:56:10')
+,(6012,NULL,31,NULL,'88.230.251.169','2025-10-12 09:56:10'),(6013,NULL,16,NULL,'79.127.141.119','2025-10-12 09:56:11'),
+(6014,NULL,30,NULL,'88.230.251.169','2025-10-12 09:56:12'),(6015,NULL,29,NULL,'88.230.251.169','2025-10-12 09:56:13'),(
+6016,NULL,28,NULL,'88.230.251.169','2025-10-12 09:56:14'),(6017,NULL,27,NULL,'88.230.251.169','2025-10-12 09:56:15'),(6
+018,NULL,26,NULL,'88.230.251.169','2025-10-12 09:56:16'),(6019,NULL,25,NULL,'88.230.251.169','2025-10-12 09:56:17'),(60
+20,NULL,24,NULL,'88.230.251.169','2025-10-12 09:56:18'),(6021,NULL,23,NULL,'88.230.251.169','2025-10-12 09:56:19'),(602
+2,NULL,22,NULL,'88.230.251.169','2025-10-12 09:56:20'),(6023,NULL,21,NULL,'88.230.251.169','2025-10-12 09:56:21'),(6024
+,NULL,20,NULL,'88.230.251.169','2025-10-12 09:56:22'),(6025,NULL,19,NULL,'88.230.251.169','2025-10-12 09:56:23'),(6026,
+NULL,18,NULL,'88.230.251.169','2025-10-12 09:56:24'),(6027,NULL,16,NULL,'88.230.251.169','2025-10-12 09:56:25'),(6029,3
+8,NULL,NULL,'31.171.51.182','2025-10-12 09:56:43'),(6030,38,NULL,NULL,'78.177.26.245','2025-10-12 09:56:51'),(6031,2,NU
+LL,NULL,'31.171.51.182','2025-10-12 09:56:58'),(6032,NULL,47,NULL,'176.54.66.187','2025-10-12 09:57:13'),(6033,38,NULL,
+NULL,'185.188.29.153','2025-10-12 09:57:14'),(6034,2,NULL,NULL,'88.242.211.15','2025-10-12 09:57:23'),(6035,38,NULL,NUL
+L,'217.131.109.114','2025-10-12 09:57:30'),(6036,2,NULL,NULL,'51.89.41.182','2025-10-12 09:58:02'),(6037,38,NULL,NULL,'
+51.89.41.182','2025-10-12 09:58:04'),(6038,38,NULL,NULL,'212.154.114.182','2025-10-12 09:58:13'),(6039,NULL,16,NULL,'31
+.143.41.103','2025-10-12 09:58:15'),(6040,NULL,48,163,'5.25.16.63','2025-10-12 09:58:16'),(6041,38,NULL,NULL,'212.252.1
+37.212','2025-10-12 09:58:29'),(6042,NULL,17,NULL,'88.235.233.32','2025-10-12 09:58:56'),(6043,NULL,18,485,'178.240.154
+.244','2025-10-12 09:59:03'),(6044,38,NULL,NULL,'176.43.182.150','2025-10-12 09:59:08'),(6045,2,NULL,NULL,'94.235.46.23
+','2025-10-12 09:59:12'),(6046,38,NULL,NULL,'94.235.46.23','2025-10-12 09:59:15'),(6047,NULL,49,NULL,'31.145.216.10','2
+025-10-12 09:59:33'),(6048,NULL,21,NULL,'176.239.72.209','2025-10-12 09:59:36'),(6049,NULL,58,3,'78.180.15.143','2025-1
+0-12 09:59:43'),(6050,38,NULL,NULL,'78.180.32.155','2025-10-12 09:59:47'),(6051,NULL,58,NULL,'78.180.15.143','2025-10-1
+2 09:59:51'),(6054,2,NULL,NULL,'88.235.230.49','2025-10-12 10:00:57'),(6055,38,NULL,NULL,'88.235.230.49','2025-10-12 10
+:00:59'),(6056,38,NULL,NULL,'178.247.61.58','2025-10-12 10:01:01'),(6057,38,NULL,NULL,'78.174.202.101','2025-10-12 10:0
+1:09'),(6058,2,NULL,NULL,'78.174.202.101','2025-10-12 10:01:12'),(6060,38,NULL,NULL,'88.240.177.32','2025-10-12 10:01:3
+5'),(6062,38,NULL,NULL,'178.246.124.153','2025-10-12 10:01:59'),(6063,38,NULL,NULL,'212.47.144.142','2025-10-12 10:02:0
+0'),(6064,NULL,45,NULL,'88.242.220.231','2025-10-12 10:02:01'),(6065,2,NULL,NULL,'212.47.144.142','2025-10-12 10:02:02'
+),(6066,NULL,16,62,'79.127.141.119','2025-10-12 10:02:07'),(6068,38,NULL,NULL,'176.43.221.5','2025-10-12 10:02:20'),(60
+69,NULL,54,NULL,'149.86.131.8','2025-10-12 10:02:29'),(6070,NULL,55,NULL,'149.86.131.8','2025-10-12 10:02:30'),(6071,NU
+LL,56,NULL,'149.86.131.8','2025-10-12 10:02:32'),(6072,NULL,57,NULL,'149.86.131.8','2025-10-12 10:02:35'),(6073,NULL,58
+,NULL,'149.86.131.8','2025-10-12 10:02:36'),(6074,NULL,58,NULL,'85.99.110.190','2025-10-12 10:03:08'),(6076,NULL,41,87,
+'149.86.128.211','2025-10-12 10:03:14'),(6077,NULL,25,321,'176.54.222.151','2025-10-12 10:03:16'),(6078,38,NULL,NULL,'2
+12.47.140.246','2025-10-12 10:03:27'),(6079,38,NULL,NULL,'149.86.128.211','2025-10-12 10:03:28'),(6080,38,NULL,NULL,'95
+.65.251.84','2025-10-12 10:03:45'),(6081,38,NULL,NULL,'31.206.197.224','2025-10-12 10:03:47'),(6083,38,NULL,NULL,'77.67
+.242.119','2025-10-12 10:04:04'),(6084,NULL,56,5,'212.47.140.246','2025-10-12 10:04:06'),(6085,NULL,56,NULL,'212.47.140
+.246','2025-10-12 10:04:10'),(6086,NULL,58,NULL,'88.234.237.106','2025-10-12 10:04:17'),(6087,38,NULL,NULL,'178.247.61.
+58','2025-10-12 10:04:52'),(6088,38,NULL,NULL,'88.242.220.231','2025-10-12 10:05:06'),(6089,NULL,16,NULL,'81.8.31.110',
+'2025-10-12 10:05:09'),(6090,NULL,43,NULL,'159.146.74.150','2025-10-12 10:05:45'),(6091,NULL,58,793,'178.247.61.58','20
+25-10-12 10:05:46'),(6092,NULL,42,NULL,'159.146.74.150','2025-10-12 10:05:46'),(6093,NULL,58,791,'178.247.61.58','2025-
+10-12 10:05:47'),(6094,NULL,41,NULL,'159.146.74.150','2025-10-12 10:05:47'),(6095,NULL,40,NULL,'159.146.74.150','2025-1
+0-12 10:05:48'),(6096,NULL,33,NULL,'159.146.74.150','2025-10-12 10:05:49'),(6097,NULL,32,NULL,'159.146.74.150','2025-10
+-12 10:05:49'),(6098,NULL,31,NULL,'159.146.74.150','2025-10-12 10:05:50'),(6099,NULL,30,NULL,'159.146.74.150','2025-10-
+12 10:05:50'),(6100,NULL,29,NULL,'159.146.74.150','2025-10-12 10:05:50'),(6101,NULL,57,NULL,'31.155.131.150','2025-10-1
+2 10:05:51'),(6102,NULL,28,NULL,'159.146.74.150','2025-10-12 10:05:52'),(6103,NULL,27,NULL,'159.146.74.150','2025-10-12
+ 10:05:52'),(6104,NULL,26,NULL,'159.146.74.150','2025-10-12 10:05:53'),(6105,NULL,25,NULL,'159.146.74.150','2025-10-12 
+10:05:53'),(6106,NULL,24,NULL,'159.146.74.150','2025-10-12 10:05:54'),(6107,NULL,23,NULL,'159.146.74.150','2025-10-12 1
+0:05:54'),(6108,NULL,22,NULL,'159.146.74.150','2025-10-12 10:05:55'),(6109,NULL,21,NULL,'159.146.74.150','2025-10-12 10
+:05:55'),(6110,NULL,20,NULL,'159.146.74.150','2025-10-12 10:05:56'),(6111,NULL,19,NULL,'159.146.74.150','2025-10-12 10:
+05:57'),(6112,NULL,18,NULL,'159.146.74.150','2025-10-12 10:05:57'),(6113,NULL,16,NULL,'159.146.74.150','2025-10-12 10:0
+5:57'),(6114,NULL,44,NULL,'159.146.74.150','2025-10-12 10:06:01'),(6115,NULL,45,NULL,'159.146.74.150','2025-10-12 10:06
+:01'),(6116,NULL,46,NULL,'159.146.74.150','2025-10-12 10:06:02'),(6117,NULL,47,NULL,'159.146.74.150','2025-10-12 10:06:
+09'),(6118,NULL,48,NULL,'159.146.74.150','2025-10-12 10:06:10'),(6119,NULL,49,NULL,'159.146.74.150','2025-10-12 10:06:1
+0'),(6120,38,NULL,NULL,'78.180.3.139','2025-10-12 10:06:11'),(6121,38,NULL,NULL,'78.180.34.159','2025-10-12 10:06:15'),
+(6122,38,NULL,NULL,'172.225.194.90','2025-10-12 10:06:25'),(6123,2,NULL,NULL,'172.225.194.90','2025-10-12 10:06:28'),(6
+124,NULL,54,NULL,'78.161.238.128','2025-10-12 10:06:29'),(6125,38,NULL,NULL,'78.180.3.139','2025-10-12 10:06:30'),(6126
+,NULL,55,NULL,'78.161.238.128','2025-10-12 10:06:30'),(6127,NULL,50,NULL,'159.146.74.150','2025-10-12 10:06:30'),(6128,
+NULL,56,NULL,'78.161.238.128','2025-10-12 10:06:31'),(6129,NULL,51,NULL,'159.146.74.150','2025-10-12 10:06:32'),(6130,N
+ULL,57,NULL,'78.161.238.128','2025-10-12 10:06:32'),(6131,NULL,58,NULL,'78.161.238.128','2025-10-12 10:06:33'),(6132,NU
+LL,53,NULL,'78.161.238.128','2025-10-12 10:06:35'),(6133,NULL,52,NULL,'78.161.238.128','2025-10-12 10:06:36'),(6134,NUL
+L,51,NULL,'78.161.238.128','2025-10-12 10:06:37'),(6135,NULL,50,NULL,'78.161.238.128','2025-10-12 10:06:38'),(6136,NULL
+,49,NULL,'78.161.238.128','2025-10-12 10:06:38'),(6137,NULL,48,NULL,'78.161.238.128','2025-10-12 10:06:39'),(6138,NULL,
+47,NULL,'78.161.238.128','2025-10-12 10:06:40'),(6139,NULL,46,NULL,'78.161.238.128','2025-10-12 10:06:41'),(6140,NULL,4
+5,NULL,'78.161.238.128','2025-10-12 10:06:42'),(6141,NULL,52,NULL,'159.146.74.150','2025-10-12 10:06:42'),(6142,NULL,18
+,NULL,'78.180.3.139','2025-10-12 10:06:42'),(6143,NULL,44,NULL,'78.161.238.128','2025-10-12 10:06:43'),(6144,NULL,16,NU
+LL,'78.180.3.139','2025-10-12 10:06:44'),(6145,NULL,43,NULL,'78.161.238.128','2025-10-12 10:06:44'),(6146,NULL,42,NULL,
+'78.161.238.128','2025-10-12 10:06:45'),(6147,NULL,19,NULL,'78.180.3.139','2025-10-12 10:06:45'),(6148,NULL,20,NULL,'78
+.180.3.139','2025-10-12 10:06:45'),(6149,NULL,53,NULL,'159.146.74.150','2025-10-12 10:06:46'),(6150,NULL,41,NULL,'78.16
+1.238.128','2025-10-12 10:06:46'),(6151,NULL,40,NULL,'78.161.238.128','2025-10-12 10:06:47'),(6152,NULL,54,NULL,'159.14
+6.74.150','2025-10-12 10:06:47'),(6153,NULL,21,NULL,'78.180.3.139','2025-10-12 10:06:48'),(6154,NULL,33,NULL,'78.161.23
+8.128','2025-10-12 10:06:48'),(6155,NULL,55,NULL,'159.146.74.150','2025-10-12 10:06:48'),(6156,NULL,22,NULL,'78.180.3.1
+39','2025-10-12 10:06:48'),(6157,NULL,32,NULL,'78.161.238.128','2025-10-12 10:06:49'),(6158,NULL,31,NULL,'78.161.238.12
+8','2025-10-12 10:06:49'),(6159,NULL,23,NULL,'78.180.3.139','2025-10-12 10:06:49'),(6160,NULL,30,NULL,'78.161.238.128',
+'2025-10-12 10:06:49'),(6161,NULL,56,NULL,'159.146.74.150','2025-10-12 10:06:50'),(6162,NULL,29,NULL,'78.161.238.128','
+2025-10-12 10:06:50'),(6163,NULL,24,NULL,'78.180.3.139','2025-10-12 10:06:51'),(6164,NULL,28,NULL,'78.161.238.128','202
+5-10-12 10:06:51'),(6165,NULL,27,NULL,'78.161.238.128','2025-10-12 10:06:52'),(6166,NULL,25,NULL,'78.180.3.139','2025-1
+0-12 10:06:52'),(6167,NULL,26,NULL,'78.180.3.139','2025-10-12 10:06:53'),(6168,38,NULL,NULL,'88.224.227.76','2025-10-12
+ 10:06:53'),(6169,NULL,26,NULL,'78.161.238.128','2025-10-12 10:06:53'),(6170,NULL,57,NULL,'159.146.74.150','2025-10-12 
+10:06:53'),(6171,NULL,25,NULL,'78.161.238.128','2025-10-12 10:06:54'),(6172,NULL,24,NULL,'78.161.238.128','2025-10-12 1
+0:06:54'),(6173,NULL,23,NULL,'78.161.238.128','2025-10-12 10:06:55'),(6174,NULL,22,NULL,'78.161.238.128','2025-10-12 10
+:06:56'),(6176,NULL,21,NULL,'78.161.238.128','2025-10-12 10:06:56'),(6177,NULL,20,NULL,'78.161.238.128','2025-10-12 10:
+06:58'),(6178,NULL,19,NULL,'78.161.238.128','2025-10-12 10:06:58'),(6179,NULL,18,NULL,'78.161.238.128','2025-10-12 10:0
+6:58'),(6180,NULL,16,NULL,'78.161.238.128','2025-10-12 10:06:59'),(6181,NULL,27,NULL,'78.180.3.139','2025-10-12 10:06:5
+9'),(6182,NULL,28,NULL,'78.180.3.139','2025-10-12 10:07:06'),(6183,NULL,29,NULL,'78.180.3.139','2025-10-12 10:07:08'),(
+6184,NULL,30,NULL,'78.180.3.139','2025-10-12 10:07:10'),(6185,NULL,31,NULL,'78.180.3.139','2025-10-12 10:07:11'),(6186,
+NULL,32,NULL,'78.180.3.139','2025-10-12 10:07:13'),(6187,NULL,33,NULL,'78.180.3.139','2025-10-12 10:07:14'),(6188,NULL,
+40,NULL,'78.180.3.139','2025-10-12 10:07:16'),(6189,NULL,41,NULL,'78.180.3.139','2025-10-12 10:07:17'),(6190,NULL,42,NU
+LL,'78.180.3.139','2025-10-12 10:07:19'),(6191,NULL,43,NULL,'78.180.3.139','2025-10-12 10:07:21'),(6192,NULL,44,NULL,'7
+8.180.3.139','2025-10-12 10:07:23'),(6193,NULL,45,NULL,'78.180.3.139','2025-10-12 10:07:25'),(6194,NULL,46,NULL,'78.180
+.3.139','2025-10-12 10:07:27'),(6195,NULL,47,NULL,'78.180.3.139','2025-10-12 10:07:29'),(6196,NULL,48,NULL,'78.180.3.13
+9','2025-10-12 10:07:30'),(6197,NULL,49,NULL,'78.180.3.139','2025-10-12 10:07:31'),(6198,NULL,50,NULL,'78.180.3.139','2
+025-10-12 10:07:33'),(6199,NULL,51,NULL,'78.180.3.139','2025-10-12 10:07:34'),(6200,38,NULL,NULL,'78.190.24.123','2025-
+10-12 10:07:35'),(6201,NULL,52,NULL,'78.180.3.139','2025-10-12 10:07:36'),(6202,2,NULL,NULL,'78.190.24.123','2025-10-12
+ 10:07:37'),(6203,NULL,53,NULL,'78.180.3.139','2025-10-12 10:07:38'),(6204,NULL,54,NULL,'78.180.3.139','2025-10-12 10:0
+7:40'),(6205,NULL,55,NULL,'78.180.3.139','2025-10-12 10:07:41'),(6206,NULL,56,NULL,'78.180.3.139','2025-10-12 10:07:43'
+),(6207,NULL,57,NULL,'78.180.3.139','2025-10-12 10:07:44'),(6208,NULL,58,NULL,'78.180.3.139','2025-10-12 10:07:46'),(62
+09,NULL,20,NULL,'85.107.108.131','2025-10-12 10:08:15'),(6210,38,NULL,NULL,'149.0.115.67','2025-10-12 10:08:57'),(6211,
+2,NULL,NULL,'149.0.115.67','2025-10-12 10:08:59'),(6213,38,NULL,NULL,'84.44.36.150','2025-10-12 10:09:36'),(6214,NULL,1
+8,641,'178.240.154.244','2025-10-12 10:09:38'),(6215,2,NULL,NULL,'84.44.36.150','2025-10-12 10:09:38'),(6216,NULL,16,NU
+LL,'178.240.74.34','2025-10-12 10:09:51'),(6217,NULL,16,262,'176.219.6.114','2025-10-12 10:10:15'),(6218,38,NULL,NULL,'
+46.197.88.57','2025-10-12 10:10:17'),(6219,38,NULL,NULL,'185.242.176.29','2025-10-12 10:10:17'),(6220,NULL,23,NULL,'95.
+7.252.82','2025-10-12 10:10:18'),(6221,2,NULL,NULL,'46.197.88.57','2025-10-12 10:10:19'),(6223,38,NULL,NULL,'84.44.36.1
+50','2025-10-12 10:10:28'),(6224,NULL,41,NULL,'85.103.86.194','2025-10-12 10:10:29'),(6225,2,NULL,NULL,'84.44.36.150','
+2025-10-12 10:10:31'),(6226,38,NULL,NULL,'46.197.116.63','2025-10-12 10:10:32'),(6227,38,NULL,NULL,'95.173.234.164','20
+25-10-12 10:10:34'),(6229,NULL,58,NULL,'178.233.210.152','2025-10-12 10:11:11'),(6230,NULL,57,NULL,'178.233.210.152','2
+025-10-12 10:11:12'),(6231,NULL,56,NULL,'178.233.210.152','2025-10-12 10:11:13'),(6232,NULL,55,NULL,'178.233.210.152','
+2025-10-12 10:11:14'),(6233,NULL,54,NULL,'178.233.210.152','2025-10-12 10:11:14'),(6234,NULL,53,NULL,'178.233.210.152',
+'2025-10-12 10:11:16'),(6235,NULL,52,NULL,'178.233.210.152','2025-10-12 10:11:16'),(6236,NULL,51,NULL,'178.233.210.152'
+,'2025-10-12 10:11:17'),(6237,NULL,50,NULL,'178.233.210.152','2025-10-12 10:11:18'),(6238,NULL,18,659,'178.240.154.244'
+,'2025-10-12 10:11:19'),(6239,NULL,49,NULL,'178.233.210.152','2025-10-12 10:11:19'),(6240,NULL,48,NULL,'178.233.210.152
+','2025-10-12 10:11:20'),(6241,NULL,47,NULL,'178.233.210.152','2025-10-12 10:11:21'),(6242,NULL,18,655,'178.240.154.244
+','2025-10-12 10:11:22'),(6243,NULL,46,NULL,'178.233.210.152','2025-10-12 10:11:22'),(6245,NULL,45,NULL,'178.233.210.15
+2','2025-10-12 10:11:22'),(6246,NULL,18,657,'178.240.154.244','2025-10-12 10:11:23'),(6247,NULL,44,NULL,'178.233.210.15
+2','2025-10-12 10:11:24'),(6248,NULL,43,NULL,'178.233.210.152','2025-10-12 10:11:25'),(6249,NULL,42,NULL,'178.233.210.1
+52','2025-10-12 10:11:25'),(6250,NULL,41,NULL,'178.233.210.152','2025-10-12 10:11:27'),(6251,NULL,40,NULL,'178.233.210.
+152','2025-10-12 10:11:28'),(6252,38,NULL,NULL,'85.97.2.245','2025-10-12 10:11:31'),(6253,NULL,33,NULL,'178.233.210.152
+','2025-10-12 10:11:31'),(6254,NULL,18,653,'178.240.154.244','2025-10-12 10:11:31'),(6255,NULL,32,NULL,'178.233.210.152
+','2025-10-12 10:11:34'),(6256,NULL,31,NULL,'178.233.210.152','2025-10-12 10:11:35'),(6257,NULL,16,NULL,'85.97.2.245','
+2025-10-12 10:11:35'),(6258,NULL,30,NULL,'178.233.210.152','2025-10-12 10:11:35'),(6259,NULL,18,NULL,'85.97.2.245','202
+5-10-12 10:11:36'),(6260,NULL,19,NULL,'85.97.2.245','2025-10-12 10:11:37'),(6261,NULL,29,NULL,'178.233.210.152','2025-1
+0-12 10:11:37'),(6262,NULL,28,NULL,'178.233.210.152','2025-10-12 10:11:38'),(6263,NULL,20,NULL,'85.97.2.245','2025-10-1
+2 10:11:39'),(6264,NULL,27,NULL,'178.233.210.152','2025-10-12 10:11:40'),(6265,NULL,21,NULL,'85.97.2.245','2025-10-12 1
+0:11:41'),(6266,NULL,22,NULL,'85.97.2.245','2025-10-12 10:11:41'),(6267,NULL,26,NULL,'178.233.210.152','2025-10-12 10:1
+1:41'),(6268,NULL,25,NULL,'178.233.210.152','2025-10-12 10:11:42'),(6269,NULL,23,NULL,'85.97.2.245','2025-10-12 10:11:4
+2'),(6270,NULL,24,NULL,'85.97.2.245','2025-10-12 10:11:43'),(6271,NULL,25,NULL,'85.97.2.245','2025-10-12 10:11:44'),(62
+72,NULL,24,NULL,'178.233.210.152','2025-10-12 10:11:44'),(6273,NULL,23,NULL,'178.233.210.152','2025-10-12 10:11:45'),(6
+274,NULL,26,NULL,'85.97.2.245','2025-10-12 10:11:45'),(6275,NULL,22,NULL,'178.233.210.152','2025-10-12 10:11:46'),(6276
+,NULL,21,NULL,'178.233.210.152','2025-10-12 10:11:46'),(6277,NULL,20,NULL,'178.233.210.152','2025-10-12 10:11:48'),(627
+8,NULL,19,NULL,'178.233.210.152','2025-10-12 10:11:48'),(6279,NULL,27,NULL,'85.97.2.245','2025-10-12 10:11:48'),(6280,N
+ULL,18,NULL,'178.233.210.152','2025-10-12 10:11:49'),(6281,NULL,16,NULL,'178.233.210.152','2025-10-12 10:11:49'),(6282,
+38,NULL,NULL,'85.106.197.33','2025-10-12 10:11:51'),(6283,NULL,28,NULL,'85.97.2.245','2025-10-12 10:11:52'),(6284,2,NUL
+L,NULL,'85.106.197.33','2025-10-12 10:11:53'),(6285,NULL,29,NULL,'85.97.2.245','2025-10-12 10:11:53'),(6286,NULL,30,NUL
+L,'85.97.2.245','2025-10-12 10:11:55'),(6287,NULL,31,NULL,'85.97.2.245','2025-10-12 10:11:55'),(6288,NULL,32,NULL,'85.9
+7.2.245','2025-10-12 10:11:56'),(6289,NULL,33,NULL,'85.97.2.245','2025-10-12 10:11:58'),(6290,NULL,40,NULL,'85.97.2.245
+','2025-10-12 10:11:58'),(6291,NULL,41,NULL,'85.97.2.245','2025-10-12 10:12:00'),(6292,NULL,42,NULL,'85.97.2.245','2025
+-10-12 10:12:00'),(6293,NULL,43,NULL,'85.97.2.245','2025-10-12 10:12:02'),(6294,NULL,44,NULL,'85.97.2.245','2025-10-12 
+10:12:04'),(6296,NULL,45,NULL,'85.97.2.245','2025-10-12 10:12:08'),(6297,NULL,46,NULL,'85.97.2.245','2025-10-12 10:12:1
+0'),(6298,NULL,56,1,'178.233.210.152','2025-10-12 10:12:11'),(6299,NULL,47,NULL,'85.97.2.245','2025-10-12 10:12:11'),(6
+300,38,NULL,NULL,'37.154.34.115','2025-10-12 10:12:12'),(6301,NULL,48,NULL,'85.97.2.245','2025-10-12 10:12:12'),(6302,N
+ULL,49,NULL,'85.97.2.245','2025-10-12 10:12:13'),(6303,NULL,50,NULL,'85.97.2.245','2025-10-12 10:12:14'),(6304,NULL,51,
+NULL,'85.97.2.245','2025-10-12 10:12:16'),(6305,NULL,52,NULL,'85.97.2.245','2025-10-12 10:12:16'),(6306,NULL,53,NULL,'8
+5.97.2.245','2025-10-12 10:12:17'),(6307,NULL,54,NULL,'85.97.2.245','2025-10-12 10:12:19'),(6308,NULL,55,NULL,'85.97.2.
+245','2025-10-12 10:12:19'),(6309,NULL,56,NULL,'85.97.2.245','2025-10-12 10:12:21'),(6310,NULL,57,NULL,'85.97.2.245','2
+025-10-12 10:12:22'),(6311,NULL,58,NULL,'85.97.2.245','2025-10-12 10:12:24'),(6312,NULL,16,NULL,'78.174.100.197','2025-
+10-12 10:12:30'),(6313,NULL,18,NULL,'78.174.100.197','2025-10-12 10:12:31'),(6314,NULL,16,NULL,'78.174.100.197','2025-1
+0-12 10:12:33'),(6315,NULL,18,NULL,'78.174.100.197','2025-10-12 10:12:35'),(6316,NULL,19,NULL,'78.174.100.197','2025-10
+-12 10:12:36'),(6317,NULL,20,NULL,'78.174.100.197','2025-10-12 10:12:38'),(6318,NULL,21,NULL,'78.174.100.197','2025-10-
+12 10:12:38'),(6319,NULL,22,NULL,'78.174.100.197','2025-10-12 10:12:40'),(6320,NULL,23,NULL,'78.174.100.197','2025-10-1
+2 10:12:41'),(6321,NULL,24,NULL,'78.174.100.197','2025-10-12 10:12:42'),(6322,NULL,25,NULL,'78.174.100.197','2025-10-12
+ 10:12:44'),(6323,NULL,26,NULL,'78.174.100.197','2025-10-12 10:12:45'),(6324,NULL,18,NULL,'176.219.6.114','2025-10-12 1
+0:12:46'),(6325,NULL,27,NULL,'78.174.100.197','2025-10-12 10:12:47'),(6326,NULL,28,NULL,'78.174.100.197','2025-10-12 10
+:12:48'),(6327,NULL,29,NULL,'78.174.100.197','2025-10-12 10:12:50'),(6328,NULL,30,NULL,'78.174.100.197','2025-10-12 10:
+12:51'),(6329,38,NULL,NULL,'88.235.222.23','2025-10-12 10:12:51'),(6330,NULL,31,NULL,'78.174.100.197','2025-10-12 10:12
+:52'),(6331,NULL,32,NULL,'78.174.100.197','2025-10-12 10:12:53'),(6333,NULL,33,NULL,'78.174.100.197','2025-10-12 10:12:
+56'),(6334,NULL,40,NULL,'78.174.100.197','2025-10-12 10:12:57'),(6335,NULL,41,NULL,'78.174.100.197','2025-10-12 10:12:5
+8'),(6336,NULL,42,NULL,'78.174.100.197','2025-10-12 10:12:59'),(6337,NULL,43,NULL,'78.174.100.197','2025-10-12 10:13:00
+'),(6338,NULL,44,NULL,'78.174.100.197','2025-10-12 10:13:02'),(6339,NULL,45,NULL,'78.174.100.197','2025-10-12 10:13:03'
+),(6340,NULL,46,NULL,'78.174.100.197','2025-10-12 10:13:04'),(6341,NULL,47,NULL,'78.174.100.197','2025-10-12 10:13:06')
+,(6342,NULL,48,NULL,'78.174.100.197','2025-10-12 10:13:07'),(6343,NULL,49,NULL,'78.174.100.197','2025-10-12 10:13:08'),
+(6344,NULL,50,NULL,'78.174.100.197','2025-10-12 10:13:10'),(6345,NULL,51,NULL,'78.174.100.197','2025-10-12 10:13:11'),(
+6346,NULL,52,NULL,'78.174.100.197','2025-10-12 10:13:12'),(6347,NULL,53,NULL,'78.174.100.197','2025-10-12 10:13:13'),(6
+348,NULL,54,NULL,'78.174.100.197','2025-10-12 10:13:14'),(6349,NULL,55,NULL,'78.174.100.197','2025-10-12 10:13:15'),(63
+50,NULL,56,NULL,'78.174.100.197','2025-10-12 10:13:17'),(6351,NULL,57,NULL,'78.174.100.197','2025-10-12 10:13:18'),(635
+2,NULL,58,NULL,'78.174.100.197','2025-10-12 10:13:19'),(6353,NULL,26,NULL,'176.237.62.78','2025-10-12 10:13:21'),(6354,
+38,NULL,NULL,'5.229.67.3','2025-10-12 10:13:41'),(6355,2,NULL,NULL,'5.229.67.3','2025-10-12 10:13:43'),(6356,NULL,58,NU
+LL,'176.33.97.34','2025-10-12 10:13:45'),(6357,38,NULL,NULL,'46.106.161.217','2025-10-12 10:14:03'),(6358,NULL,58,NULL,
+'78.184.185.223','2025-10-12 10:14:09'),(6359,38,NULL,NULL,'178.233.45.244','2025-10-12 10:14:11'),(6360,NULL,18,NULL,'
+79.127.141.119','2025-10-12 10:14:16'),(6361,NULL,28,NULL,'31.145.216.10','2025-10-12 10:14:19'),(6362,38,NULL,NULL,'88
+.243.192.246','2025-10-12 10:14:35'),(6363,NULL,58,NULL,'88.235.222.23','2025-10-12 10:14:56'),(6364,NULL,57,NULL,'88.2
+35.222.23','2025-10-12 10:14:58'),(6365,NULL,16,NULL,'88.235.222.23','2025-10-12 10:15:13'),(6366,NULL,57,NULL,'159.146
+.74.150','2025-10-12 10:15:33'),(6367,NULL,16,NULL,'159.146.74.150','2025-10-12 10:15:37'),(6368,NULL,18,NULL,'159.146.
+74.150','2025-10-12 10:15:38'),(6369,NULL,19,NULL,'159.146.74.150','2025-10-12 10:15:39'),(6370,NULL,20,NULL,'159.146.7
+4.150','2025-10-12 10:15:40'),(6371,NULL,21,NULL,'159.146.74.150','2025-10-12 10:15:41'),(6372,NULL,22,NULL,'159.146.74
+.150','2025-10-12 10:15:41'),(6373,NULL,23,NULL,'159.146.74.150','2025-10-12 10:15:42'),(6374,NULL,24,NULL,'159.146.74.
+150','2025-10-12 10:15:42'),(6375,NULL,25,NULL,'159.146.74.150','2025-10-12 10:15:44'),(6376,NULL,26,NULL,'159.146.74.1
+50','2025-10-12 10:15:44'),(6377,NULL,27,NULL,'159.146.74.150','2025-10-12 10:15:45'),(6378,NULL,28,NULL,'159.146.74.15
+0','2025-10-12 10:15:46'),(6379,NULL,29,NULL,'159.146.74.150','2025-10-12 10:15:46'),(6380,NULL,30,NULL,'159.146.74.150
+','2025-10-12 10:15:47'),(6381,NULL,31,NULL,'159.146.74.150','2025-10-12 10:15:47'),(6382,NULL,32,NULL,'159.146.74.150'
+,'2025-10-12 10:15:48'),(6383,NULL,33,NULL,'159.146.74.150','2025-10-12 10:15:49'),(6384,NULL,40,NULL,'159.146.74.150',
+'2025-10-12 10:15:49'),(6385,NULL,41,NULL,'159.146.74.150','2025-10-12 10:15:50'),(6386,NULL,42,NULL,'159.146.74.150','
+2025-10-12 10:15:50'),(6387,NULL,43,NULL,'159.146.74.150','2025-10-12 10:15:51'),(6388,NULL,44,NULL,'159.146.74.150','2
+025-10-12 10:15:52'),(6389,NULL,45,NULL,'159.146.74.150','2025-10-12 10:15:52'),(6390,NULL,46,NULL,'159.146.74.150','20
+25-10-12 10:15:53'),(6391,NULL,47,NULL,'159.146.74.150','2025-10-12 10:15:53'),(6392,NULL,48,NULL,'159.146.74.150','202
+5-10-12 10:15:55'),(6393,NULL,49,NULL,'159.146.74.150','2025-10-12 10:15:55'),(6394,NULL,50,NULL,'159.146.74.150','2025
+-10-12 10:15:56'),(6395,NULL,51,NULL,'159.146.74.150','2025-10-12 10:15:56'),(6396,NULL,52,NULL,'159.146.74.150','2025-
+10-12 10:15:57'),(6397,NULL,53,NULL,'159.146.74.150','2025-10-12 10:15:58'),(6398,NULL,54,NULL,'159.146.74.150','2025-1
+0-12 10:15:58'),(6399,NULL,55,NULL,'159.146.74.150','2025-10-12 10:15:59'),(6400,38,NULL,NULL,'81.214.80.223','2025-10-
+12 10:16:00'),(6401,NULL,56,NULL,'159.146.74.150','2025-10-12 10:16:00'),(6402,38,NULL,NULL,'57.129.130.10','2025-10-12
+ 10:16:02'),(6404,2,NULL,NULL,'57.129.130.10','2025-10-12 10:16:04'),(6407,NULL,48,225,'5.25.16.63','2025-10-12 10:16:4
+3'),(6408,NULL,50,NULL,'31.145.216.10','2025-10-12 10:17:11'),(6409,38,NULL,NULL,'88.229.200.0','2025-10-12 10:17:24'),
+(6410,38,NULL,NULL,'78.173.17.66','2025-10-12 10:18:02'),(6411,2,NULL,NULL,'85.99.16.161','2025-10-12 10:18:22'),(6412,
+38,NULL,NULL,'85.99.16.161','2025-10-12 10:18:26'),(6413,38,NULL,NULL,'93.239.19.239','2025-10-12 10:18:47'),(6414,38,N
+ULL,NULL,'78.173.41.178','2025-10-12 10:19:06'),(6416,38,NULL,NULL,'31.223.77.42','2025-10-12 10:19:24'),(6417,2,NULL,N
+ULL,'77.67.175.207','2025-10-12 10:19:24'),(6418,2,NULL,NULL,'31.223.77.42','2025-10-12 10:19:25'),(6419,38,NULL,NULL,'
+77.67.175.207','2025-10-12 10:19:28'),(6420,38,NULL,NULL,'95.65.251.190','2025-10-12 10:20:05'),(6422,NULL,58,NULL,'176
+.33.97.34','2025-10-12 10:20:30'),(6423,38,NULL,NULL,'176.33.97.34','2025-10-12 10:20:47'),(6424,2,NULL,NULL,'79.127.14
+1.106','2025-10-12 10:21:05'),(6425,38,NULL,NULL,'79.127.141.106','2025-10-12 10:21:07'),(6426,NULL,43,NULL,'85.110.183
+.185','2025-10-12 10:21:23'),(6427,NULL,19,17,'178.240.154.244','2025-10-12 10:21:25'),(6428,2,NULL,NULL,'5.176.41.174'
+,'2025-10-12 10:21:30'),(6429,NULL,38,NULL,'5.176.41.174','2025-10-12 10:21:46'),(6430,NULL,37,NULL,'5.176.41.174','202
+5-10-12 10:21:47'),(6431,NULL,36,NULL,'5.176.41.174','2025-10-12 10:21:48'),(6432,NULL,35,NULL,'5.176.41.174','2025-10-
+12 10:21:49'),(6433,NULL,34,NULL,'5.176.41.174','2025-10-12 10:21:49'),(6434,NULL,17,NULL,'5.176.41.174','2025-10-12 10
+:21:51'),(6435,38,NULL,NULL,'88.225.239.29','2025-10-12 10:21:53'),(6436,2,NULL,NULL,'88.225.239.29','2025-10-12 10:21:
+58'),(6437,38,NULL,NULL,'78.174.129.240','2025-10-12 10:22:02'),(6438,38,NULL,NULL,'88.225.239.29','2025-10-12 10:22:11
+'),(6439,38,NULL,NULL,'31.223.46.204','2025-10-12 10:22:14'),(6440,38,NULL,NULL,'88.236.98.79','2025-10-12 10:22:38'),(
+6441,NULL,58,NULL,'172.226.108.14','2025-10-12 10:23:23'),(6442,NULL,52,NULL,'88.225.239.29','2025-10-12 10:23:31'),(64
+43,2,NULL,NULL,'31.223.46.204','2025-10-12 10:23:36'),(6444,NULL,19,83,'178.240.154.244','2025-10-12 10:23:44'),(6445,N
+ULL,30,NULL,'31.223.31.215','2025-10-12 10:23:44'),(6446,2,NULL,NULL,'78.190.58.160','2025-10-12 10:23:44'),(6447,38,NU
+LL,NULL,'78.190.58.160','2025-10-12 10:23:46'),(6448,38,NULL,NULL,'88.243.159.136','2025-10-12 10:23:51'),(6451,2,NULL,
+NULL,'91.93.22.102','2025-10-12 10:23:57'),(6453,NULL,45,393,'78.185.26.180','2025-10-12 10:24:06'),(6454,NULL,18,7,'95
+.10.155.70','2025-10-12 10:24:38'),(6455,NULL,18,5,'95.10.155.70','2025-10-12 10:24:40'),(6456,NULL,18,3,'95.10.155.70'
+,'2025-10-12 10:24:41'),(6457,NULL,18,9,'95.10.155.70','2025-10-12 10:24:42'),(6458,NULL,18,1,'95.10.155.70','2025-10-1
+2 10:24:46'),(6459,NULL,18,11,'95.10.155.70','2025-10-12 10:24:53'),(6460,38,NULL,NULL,'78.174.69.193','2025-10-12 10:2
+4:59'),(6461,38,NULL,NULL,'79.127.184.91','2025-10-12 10:25:05'),(6462,38,NULL,NULL,'88.230.193.194','2025-10-12 10:25:
+13'),(6463,38,NULL,NULL,'95.10.171.193','2025-10-12 10:25:21'),(6464,2,NULL,NULL,'95.10.171.193','2025-10-12 10:25:22')
+,(6465,38,NULL,NULL,'91.93.22.102','2025-10-12 10:25:24'),(6466,NULL,18,13,'95.10.155.70','2025-10-12 10:25:35'),(6467,
+NULL,17,NULL,'188.58.47.23','2025-10-12 10:25:35'),(6468,NULL,16,NULL,'79.127.184.91','2025-10-12 10:26:08'),(6469,NULL
+,17,NULL,'195.174.132.111','2025-10-12 10:26:15'),(6470,38,NULL,NULL,'78.181.149.186','2025-10-12 10:26:38'),(6473,NULL
+,19,155,'178.240.154.244','2025-10-12 10:26:54'),(6474,NULL,51,NULL,'176.237.63.85','2025-10-12 10:27:09'),(6475,NULL,1
+6,NULL,'88.228.110.92','2025-10-12 10:27:11'),(6476,NULL,18,NULL,'88.228.110.92','2025-10-12 10:27:12'),(6477,NULL,19,N
+ULL,'88.228.110.92','2025-10-12 10:27:13'),(6478,NULL,20,NULL,'88.228.110.92','2025-10-12 10:27:14'),(6479,NULL,21,NULL
+,'88.228.110.92','2025-10-12 10:27:15'),(6480,NULL,22,NULL,'88.228.110.92','2025-10-12 10:27:16'),(6481,NULL,23,NULL,'8
+8.228.110.92','2025-10-12 10:27:16'),(6482,NULL,24,NULL,'88.228.110.92','2025-10-12 10:27:17'),(6483,NULL,25,NULL,'88.2
+28.110.92','2025-10-12 10:27:18'),(6484,NULL,26,NULL,'88.228.110.92','2025-10-12 10:27:19'),(6485,NULL,27,NULL,'88.228.
+110.92','2025-10-12 10:27:21'),(6486,NULL,28,NULL,'88.228.110.92','2025-10-12 10:27:22'),(6487,NULL,29,NULL,'88.228.110
+.92','2025-10-12 10:27:23'),(6488,NULL,30,NULL,'88.228.110.92','2025-10-12 10:27:23'),(6489,NULL,31,NULL,'88.228.110.92
+','2025-10-12 10:27:25'),(6490,NULL,32,NULL,'88.228.110.92','2025-10-12 10:27:25'),(6491,NULL,33,NULL,'88.228.110.92','
+2025-10-12 10:27:26'),(6492,NULL,22,87,'185.146.112.15','2025-10-12 10:27:26'),(6493,NULL,40,NULL,'88.228.110.92','2025
+-10-12 10:27:27'),(6494,NULL,22,89,'185.146.112.15','2025-10-12 10:27:28'),(6495,NULL,41,NULL,'88.228.110.92','2025-10-
+12 10:27:28'),(6496,NULL,42,NULL,'88.228.110.92','2025-10-12 10:27:28'),(6497,NULL,43,NULL,'88.228.110.92','2025-10-12 
+10:27:30'),(6498,NULL,44,NULL,'88.228.110.92','2025-10-12 10:27:30'),(6499,NULL,45,NULL,'88.228.110.92','2025-10-12 10:
+27:31'),(6500,NULL,46,NULL,'88.228.110.92','2025-10-12 10:27:32'),(6501,NULL,47,NULL,'88.228.110.92','2025-10-12 10:27:
+33'),(6502,NULL,48,NULL,'88.228.110.92','2025-10-12 10:27:33'),(6503,NULL,49,NULL,'88.228.110.92','2025-10-12 10:27:34'
+),(6504,NULL,50,NULL,'88.228.110.92','2025-10-12 10:27:35'),(6505,NULL,51,NULL,'88.228.110.92','2025-10-12 10:27:36'),(
+6506,NULL,52,NULL,'88.228.110.92','2025-10-12 10:27:36'),(6507,NULL,47,NULL,'176.88.23.69','2025-10-12 10:27:37'),(6508
+,NULL,53,NULL,'88.228.110.92','2025-10-12 10:27:38'),(6509,NULL,54,NULL,'88.228.110.92','2025-10-12 10:27:38'),(6510,NU
+LL,48,NULL,'176.88.23.69','2025-10-12 10:27:38'),(6511,NULL,49,NULL,'176.88.23.69','2025-10-12 10:27:39'),(6512,NULL,50
+,NULL,'176.88.23.69','2025-10-12 10:27:39'),(6513,NULL,55,NULL,'88.228.110.92','2025-10-12 10:27:39'),(6514,NULL,51,NUL
+L,'176.88.23.69','2025-10-12 10:27:39'),(6515,NULL,56,NULL,'88.228.110.92','2025-10-12 10:27:40'),(6516,NULL,57,NULL,'8
+8.228.110.92','2025-10-12 10:27:41'),(6517,NULL,58,NULL,'88.228.110.92','2025-10-12 10:27:41'),(6518,NULL,52,NULL,'176.
+88.23.69','2025-10-12 10:27:42'),(6520,NULL,53,NULL,'176.88.23.69','2025-10-12 10:27:42'),(6521,NULL,54,NULL,'176.88.23
+.69','2025-10-12 10:27:43'),(6522,NULL,55,NULL,'176.88.23.69','2025-10-12 10:27:43'),(6523,NULL,56,NULL,'176.88.23.69',
+'2025-10-12 10:27:45'),(6524,NULL,57,NULL,'176.88.23.69','2025-10-12 10:27:45'),(6525,NULL,58,NULL,'176.88.23.69','2025
+-10-12 10:27:45'),(6526,NULL,27,NULL,'176.88.23.69','2025-10-12 10:27:52'),(6527,NULL,28,NULL,'176.88.23.69','2025-10-1
+2 10:27:52'),(6528,NULL,18,15,'95.10.155.70','2025-10-12 10:27:52'),(6529,NULL,29,NULL,'176.88.23.69','2025-10-12 10:27
+:53'),(6530,NULL,30,NULL,'176.88.23.69','2025-10-12 10:27:54'),(6531,NULL,31,NULL,'176.88.23.69','2025-10-12 10:27:55')
+,(6532,NULL,32,NULL,'176.88.23.69','2025-10-12 10:27:55'),(6533,NULL,33,NULL,'176.88.23.69','2025-10-12 10:27:56'),(653
+4,NULL,40,NULL,'176.88.23.69','2025-10-12 10:27:57'),(6535,NULL,41,NULL,'176.88.23.69','2025-10-12 10:27:57'),(6536,NUL
+L,42,NULL,'176.88.23.69','2025-10-12 10:27:58'),(6537,NULL,43,NULL,'176.88.23.69','2025-10-12 10:27:59'),(6538,NULL,44,
+NULL,'176.88.23.69','2025-10-12 10:28:00'),(6539,NULL,45,NULL,'176.88.23.69','2025-10-12 10:28:00'),(6540,NULL,38,NULL,
+'5.47.123.30','2025-10-12 10:28:01'),(6541,NULL,46,NULL,'176.88.23.69','2025-10-12 10:28:01'),(6542,38,NULL,NULL,'176.2
+19.8.68','2025-10-12 10:28:03'),(6543,NULL,16,NULL,'176.88.23.69','2025-10-12 10:28:04'),(6544,NULL,18,NULL,'176.88.23.
+69','2025-10-12 10:28:05'),(6545,NULL,19,NULL,'176.88.23.69','2025-10-12 10:28:05'),(6546,NULL,20,NULL,'176.88.23.69','
+2025-10-12 10:28:06'),(6547,NULL,21,NULL,'176.88.23.69','2025-10-12 10:28:06'),(6548,NULL,22,NULL,'176.88.23.69','2025-
+10-12 10:28:08'),(6549,NULL,23,NULL,'176.88.23.69','2025-10-12 10:28:08'),(6550,NULL,24,NULL,'176.88.23.69','2025-10-12
+ 10:28:09'),(6551,NULL,25,NULL,'176.88.23.69','2025-10-12 10:28:09'),(6552,NULL,26,NULL,'176.88.23.69','2025-10-12 10:2
+8:10'),(6553,38,NULL,NULL,'194.31.11.20','2025-10-12 10:28:24'),(6554,2,NULL,NULL,'194.31.11.20','2025-10-12 10:28:27')
+,(6555,38,NULL,NULL,'78.162.27.234','2025-10-12 10:28:38'),(6556,NULL,48,NULL,'78.190.199.222','2025-10-12 10:28:39'),(
+6557,2,NULL,NULL,'78.162.27.234','2025-10-12 10:28:41'),(6558,38,NULL,NULL,'176.219.8.68','2025-10-12 10:28:57'),(6559,
+38,NULL,NULL,'188.3.193.149','2025-10-12 10:28:59'),(6560,38,NULL,NULL,'88.242.211.16','2025-10-12 10:29:13'),(6561,NUL
+L,16,NULL,'37.155.184.94','2025-10-12 10:29:26'),(6562,NULL,18,NULL,'37.155.184.94','2025-10-12 10:29:27'),(6563,NULL,2
+0,NULL,'37.155.184.94','2025-10-12 10:29:30'),(6564,NULL,21,NULL,'37.155.184.94','2025-10-12 10:29:31'),(6565,NULL,22,N
+ULL,'37.155.184.94','2025-10-12 10:29:32'),(6566,NULL,23,NULL,'37.155.184.94','2025-10-12 10:29:33'),(6567,NULL,24,NULL
+,'37.155.184.94','2025-10-12 10:29:34'),(6568,NULL,25,NULL,'37.155.184.94','2025-10-12 10:29:36'),(6569,NULL,26,NULL,'3
+7.155.184.94','2025-10-12 10:29:37'),(6570,NULL,27,NULL,'37.155.184.94','2025-10-12 10:29:40'),(6571,NULL,28,NULL,'37.1
+55.184.94','2025-10-12 10:29:41'),(6572,NULL,29,NULL,'37.155.184.94','2025-10-12 10:29:43'),(6573,NULL,30,NULL,'37.155.
+184.94','2025-10-12 10:29:43'),(6574,NULL,31,NULL,'37.155.184.94','2025-10-12 10:29:45'),(6575,NULL,32,NULL,'37.155.184
+.94','2025-10-12 10:29:46'),(6576,NULL,33,NULL,'37.155.184.94','2025-10-12 10:29:48'),(6577,2,NULL,NULL,'5.46.65.176','
+2025-10-12 10:29:49'),(6578,NULL,40,NULL,'37.155.184.94','2025-10-12 10:29:49'),(6579,NULL,41,NULL,'37.155.184.94','202
+5-10-12 10:29:50'),(6580,NULL,42,NULL,'37.155.184.94','2025-10-12 10:29:52'),(6581,NULL,43,NULL,'37.155.184.94','2025-1
+0-12 10:29:53'),(6582,38,NULL,NULL,'5.46.65.176','2025-10-12 10:29:54'),(6583,NULL,44,NULL,'37.155.184.94','2025-10-12 
+10:29:54'),(6584,NULL,45,NULL,'37.155.184.94','2025-10-12 10:29:56'),(6585,NULL,46,NULL,'37.155.184.94','2025-10-12 10:
+29:57'),(6586,NULL,48,NULL,'37.155.184.94','2025-10-12 10:29:59'),(6587,NULL,47,NULL,'37.155.184.94','2025-10-12 10:30:
+00'),(6588,NULL,49,NULL,'37.155.184.94','2025-10-12 10:30:02'),(6589,NULL,50,NULL,'37.155.184.94','2025-10-12 10:30:03'
+),(6591,NULL,51,NULL,'37.155.184.94','2025-10-12 10:30:04'),(6592,NULL,52,NULL,'37.155.184.94','2025-10-12 10:30:06'),(
+6593,NULL,53,NULL,'37.155.184.94','2025-10-12 10:30:08'),(6594,NULL,54,NULL,'37.155.184.94','2025-10-12 10:30:11'),(659
+5,NULL,55,NULL,'37.155.184.94','2025-10-12 10:30:11'),(6596,NULL,56,NULL,'37.155.184.94','2025-10-12 10:30:13'),(6597,N
+ULL,57,NULL,'37.155.184.94','2025-10-12 10:30:14'),(6598,NULL,58,NULL,'37.155.184.94','2025-10-12 10:30:16'),(6599,38,N
+ULL,NULL,'78.166.0.4','2025-10-12 10:30:17'),(6600,NULL,53,NULL,'212.47.146.216','2025-10-12 10:30:19'),(6601,NULL,58,N
+ULL,'159.146.64.209','2025-10-12 10:30:21'),(6603,NULL,31,NULL,'212.47.146.216','2025-10-12 10:31:06'),(6604,NULL,58,NU
+LL,'88.242.211.16','2025-10-12 10:31:09'),(6605,NULL,58,NULL,'185.195.252.136','2025-10-12 10:31:14'),(6606,NULL,38,NUL
+L,'185.195.252.136','2025-10-12 10:31:30'),(6607,NULL,58,NULL,'178.246.88.50','2025-10-12 10:31:38'),(6608,38,NULL,NULL
+,'5.47.180.192','2025-10-12 10:31:46'),(6609,2,NULL,NULL,'5.47.180.192','2025-10-12 10:31:49'),(6610,38,NULL,NULL,'88.2
+29.204.139','2025-10-12 10:32:23'),(6611,NULL,17,NULL,'176.216.94.2','2025-10-12 10:32:33'),(6612,NULL,58,NULL,'94.235.
+240.178','2025-10-12 10:32:49'),(6613,38,NULL,NULL,'78.175.51.13','2025-10-12 10:33:28'),(6614,2,NULL,NULL,'31.142.199.
+15','2025-10-12 10:33:35'),(6615,38,NULL,NULL,'31.142.199.15','2025-10-12 10:33:36'),(6616,NULL,45,529,'78.185.26.180',
+'2025-10-12 10:33:50'),(6617,NULL,45,533,'78.185.26.180','2025-10-12 10:33:56'),(6618,38,NULL,NULL,'176.88.125.168','20
+25-10-12 10:34:24'),(6619,38,NULL,NULL,'94.121.238.232','2025-10-12 10:34:45'),(6620,NULL,16,NULL,'62.217.158.212','202
+5-10-12 10:34:56'),(6621,38,NULL,NULL,'176.88.125.168','2025-10-12 10:35:11'),(6622,NULL,58,NULL,'188.3.239.216','2025-
+10-12 10:35:16'),(6623,NULL,57,NULL,'188.3.239.216','2025-10-12 10:35:18'),(6624,NULL,56,NULL,'188.3.239.216','2025-10-
+12 10:35:20'),(6625,NULL,55,NULL,'188.3.239.216','2025-10-12 10:35:21'),(6626,NULL,54,NULL,'188.3.239.216','2025-10-12 
+10:35:23'),(6627,NULL,53,NULL,'188.3.239.216','2025-10-12 10:35:24'),(6628,NULL,52,NULL,'188.3.239.216','2025-10-12 10:
+35:25'),(6629,NULL,51,NULL,'188.3.239.216','2025-10-12 10:35:27'),(6630,NULL,50,NULL,'188.3.239.216','2025-10-12 10:35:
+29'),(6631,NULL,49,NULL,'188.3.239.216','2025-10-12 10:35:31'),(6632,NULL,48,NULL,'188.3.239.216','2025-10-12 10:35:33'
+),(6633,NULL,47,NULL,'188.3.239.216','2025-10-12 10:35:34'),(6634,NULL,46,NULL,'188.3.239.216','2025-10-12 10:35:36'),(
+6635,NULL,45,NULL,'188.3.239.216','2025-10-12 10:35:38'),(6636,NULL,44,NULL,'188.3.239.216','2025-10-12 10:35:39'),(663
+7,NULL,43,NULL,'188.3.239.216','2025-10-12 10:35:41'),(6638,NULL,42,NULL,'188.3.239.216','2025-10-12 10:35:42'),(6639,N
+ULL,41,NULL,'188.3.239.216','2025-10-12 10:35:43'),(6640,NULL,40,NULL,'188.3.239.216','2025-10-12 10:35:44'),(6641,NULL
+,33,NULL,'188.3.239.216','2025-10-12 10:35:45'),(6642,NULL,32,NULL,'188.3.239.216','2025-10-12 10:35:47'),(6643,NULL,31
+,NULL,'188.3.239.216','2025-10-12 10:35:48'),(6644,NULL,30,NULL,'188.3.239.216','2025-10-12 10:35:49'),(6645,NULL,29,NU
+LL,'188.3.239.216','2025-10-12 10:35:50'),(6646,NULL,28,NULL,'188.3.239.216','2025-10-12 10:35:51'),(6647,NULL,27,NULL,
+'188.3.239.216','2025-10-12 10:35:53'),(6648,NULL,26,NULL,'188.3.239.216','2025-10-12 10:35:54'),(6649,NULL,25,NULL,'18
+8.3.239.216','2025-10-12 10:35:54'),(6650,NULL,24,NULL,'188.3.239.216','2025-10-12 10:35:56'),(6651,NULL,23,NULL,'188.3
+.239.216','2025-10-12 10:35:57'),(6652,NULL,22,NULL,'188.3.239.216','2025-10-12 10:35:59'),(6653,NULL,21,NULL,'188.3.23
+9.216','2025-10-12 10:35:59'),(6654,NULL,20,NULL,'188.3.239.216','2025-10-12 10:36:01'),(6655,NULL,19,NULL,'188.3.239.2
+16','2025-10-12 10:36:01'),(6656,NULL,18,NULL,'188.3.239.216','2025-10-12 10:36:02'),(6657,NULL,16,NULL,'188.3.239.216'
+,'2025-10-12 10:36:03'),(6658,38,NULL,NULL,'5.229.35.230','2025-10-12 10:36:44'),(6659,NULL,41,403,'188.3.126.50','2025
+-10-12 10:36:45'),(6660,NULL,41,401,'188.3.126.50','2025-10-12 10:36:46'),(6661,NULL,43,NULL,'176.220.142.112','2025-10
+-12 10:36:46'),(6662,NULL,42,NULL,'176.220.142.112','2025-10-12 10:36:47'),(6663,NULL,44,NULL,'176.220.142.112','2025-1
+0-12 10:36:48'),(6664,NULL,41,405,'188.3.126.50','2025-10-12 10:36:49'),(6665,2,NULL,NULL,'5.229.35.230','2025-10-12 10
+:36:50'),(6666,NULL,22,NULL,'176.238.163.46','2025-10-12 10:37:05'),(6668,38,NULL,NULL,'178.247.55.92','2025-10-12 10:3
+7:32'),(6670,2,NULL,NULL,'178.247.55.92','2025-10-12 10:37:34'),(6672,38,NULL,NULL,'24.133.85.142','2025-10-12 10:37:36
+'),(6673,38,NULL,NULL,'46.2.153.229','2025-10-12 10:37:59'),(6674,38,NULL,NULL,'188.57.39.254','2025-10-12 10:38:22'),(
+6677,NULL,18,23,'95.10.155.70','2025-10-12 10:39:06'),(6681,38,NULL,NULL,'46.106.167.191','2025-10-12 10:39:43'),(6683,
+NULL,58,NULL,'88.253.71.80','2025-10-12 10:39:52'),(6684,NULL,18,17,'95.10.155.70','2025-10-12 10:39:52'),(6685,38,NULL
+,NULL,'104.28.212.150','2025-10-12 10:39:53'),(6686,NULL,16,NULL,'46.106.167.191','2025-10-12 10:39:54'),(6687,NULL,18,
+NULL,'46.106.167.191','2025-10-12 10:39:55'),(6688,NULL,19,NULL,'46.106.167.191','2025-10-12 10:39:57'),(6689,NULL,18,1
+9,'95.10.155.70','2025-10-12 10:39:57'),(6690,NULL,20,NULL,'46.106.167.191','2025-10-12 10:39:58'),(6691,NULL,18,117,'1
+76.88.125.168','2025-10-12 10:39:59'),(6692,NULL,21,NULL,'46.106.167.191','2025-10-12 10:39:59'),(6693,NULL,22,NULL,'46
+.106.167.191','2025-10-12 10:40:00'),(6694,NULL,23,NULL,'46.106.167.191','2025-10-12 10:40:02'),(6695,NULL,24,NULL,'46.
+106.167.191','2025-10-12 10:40:03'),(6696,NULL,25,NULL,'46.106.167.191','2025-10-12 10:40:04'),(6697,NULL,18,21,'95.10.
+155.70','2025-10-12 10:40:04'),(6698,NULL,18,121,'176.88.125.168','2025-10-12 10:40:05'),(6699,NULL,26,NULL,'46.106.167
+.191','2025-10-12 10:40:05'),(6700,NULL,27,NULL,'46.106.167.191','2025-10-12 10:40:07'),(6701,NULL,28,NULL,'46.106.167.
+191','2025-10-12 10:40:08'),(6702,NULL,29,NULL,'46.106.167.191','2025-10-12 10:40:09'),(6703,NULL,30,NULL,'46.106.167.1
+91','2025-10-12 10:40:09'),(6704,NULL,31,NULL,'46.106.167.191','2025-10-12 10:40:11'),(6705,NULL,32,NULL,'46.106.167.19
+1','2025-10-12 10:40:13'),(6706,NULL,33,NULL,'46.106.167.191','2025-10-12 10:40:14'),(6707,NULL,40,NULL,'46.106.167.191
+','2025-10-12 10:40:16'),(6708,NULL,41,NULL,'46.106.167.191','2025-10-12 10:40:16'),(6709,NULL,18,25,'95.10.155.70','20
+25-10-12 10:40:17'),(6710,NULL,42,NULL,'46.106.167.191','2025-10-12 10:40:17'),(6711,2,NULL,NULL,'85.98.46.139','2025-1
+0-12 10:40:18'),(6712,NULL,43,NULL,'46.106.167.191','2025-10-12 10:40:18'),(6713,NULL,44,NULL,'46.106.167.191','2025-10
+-12 10:40:19'),(6714,NULL,45,NULL,'46.106.167.191','2025-10-12 10:40:21'),(6715,NULL,46,NULL,'46.106.167.191','2025-10-
+12 10:40:22'),(6716,NULL,47,NULL,'46.106.167.191','2025-10-12 10:40:23'),(6717,NULL,48,NULL,'46.106.167.191','2025-10-1
+2 10:40:24'),(6718,NULL,49,NULL,'46.106.167.191','2025-10-12 10:40:26'),(6719,NULL,50,NULL,'46.106.167.191','2025-10-12
+ 10:40:27'),(6720,NULL,51,NULL,'46.106.167.191','2025-10-12 10:40:28'),(6721,NULL,52,NULL,'46.106.167.191','2025-10-12 
+10:40:30'),(6722,NULL,53,NULL,'46.106.167.191','2025-10-12 10:40:31'),(6723,NULL,54,NULL,'46.106.167.191','2025-10-12 1
+0:40:33'),(6724,NULL,55,NULL,'46.106.167.191','2025-10-12 10:40:34'),(6725,NULL,18,27,'95.10.155.70','2025-10-12 10:40:
+34'),(6726,NULL,56,NULL,'46.106.167.191','2025-10-12 10:40:36'),(6727,NULL,57,NULL,'46.106.167.191','2025-10-12 10:40:3
+7'),(6728,NULL,58,NULL,'46.106.167.191','2025-10-12 10:40:38'),(6729,NULL,18,29,'95.10.155.70','2025-10-12 10:40:57'),(
+6731,NULL,18,NULL,'176.234.191.177','2025-10-12 10:41:33'),(6732,NULL,19,NULL,'176.234.191.177','2025-10-12 10:41:34'),
+(6733,NULL,18,31,'95.10.155.70','2025-10-12 10:41:34'),(6734,NULL,20,NULL,'176.234.191.177','2025-10-12 10:41:34'),(673
+5,38,NULL,NULL,'85.107.79.113','2025-10-12 10:41:35'),(6736,NULL,21,NULL,'176.234.191.177','2025-10-12 10:41:36'),(6737
+,2,NULL,NULL,'85.107.79.113','2025-10-12 10:41:37'),(6738,NULL,22,NULL,'176.234.191.177','2025-10-12 10:41:37'),(6739,N
+ULL,23,NULL,'176.234.191.177','2025-10-12 10:41:39'),(6740,NULL,24,NULL,'176.234.191.177','2025-10-12 10:41:40'),(6741,
+NULL,25,NULL,'176.234.191.177','2025-10-12 10:41:42'),(6743,NULL,26,NULL,'176.234.191.177','2025-10-12 10:41:42'),(6744
+,NULL,27,NULL,'176.234.191.177','2025-10-12 10:41:47'),(6745,NULL,28,NULL,'176.234.191.177','2025-10-12 10:41:48'),(674
+6,NULL,58,NULL,'78.176.119.115','2025-10-12 10:41:48'),(6747,NULL,29,NULL,'176.234.191.177','2025-10-12 10:41:50'),(674
+8,NULL,30,NULL,'176.234.191.177','2025-10-12 10:41:51'),(6749,NULL,31,NULL,'176.234.191.177','2025-10-12 10:41:53'),(67
+50,NULL,32,NULL,'176.234.191.177','2025-10-12 10:41:54'),(6751,NULL,33,NULL,'176.234.191.177','2025-10-12 10:41:55'),(6
+752,NULL,40,NULL,'176.234.191.177','2025-10-12 10:41:57'),(6753,NULL,41,NULL,'176.234.191.177','2025-10-12 10:41:57'),(
+6754,NULL,42,NULL,'176.234.191.177','2025-10-12 10:41:59'),(6755,NULL,43,NULL,'176.234.191.177','2025-10-12 10:42:00'),
+(6756,NULL,44,NULL,'176.234.191.177','2025-10-12 10:42:01'),(6757,NULL,45,NULL,'176.234.191.177','2025-10-12 10:42:03')
+,(6758,NULL,46,NULL,'176.234.191.177','2025-10-12 10:42:04'),(6759,NULL,47,NULL,'176.234.191.177','2025-10-12 10:42:06'
+),(6760,NULL,48,NULL,'176.234.191.177','2025-10-12 10:42:08'),(6761,NULL,49,NULL,'176.234.191.177','2025-10-12 10:42:09
+'),(6762,NULL,50,NULL,'176.234.191.177','2025-10-12 10:42:10'),(6763,NULL,51,NULL,'176.234.191.177','2025-10-12 10:42:1
+1'),(6765,NULL,18,33,'95.10.155.70','2025-10-12 10:42:12'),(6766,NULL,52,NULL,'176.234.191.177','2025-10-12 10:42:13'),
+(6767,38,NULL,NULL,'212.47.138.242','2025-10-12 10:42:13'),(6768,NULL,53,NULL,'176.234.191.177','2025-10-12 10:42:14'),
+(6769,NULL,54,NULL,'176.234.191.177','2025-10-12 10:42:15'),(6770,2,NULL,NULL,'212.47.138.242','2025-10-12 10:42:16'),(
+6771,NULL,55,NULL,'176.234.191.177','2025-10-12 10:42:17'),(6772,NULL,56,NULL,'176.234.191.177','2025-10-12 10:42:19'),
+(6773,NULL,57,NULL,'176.234.191.177','2025-10-12 10:42:20'),(6774,NULL,58,NULL,'176.234.191.177','2025-10-12 10:42:22')
+,(6775,38,NULL,NULL,'159.146.74.150','2025-10-12 10:42:29'),(6776,NULL,16,NULL,'62.164.144.190','2025-10-12 10:42:34'),
+(6777,NULL,16,NULL,'176.234.191.177','2025-10-12 10:42:37'),(6779,NULL,16,NULL,'78.163.179.16','2025-10-12 10:42:38'),(
+6780,38,NULL,NULL,'176.234.191.177','2025-10-12 10:42:41'),(6781,38,NULL,NULL,'212.47.138.242','2025-10-12 10:42:41'),(
+6782,NULL,18,35,'95.10.155.70','2025-10-12 10:42:43'),(6783,38,NULL,NULL,'46.106.14.41','2025-10-12 10:42:43'),(6784,NU
+LL,40,NULL,'5.25.17.27','2025-10-12 10:42:57'),(6785,38,NULL,NULL,'31.142.195.206','2025-10-12 10:43:02'),(6786,38,NULL
+,NULL,'78.176.97.122','2025-10-12 10:43:14'),(6787,NULL,16,NULL,'78.176.119.115','2025-10-12 10:43:40'),(6790,NULL,58,N
+ULL,'159.146.74.150','2025-10-12 10:43:53'),(6791,NULL,18,NULL,'78.176.119.115','2025-10-12 10:44:06'),(6793,NULL,16,NU
+LL,'5.176.237.229','2025-10-12 10:44:40'),(6794,NULL,18,NULL,'5.176.237.229','2025-10-12 10:44:40'),(6795,NULL,19,NULL,
+'5.176.237.229','2025-10-12 10:44:41'),(6796,NULL,20,NULL,'5.176.237.229','2025-10-12 10:44:42'),(6797,NULL,21,NULL,'5.
+176.237.229','2025-10-12 10:44:44'),(6798,NULL,22,NULL,'5.176.237.229','2025-10-12 10:44:44'),(6799,38,NULL,NULL,'176.2
+19.19.134','2025-10-12 10:44:45'),(6800,NULL,23,NULL,'5.176.237.229','2025-10-12 10:44:46'),(6801,NULL,24,NULL,'5.176.2
+37.229','2025-10-12 10:44:47'),(6802,NULL,25,NULL,'5.176.237.229','2025-10-12 10:44:47'),(6803,NULL,26,NULL,'5.176.237.
+229','2025-10-12 10:44:48'),(6804,NULL,27,NULL,'5.176.237.229','2025-10-12 10:44:51'),(6805,NULL,28,NULL,'5.176.237.229
+','2025-10-12 10:44:53'),(6806,NULL,29,NULL,'5.176.237.229','2025-10-12 10:44:54'),(6807,NULL,30,NULL,'5.176.237.229','
+2025-10-12 10:44:55'),(6808,NULL,31,NULL,'5.176.237.229','2025-10-12 10:44:55'),(6809,NULL,32,NULL,'5.176.237.229','202
+5-10-12 10:44:56'),(6810,NULL,33,NULL,'5.176.237.229','2025-10-12 10:44:57'),(6811,NULL,40,NULL,'5.176.237.229','2025-1
+0-12 10:44:58'),(6812,NULL,41,NULL,'5.176.237.229','2025-10-12 10:44:59'),(6813,NULL,42,NULL,'5.176.237.229','2025-10-1
+2 10:45:00'),(6814,NULL,43,NULL,'5.176.237.229','2025-10-12 10:45:01'),(6815,NULL,44,NULL,'5.176.237.229','2025-10-12 1
+0:45:02'),(6816,NULL,45,NULL,'5.176.237.229','2025-10-12 10:45:03'),(6817,NULL,46,NULL,'5.176.237.229','2025-10-12 10:4
+5:04'),(6818,NULL,47,NULL,'5.176.237.229','2025-10-12 10:45:05'),(6819,NULL,16,NULL,'5.176.237.229','2025-10-12 10:45:5
+4'),(6820,NULL,18,NULL,'5.176.237.229','2025-10-12 10:45:54'),(6821,NULL,19,NULL,'5.176.237.229','2025-10-12 10:45:56')
+,(6822,NULL,20,NULL,'5.176.237.229','2025-10-12 10:45:57'),(6823,NULL,21,NULL,'5.176.237.229','2025-10-12 10:45:58'),(6
+824,NULL,22,NULL,'5.176.237.229','2025-10-12 10:45:58'),(6825,NULL,23,NULL,'5.176.237.229','2025-10-12 10:45:59'),(6826
+,NULL,24,NULL,'5.176.237.229','2025-10-12 10:46:00'),(6827,NULL,25,NULL,'5.176.237.229','2025-10-12 10:46:00'),(6828,NU
+LL,26,NULL,'5.176.237.229','2025-10-12 10:46:01'),(6829,NULL,27,NULL,'5.176.237.229','2025-10-12 10:46:03'),(6830,NULL,
+28,NULL,'5.176.237.229','2025-10-12 10:46:05'),(6831,NULL,29,NULL,'5.176.237.229','2025-10-12 10:46:05'),(6832,NULL,30,
+NULL,'5.176.237.229','2025-10-12 10:46:06'),(6833,NULL,31,NULL,'5.176.237.229','2025-10-12 10:46:07'),(6834,NULL,32,NUL
+L,'5.176.237.229','2025-10-12 10:46:08'),(6835,NULL,33,NULL,'5.176.237.229','2025-10-12 10:46:09'),(6836,NULL,40,NULL,'
+5.176.237.229','2025-10-12 10:46:09'),(6837,NULL,41,NULL,'5.176.237.229','2025-10-12 10:46:10'),(6838,NULL,42,NULL,'5.1
+76.237.229','2025-10-12 10:46:11'),(6839,NULL,43,NULL,'5.176.237.229','2025-10-12 10:46:12'),(6840,NULL,44,NULL,'5.176.
+237.229','2025-10-12 10:46:12'),(6841,NULL,45,NULL,'5.176.237.229','2025-10-12 10:46:13'),(6842,NULL,46,NULL,'5.176.237
+.229','2025-10-12 10:46:14'),(6843,NULL,47,NULL,'5.176.237.229','2025-10-12 10:46:14'),(6844,NULL,48,NULL,'5.176.237.22
+9','2025-10-12 10:46:16'),(6845,NULL,49,NULL,'5.176.237.229','2025-10-12 10:46:16'),(6846,NULL,50,NULL,'5.176.237.229',
+'2025-10-12 10:46:17'),(6847,NULL,51,NULL,'5.176.237.229','2025-10-12 10:46:18'),(6848,NULL,52,NULL,'5.176.237.229','20
+25-10-12 10:46:19'),(6849,NULL,53,NULL,'5.176.237.229','2025-10-12 10:46:20'),(6850,NULL,54,NULL,'5.176.237.229','2025-
+10-12 10:46:21'),(6851,NULL,55,NULL,'5.176.237.229','2025-10-12 10:46:22'),(6852,NULL,56,NULL,'5.176.237.229','2025-10-
+12 10:46:23'),(6853,NULL,57,NULL,'5.176.237.229','2025-10-12 10:46:24'),(6854,NULL,58,NULL,'5.176.237.229','2025-10-12 
+10:46:26'),(6855,NULL,21,NULL,'85.153.234.81','2025-10-12 10:46:35'),(6856,38,NULL,NULL,'195.7.11.165','2025-10-12 10:4
+6:37'),(6857,NULL,26,NULL,'85.153.234.81','2025-10-12 10:46:38'),(6858,38,NULL,NULL,'176.219.91.232','2025-10-12 10:46:
+39'),(6859,NULL,58,NULL,'213.238.188.184','2025-10-12 10:46:51'),(6860,NULL,48,357,'5.25.16.63','2025-10-12 10:47:04'),
+(6861,38,NULL,NULL,'212.133.205.163','2025-10-12 10:47:48'),(6862,38,NULL,NULL,'37.26.30.147','2025-10-12 10:47:56'),(6
+864,38,NULL,NULL,'78.173.82.158','2025-10-12 10:48:25'),(6867,NULL,58,NULL,'212.133.205.163','2025-10-12 10:48:51'),(68
+68,NULL,48,371,'5.25.16.63','2025-10-12 10:49:29'),(6869,38,NULL,NULL,'151.135.21.10','2025-10-12 10:49:30'),(6872,2,NU
+LL,NULL,'88.230.149.203','2025-10-12 10:49:39'),(6875,NULL,19,249,'178.240.154.244','2025-10-12 10:49:49'),(6876,38,NUL
+L,NULL,'82.222.238.75','2025-10-12 10:49:54'),(6878,NULL,48,379,'5.25.16.63','2025-10-12 10:50:16'),(6879,NULL,48,377,'
+5.25.16.63','2025-10-12 10:50:19'),(6880,NULL,48,381,'5.25.16.63','2025-10-12 10:50:29'),(6881,NULL,48,383,'5.25.16.63'
+,'2025-10-12 10:50:48'),(6882,38,NULL,NULL,'212.252.118.217','2025-10-12 10:50:55'),(6883,38,NULL,NULL,'37.155.224.255'
+,'2025-10-12 10:51:09'),(6884,38,NULL,NULL,'141.196.43.179','2025-10-12 10:51:35'),(6885,2,NULL,NULL,'95.7.197.64','202
+5-10-12 10:51:49'),(6886,38,NULL,NULL,'188.3.116.65','2025-10-12 10:52:16'),(6887,2,NULL,NULL,'188.3.116.65','2025-10-1
+2 10:52:18'),(6888,NULL,54,NULL,'212.252.118.217','2025-10-12 10:52:31'),(6889,NULL,55,NULL,'212.252.118.217','2025-10-
+12 10:52:32'),(6890,NULL,56,NULL,'212.252.118.217','2025-10-12 10:52:33'),(6891,NULL,57,NULL,'212.252.118.217','2025-10
+-12 10:52:33'),(6892,NULL,58,NULL,'212.252.118.217','2025-10-12 10:52:34'),(6893,NULL,53,NULL,'212.252.118.217','2025-1
+0-12 10:52:38'),(6894,38,NULL,NULL,'212.47.136.161','2025-10-12 10:52:38'),(6895,NULL,52,NULL,'212.252.118.217','2025-1
+0-12 10:52:38'),(6896,NULL,51,NULL,'212.252.118.217','2025-10-12 10:52:39'),(6897,NULL,50,NULL,'212.252.118.217','2025-
+10-12 10:52:41'),(6898,NULL,49,NULL,'212.252.118.217','2025-10-12 10:52:41'),(6899,NULL,48,NULL,'212.252.118.217','2025
+-10-12 10:52:43'),(6900,NULL,47,NULL,'212.252.118.217','2025-10-12 10:52:44'),(6901,NULL,46,NULL,'212.252.118.217','202
+5-10-12 10:52:44'),(6902,NULL,45,NULL,'212.252.118.217','2025-10-12 10:52:46'),(6903,NULL,44,NULL,'212.252.118.217','20
+25-10-12 10:52:47'),(6904,NULL,43,NULL,'212.252.118.217','2025-10-12 10:52:47'),(6905,NULL,42,NULL,'212.252.118.217','2
+025-10-12 10:52:49'),(6906,NULL,41,NULL,'212.252.118.217','2025-10-12 10:52:49'),(6907,NULL,40,NULL,'212.252.118.217','
+2025-10-12 10:52:50'),(6908,NULL,58,NULL,'31.143.154.111','2025-10-12 10:52:50'),(6909,NULL,33,NULL,'212.252.118.217','
+2025-10-12 10:52:52'),(6910,NULL,32,NULL,'212.252.118.217','2025-10-12 10:52:53'),(6911,NULL,31,NULL,'212.252.118.217',
+'2025-10-12 10:52:53'),(6912,38,NULL,NULL,'78.175.215.8','2025-10-12 10:52:53'),(6913,NULL,30,NULL,'212.252.118.217','2
+025-10-12 10:52:55'),(6914,NULL,29,NULL,'212.252.118.217','2025-10-12 10:52:55'),(6915,NULL,28,NULL,'212.252.118.217','
+2025-10-12 10:52:56'),(6916,NULL,27,NULL,'212.252.118.217','2025-10-12 10:52:57'),(6917,NULL,26,NULL,'212.252.118.217',
+'2025-10-12 10:52:58'),(6918,NULL,25,NULL,'212.252.118.217','2025-10-12 10:53:00'),(6919,NULL,24,NULL,'212.252.118.217'
+,'2025-10-12 10:53:01'),(6920,NULL,23,NULL,'212.252.118.217','2025-10-12 10:53:02'),(6921,NULL,22,NULL,'212.252.118.217
+','2025-10-12 10:53:03'),(6922,NULL,21,NULL,'212.252.118.217','2025-10-12 10:53:04'),(6923,NULL,20,NULL,'212.252.118.21
+7','2025-10-12 10:53:05'),(6924,NULL,19,NULL,'212.252.118.217','2025-10-12 10:53:06'),(6925,NULL,18,NULL,'212.252.118.2
+17','2025-10-12 10:53:07'),(6926,NULL,16,NULL,'212.252.118.217','2025-10-12 10:53:07'),(6928,38,NULL,NULL,'78.190.15.61
+','2025-10-12 10:53:41'),(6929,38,NULL,NULL,'176.88.162.10','2025-10-12 10:53:46'),(6930,NULL,16,NULL,'104.28.248.174',
+'2025-10-12 10:53:50'),(6931,NULL,18,NULL,'104.28.248.174','2025-10-12 10:53:50'),(6932,NULL,19,NULL,'104.28.248.174','
+2025-10-12 10:53:51'),(6933,NULL,20,NULL,'104.28.248.174','2025-10-12 10:53:52'),(6934,NULL,21,NULL,'104.28.248.174','2
+025-10-12 10:53:53'),(6935,NULL,22,NULL,'104.28.248.174','2025-10-12 10:53:54'),(6936,NULL,23,NULL,'104.28.248.174','20
+25-10-12 10:53:55'),(6937,NULL,24,NULL,'104.28.248.174','2025-10-12 10:53:55'),(6939,NULL,25,NULL,'104.28.248.174','202
+5-10-12 10:53:57'),(6940,NULL,26,NULL,'104.28.248.174','2025-10-12 10:53:58'),(6941,NULL,27,NULL,'104.28.248.174','2025
+-10-12 10:53:59'),(6942,NULL,28,NULL,'104.28.248.174','2025-10-12 10:54:00'),(6943,NULL,29,NULL,'104.28.248.174','2025-
+10-12 10:54:01'),(6944,NULL,30,NULL,'104.28.248.174','2025-10-12 10:54:02'),(6945,NULL,31,NULL,'104.28.248.174','2025-1
+0-12 10:54:02'),(6946,NULL,32,NULL,'104.28.248.174','2025-10-12 10:54:03'),(6947,NULL,33,NULL,'104.28.248.174','2025-10
+-12 10:54:04'),(6948,NULL,40,NULL,'104.28.248.174','2025-10-12 10:54:04'),(6949,NULL,41,NULL,'104.28.248.174','2025-10-
+12 10:54:05'),(6950,NULL,42,NULL,'104.28.248.174','2025-10-12 10:54:07'),(6951,NULL,43,NULL,'104.28.248.174','2025-10-1
+2 10:54:07'),(6952,NULL,44,NULL,'104.28.248.174','2025-10-12 10:54:08'),(6953,NULL,45,NULL,'104.28.248.174','2025-10-12
+ 10:54:08'),(6954,NULL,46,NULL,'104.28.248.174','2025-10-12 10:54:09'),(6955,NULL,47,NULL,'104.28.248.174','2025-10-12 
+10:54:10'),(6956,NULL,48,NULL,'104.28.248.174','2025-10-12 10:54:11'),(6957,NULL,49,NULL,'104.28.248.174','2025-10-12 1
+0:54:12'),(6958,NULL,50,NULL,'104.28.248.174','2025-10-12 10:54:13'),(6959,NULL,51,NULL,'104.28.248.174','2025-10-12 10
+:54:13'),(6960,NULL,52,NULL,'104.28.248.174','2025-10-12 10:54:14'),(6961,NULL,53,NULL,'104.28.248.174','2025-10-12 10:
+54:15'),(6962,NULL,54,NULL,'104.28.248.174','2025-10-12 10:54:16'),(6963,NULL,55,NULL,'104.28.248.174','2025-10-12 10:5
+4:17'),(6964,NULL,56,NULL,'104.28.248.174','2025-10-12 10:54:18'),(6965,NULL,57,NULL,'104.28.248.174','2025-10-12 10:54
+:19'),(6966,NULL,58,NULL,'104.28.248.174','2025-10-12 10:54:19'),(6967,NULL,18,169,'176.88.125.168','2025-10-12 10:54:4
+5'),(6970,38,NULL,NULL,'151.135.169.47','2025-10-12 10:55:18'),(6971,38,NULL,NULL,'176.233.25.204','2025-10-12 10:55:34
+'),(6972,NULL,54,NULL,'85.99.33.214','2025-10-12 10:55:36'),(6973,38,NULL,NULL,'176.42.136.151','2025-10-12 10:55:37'),
+(6974,NULL,56,NULL,'176.233.25.204','2025-10-12 10:55:56'),(6975,NULL,57,NULL,'176.233.25.204','2025-10-12 10:55:57'),(
+6976,NULL,58,NULL,'176.233.25.204','2025-10-12 10:55:58'),(6977,NULL,55,NULL,'176.233.25.204','2025-10-12 10:55:58'),(6
+978,NULL,54,NULL,'176.233.25.204','2025-10-12 10:55:59'),(6979,38,NULL,NULL,'176.90.164.205','2025-10-12 10:56:00'),(69
+80,NULL,53,NULL,'176.233.25.204','2025-10-12 10:56:00'),(6981,NULL,52,NULL,'176.233.25.204','2025-10-12 10:56:01'),(698
+2,NULL,51,NULL,'176.233.25.204','2025-10-12 10:56:02'),(6983,NULL,50,NULL,'176.233.25.204','2025-10-12 10:56:03'),(6984
+,NULL,49,NULL,'176.233.25.204','2025-10-12 10:56:04'),(6985,NULL,48,NULL,'176.233.25.204','2025-10-12 10:56:04'),(6986,
+NULL,47,NULL,'176.233.25.204','2025-10-12 10:56:05'),(6987,NULL,46,NULL,'176.233.25.204','2025-10-12 10:56:06'),(6988,N
+ULL,45,NULL,'176.233.25.204','2025-10-12 10:56:08'),(6989,NULL,44,NULL,'176.233.25.204','2025-10-12 10:56:09'),(6990,NU
+LL,43,NULL,'176.233.25.204','2025-10-12 10:56:10'),(6991,NULL,42,NULL,'176.233.25.204','2025-10-12 10:56:11'),(6992,NUL
+L,41,NULL,'176.233.25.204','2025-10-12 10:56:12'),(6993,NULL,40,NULL,'176.233.25.204','2025-10-12 10:56:14'),(6994,NULL
+,33,NULL,'176.233.25.204','2025-10-12 10:56:15'),(6995,NULL,32,NULL,'176.233.25.204','2025-10-12 10:56:15'),(6996,NULL,
+31,NULL,'176.233.25.204','2025-10-12 10:56:17'),(6997,NULL,30,NULL,'176.233.25.204','2025-10-12 10:56:17'),(6998,NULL,2
+9,NULL,'176.233.25.204','2025-10-12 10:56:18'),(6999,NULL,28,NULL,'176.233.25.204','2025-10-12 10:56:19'),(7000,NULL,27
+,NULL,'176.233.25.204','2025-10-12 10:56:20'),(7001,NULL,26,NULL,'176.233.25.204','2025-10-12 10:56:21'),(7002,NULL,25,
+NULL,'176.233.25.204','2025-10-12 10:56:23'),(7003,NULL,24,NULL,'176.233.25.204','2025-10-12 10:56:23'),(7004,NULL,23,N
+ULL,'176.233.25.204','2025-10-12 10:56:24'),(7005,NULL,22,NULL,'176.233.25.204','2025-10-12 10:56:25'),(7006,NULL,21,NU
+LL,'176.233.25.204','2025-10-12 10:56:26'),(7007,NULL,20,NULL,'176.233.25.204','2025-10-12 10:56:27'),(7008,NULL,19,NUL
+L,'176.233.25.204','2025-10-12 10:56:28'),(7009,NULL,18,NULL,'176.233.25.204','2025-10-12 10:56:28'),(7010,NULL,16,NULL
+,'176.233.25.204','2025-10-12 10:56:29'),(7011,38,NULL,NULL,'176.42.136.151','2025-10-12 10:56:30'),(7013,2,NULL,NULL,'
+176.220.43.102','2025-10-12 10:56:45'),(7014,38,NULL,NULL,'176.220.43.102','2025-10-12 10:56:47'),(7015,NULL,18,193,'17
+6.88.125.168','2025-10-12 10:57:07'),(7016,NULL,18,191,'176.88.125.168','2025-10-12 10:57:10'),(7017,NULL,18,195,'176.8
+8.125.168','2025-10-12 10:57:23'),(7018,NULL,18,197,'176.88.125.168','2025-10-12 10:57:24'),(7020,38,NULL,NULL,'95.10.2
+35.105','2025-10-12 10:58:13'),(7021,38,NULL,NULL,'151.241.19.25','2025-10-12 10:58:22'),(7022,2,NULL,NULL,'151.241.19.
+25','2025-10-12 10:58:29'),(7024,NULL,16,NULL,'151.241.19.25','2025-10-12 10:58:52'),(7025,NULL,18,NULL,'151.241.19.25'
+,'2025-10-12 10:58:53'),(7026,NULL,19,NULL,'151.241.19.25','2025-10-12 10:58:53'),(7027,NULL,20,NULL,'151.241.19.25','2
+025-10-12 10:58:54'),(7028,NULL,21,NULL,'151.241.19.25','2025-10-12 10:58:55'),(7029,NULL,22,NULL,'151.241.19.25','2025
+-10-12 10:58:56'),(7030,2,NULL,NULL,'88.236.101.22','2025-10-12 10:59:10'),(7031,38,NULL,NULL,'88.236.101.22','2025-10-
+12 10:59:13'),(7032,NULL,24,NULL,'31.206.139.173','2025-10-12 10:59:37'),(7033,NULL,23,NULL,'31.206.139.173','2025-10-1
+2 10:59:39'),(7034,NULL,22,NULL,'31.206.139.173','2025-10-12 10:59:40'),(7035,NULL,16,NULL,'31.206.139.173','2025-10-12
+ 10:59:44'),(7036,NULL,16,NULL,'88.236.166.201','2025-10-12 10:59:45'),(7037,NULL,18,NULL,'31.206.139.173','2025-10-12 
+10:59:45'),(7038,NULL,19,NULL,'31.206.139.173','2025-10-12 10:59:46'),(7039,NULL,20,NULL,'31.206.139.173','2025-10-12 1
+0:59:48'),(7040,NULL,21,NULL,'31.206.139.173','2025-10-12 10:59:49'),(7041,38,NULL,NULL,'95.10.204.91','2025-10-12 10:5
+9:50'),(7042,NULL,25,NULL,'31.206.139.173','2025-10-12 10:59:55'),(7043,NULL,26,NULL,'31.206.139.173','2025-10-12 10:59
+:56'),(7044,NULL,27,NULL,'31.206.139.173','2025-10-12 11:00:03'),(7045,NULL,28,NULL,'31.206.139.173','2025-10-12 11:00:
+05'),(7046,NULL,29,NULL,'31.206.139.173','2025-10-12 11:00:06'),(7047,NULL,30,NULL,'31.206.139.173','2025-10-12 11:00:0
+9'),(7048,NULL,58,NULL,'57.129.13.14','2025-10-12 11:00:09'),(7049,NULL,31,NULL,'31.206.139.173','2025-10-12 11:00:10')
+,(7050,NULL,32,NULL,'31.206.139.173','2025-10-12 11:00:11'),(7051,NULL,33,NULL,'31.206.139.173','2025-10-12 11:00:12'),
+(7052,NULL,40,NULL,'31.206.139.173','2025-10-12 11:00:13'),(7053,NULL,41,NULL,'31.206.139.173','2025-10-12 11:00:15'),(
+7054,NULL,42,NULL,'31.206.139.173','2025-10-12 11:00:16'),(7055,NULL,43,NULL,'31.206.139.173','2025-10-12 11:00:18'),(7
+056,NULL,44,NULL,'31.206.139.173','2025-10-12 11:00:19'),(7057,NULL,45,NULL,'31.206.139.173','2025-10-12 11:00:20'),(70
+58,NULL,46,NULL,'31.206.139.173','2025-10-12 11:00:22'),(7059,NULL,47,NULL,'31.206.139.173','2025-10-12 11:00:23'),(706
+0,NULL,48,NULL,'31.206.139.173','2025-10-12 11:00:24'),(7061,NULL,49,NULL,'31.206.139.173','2025-10-12 11:00:26'),(7062
+,38,NULL,NULL,'176.220.149.206','2025-10-12 11:00:26'),(7063,38,NULL,NULL,'178.240.182.92','2025-10-12 11:00:26'),(7064
+,NULL,50,NULL,'31.206.139.173','2025-10-12 11:00:27'),(7065,NULL,51,NULL,'31.206.139.173','2025-10-12 11:00:29'),(7066,
+NULL,52,NULL,'31.206.139.173','2025-10-12 11:00:30'),(7067,NULL,53,NULL,'31.206.139.173','2025-10-12 11:00:31'),(7068,N
+ULL,54,NULL,'31.206.139.173','2025-10-12 11:00:33'),(7069,NULL,55,NULL,'31.206.139.173','2025-10-12 11:00:35'),(7070,NU
+LL,56,NULL,'31.206.139.173','2025-10-12 11:00:36'),(7071,NULL,57,NULL,'31.206.139.173','2025-10-12 11:00:37'),(7072,NUL
+L,58,NULL,'31.206.139.173','2025-10-12 11:00:38'),(7073,NULL,49,NULL,'78.190.199.222','2025-10-12 11:00:42'),(7074,NULL
+,58,9,'57.129.13.14','2025-10-12 11:00:44'),(7075,NULL,58,11,'57.129.13.14','2025-10-12 11:00:48'),(7076,NULL,17,NULL,'
+31.206.139.173','2025-10-12 11:00:59'),(7077,NULL,34,NULL,'31.206.139.173','2025-10-12 11:01:00'),(7078,NULL,35,NULL,'3
+1.206.139.173','2025-10-12 11:01:01'),(7079,NULL,36,NULL,'31.206.139.173','2025-10-12 11:01:02'),(7080,NULL,37,NULL,'31
+.206.139.173','2025-10-12 11:01:04'),(7081,NULL,38,NULL,'31.206.139.173','2025-10-12 11:01:04'),(7083,38,NULL,NULL,'57.
+129.13.14','2025-10-12 11:02:19'),(7084,2,NULL,NULL,'57.129.13.14','2025-10-12 11:02:32'),(7085,NULL,58,3,'98.98.142.13
+3','2025-10-12 11:02:33'),(7086,NULL,58,1,'98.98.142.133','2025-10-12 11:02:33'),(7087,NULL,58,NULL,'98.98.142.133','20
+25-10-12 11:02:35'),(7088,NULL,24,NULL,'31.143.154.111','2025-10-12 11:02:43'),(7089,NULL,23,NULL,'31.143.154.111','202
+5-10-12 11:02:44'),(7090,38,NULL,NULL,'141.196.69.175','2025-10-12 11:03:01'),(7091,NULL,58,NULL,'31.142.13.229','2025-
+10-12 11:03:02'),(7092,2,NULL,NULL,'57.129.13.14','2025-10-12 11:03:32'),(7093,NULL,17,NULL,'57.129.13.14','2025-10-12 
+11:03:36'),(7094,NULL,34,NULL,'57.129.13.14','2025-10-12 11:03:37'),(7095,NULL,36,NULL,'57.129.13.14','2025-10-12 11:03
+:38'),(7096,NULL,35,NULL,'57.129.13.14','2025-10-12 11:03:40'),(7097,NULL,38,NULL,'57.129.13.14','2025-10-12 11:03:41')
+,(7098,NULL,37,NULL,'57.129.13.14','2025-10-12 11:03:42'),(7099,NULL,18,247,'176.88.125.168','2025-10-12 11:03:48'),(71
+01,2,NULL,NULL,'88.226.248.251','2025-10-12 11:04:51'),(7102,38,NULL,NULL,'88.226.248.251','2025-10-12 11:04:52'),(7104
+,38,NULL,NULL,'85.108.96.208','2025-10-12 11:05:34'),(7105,NULL,55,254,'85.109.16.12','2025-10-12 11:05:34'),(7106,NULL
+,18,373,'176.88.125.168','2025-10-12 11:05:50'),(7107,38,NULL,NULL,'37.154.250.156','2025-10-12 11:06:00'),(7108,NULL,1
+6,NULL,'37.154.250.156','2025-10-12 11:06:02'),(7109,NULL,18,NULL,'37.154.250.156','2025-10-12 11:06:03'),(7110,NULL,19
+,NULL,'37.154.250.156','2025-10-12 11:06:04'),(7111,NULL,20,NULL,'37.154.250.156','2025-10-12 11:06:06'),(7112,NULL,21,
+NULL,'37.154.250.156','2025-10-12 11:06:06'),(7113,NULL,22,NULL,'37.154.250.156','2025-10-12 11:06:07'),(7114,NULL,23,N
+ULL,'37.154.250.156','2025-10-12 11:06:08'),(7115,38,NULL,NULL,'88.234.214.152','2025-10-12 11:06:50'),(7116,2,NULL,NUL
+L,'88.234.214.152','2025-10-12 11:06:53'),(7117,38,NULL,NULL,'88.252.140.41','2025-10-12 11:07:01'),(7118,2,NULL,NULL,'
+88.252.140.41','2025-10-12 11:07:05'),(7119,2,NULL,NULL,'176.88.149.7','2025-10-12 11:07:06'),(7120,38,NULL,NULL,'176.8
+8.149.7','2025-10-12 11:07:09'),(7121,NULL,52,1,'176.234.190.165','2025-10-12 11:07:42'),(7122,NULL,58,136,'88.242.67.1
+27','2025-10-12 11:08:03'),(7125,NULL,55,278,'85.109.16.12','2025-10-12 11:08:08'),(7128,38,NULL,NULL,'95.7.10.149','20
+25-10-12 11:08:22'),(7129,NULL,58,NULL,'31.142.145.180','2025-10-12 11:08:33'),(7130,NULL,57,NULL,'31.142.145.180','202
+5-10-12 11:08:35'),(7131,NULL,18,483,'176.88.125.168','2025-10-12 11:09:01'),(7132,NULL,55,288,'85.109.16.12','2025-10-
+12 11:09:20'),(7133,NULL,16,NULL,'78.173.82.158','2025-10-12 11:09:37'),(7134,38,NULL,NULL,'176.227.98.136','2025-10-12
+ 11:09:41'),(7135,38,NULL,NULL,'94.235.235.227','2025-10-12 11:09:42'),(7136,NULL,55,290,'85.109.16.12','2025-10-12 11:
+09:46'),(7138,NULL,58,NULL,'78.160.113.124','2025-10-12 11:10:29'),(7139,38,NULL,NULL,'78.173.82.158','2025-10-12 11:10
+:41'),(7141,NULL,18,513,'176.88.125.168','2025-10-12 11:10:45'),(7142,NULL,18,515,'176.88.125.168','2025-10-12 11:10:50
+'),(7143,NULL,16,NULL,'78.163.170.159','2025-10-12 11:11:36'),(7144,NULL,18,NULL,'78.163.170.159','2025-10-12 11:11:37'
+),(7145,NULL,19,NULL,'78.163.170.159','2025-10-12 11:11:38'),(7146,NULL,20,NULL,'78.163.170.159','2025-10-12 11:11:39')
+,(7147,NULL,21,NULL,'78.163.170.159','2025-10-12 11:11:40'),(7148,NULL,22,NULL,'78.163.170.159','2025-10-12 11:11:42'),
+(7149,NULL,23,NULL,'78.163.170.159','2025-10-12 11:11:43'),(7150,NULL,24,NULL,'78.163.170.159','2025-10-12 11:11:44'),(
+7151,NULL,25,NULL,'78.163.170.159','2025-10-12 11:11:46'),(7152,NULL,26,NULL,'78.163.170.159','2025-10-12 11:11:47'),(7
+153,NULL,27,NULL,'78.163.170.159','2025-10-12 11:11:50'),(7154,NULL,28,NULL,'78.163.170.159','2025-10-12 11:11:51'),(71
+55,NULL,29,NULL,'78.163.170.159','2025-10-12 11:11:52'),(7156,NULL,30,NULL,'78.163.170.159','2025-10-12 11:11:53'),(715
+7,38,NULL,NULL,'78.182.199.53','2025-10-12 11:11:53'),(7158,NULL,31,NULL,'78.163.170.159','2025-10-12 11:11:54'),(7159,
+NULL,32,NULL,'78.163.170.159','2025-10-12 11:11:55'),(7160,2,NULL,NULL,'78.182.199.53','2025-10-12 11:11:56'),(7161,NUL
+L,33,NULL,'78.163.170.159','2025-10-12 11:11:58'),(7163,NULL,40,NULL,'78.163.170.159','2025-10-12 11:11:59'),(7164,NULL
+,41,NULL,'78.163.170.159','2025-10-12 11:12:00'),(7165,NULL,42,NULL,'78.163.170.159','2025-10-12 11:12:01'),(7166,NULL,
+43,NULL,'78.163.170.159','2025-10-12 11:12:02'),(7167,NULL,44,NULL,'78.163.170.159','2025-10-12 11:12:04'),(7168,38,NUL
+L,NULL,'94.55.136.56','2025-10-12 11:12:08'),(7169,NULL,45,NULL,'78.163.170.159','2025-10-12 11:12:09'),(7170,NULL,46,N
+ULL,'78.163.170.159','2025-10-12 11:12:11'),(7171,NULL,47,NULL,'78.163.170.159','2025-10-12 11:12:13'),(7172,NULL,48,NU
+LL,'78.163.170.159','2025-10-12 11:12:14'),(7174,NULL,49,NULL,'78.163.170.159','2025-10-12 11:12:16'),(7175,NULL,50,NUL
+L,'78.163.170.159','2025-10-12 11:12:17'),(7176,38,NULL,NULL,'176.55.170.128','2025-10-12 11:12:17'),(7177,NULL,51,NULL
+,'78.163.170.159','2025-10-12 11:12:19'),(7178,2,NULL,NULL,'176.55.170.128','2025-10-12 11:12:19'),(7179,NULL,19,419,'1
+78.240.154.244','2025-10-12 11:12:20'),(7180,2,NULL,NULL,'85.106.134.59','2025-10-12 11:12:24'),(7181,NULL,52,NULL,'78.
+163.170.159','2025-10-12 11:12:31'),(7182,NULL,53,NULL,'78.163.170.159','2025-10-12 11:12:33'),(7183,NULL,54,NULL,'78.1
+63.170.159','2025-10-12 11:12:38'),(7184,NULL,55,NULL,'78.163.170.159','2025-10-12 11:12:38'),(7185,NULL,56,NULL,'78.16
+3.170.159','2025-10-12 11:12:40'),(7186,NULL,57,NULL,'78.163.170.159','2025-10-12 11:12:41'),(7187,NULL,58,NULL,'78.163
+.170.159','2025-10-12 11:12:42'),(7190,NULL,47,235,'85.110.148.189','2025-10-12 11:13:08'),(7191,2,NULL,NULL,'78.190.13
+0.172','2025-10-12 11:13:45'),(7192,NULL,38,NULL,'78.190.130.172','2025-10-12 11:14:05'),(7193,NULL,37,NULL,'78.190.130
+.172','2025-10-12 11:14:06'),(7194,NULL,36,NULL,'78.190.130.172','2025-10-12 11:14:07'),(7195,NULL,35,NULL,'78.190.130.
+172','2025-10-12 11:14:08'),(7196,NULL,34,NULL,'78.190.130.172','2025-10-12 11:14:08'),(7197,NULL,17,NULL,'78.190.130.1
+72','2025-10-12 11:14:10'),(7198,NULL,55,322,'85.109.16.12','2025-10-12 11:14:29'),(7201,NULL,55,324,'85.109.16.12','20
+25-10-12 11:14:42'),(7202,NULL,55,328,'85.109.16.12','2025-10-12 11:14:52'),(7203,38,NULL,NULL,'188.132.132.158','2025-
+10-12 11:14:59'),(7204,NULL,16,NULL,'94.54.167.19','2025-10-12 11:15:05'),(7205,2,NULL,NULL,'78.185.26.180','2025-10-12
+ 11:15:05'),(7206,38,NULL,NULL,'78.170.126.63','2025-10-12 11:15:07'),(7207,NULL,19,521,'178.240.154.244','2025-10-12 1
+1:15:29'),(7208,38,NULL,NULL,'88.241.170.252','2025-10-12 11:15:30'),(7209,2,NULL,NULL,'88.241.170.252','2025-10-12 11:
+15:32'),(7210,38,NULL,NULL,'37.114.152.55','2025-10-12 11:15:38'),(7211,NULL,19,523,'178.240.154.244','2025-10-12 11:15
+:50'),(7213,NULL,19,525,'178.240.154.244','2025-10-12 11:15:53'),(7214,NULL,19,527,'178.240.154.244','2025-10-12 11:15:
+54'),(7215,NULL,19,529,'178.240.154.244','2025-10-12 11:15:57'),(7216,NULL,19,531,'178.240.154.244','2025-10-12 11:15:5
+9'),(7217,NULL,19,533,'178.240.154.244','2025-10-12 11:16:00'),(7218,NULL,16,16,'94.54.167.19','2025-10-12 11:16:09'),(
+7219,NULL,18,641,'176.88.125.168','2025-10-12 11:16:09'),(7221,NULL,58,NULL,'37.155.239.238','2025-10-15 06:21:33'),(72
+22,NULL,57,NULL,'37.155.239.238','2025-10-15 06:21:35'),(7223,NULL,56,NULL,'37.155.239.238','2025-10-15 06:21:36'),(722
+4,NULL,55,NULL,'37.155.239.238','2025-10-15 06:21:37'),(7225,NULL,54,NULL,'37.155.239.238','2025-10-15 06:21:38'),(7226
+,NULL,53,NULL,'37.155.239.238','2025-10-15 06:21:39'),(7227,NULL,52,NULL,'37.155.239.238','2025-10-15 06:21:40'),(7228,
+NULL,51,NULL,'37.155.239.238','2025-10-15 06:21:41'),(7229,NULL,50,NULL,'37.155.239.238','2025-10-15 06:21:42'),(7230,N
+ULL,49,NULL,'37.155.239.238','2025-10-15 06:21:43'),(7231,NULL,48,NULL,'37.155.239.238','2025-10-15 06:21:44'),(7232,NU
+LL,47,NULL,'37.155.239.238','2025-10-15 06:21:45'),(7233,NULL,46,NULL,'37.155.239.238','2025-10-15 06:21:46'),(7234,NUL
+L,45,NULL,'37.155.239.238','2025-10-15 06:21:47'),(7235,NULL,44,NULL,'37.155.239.238','2025-10-15 06:21:48'),(7236,NULL
+,43,NULL,'37.155.239.238','2025-10-15 06:21:49'),(7237,NULL,42,NULL,'37.155.239.238','2025-10-15 06:21:50'),(7238,NULL,
+41,NULL,'37.155.239.238','2025-10-15 06:21:51'),(7239,NULL,40,NULL,'37.155.239.238','2025-10-15 06:21:52'),(7240,NULL,3
+3,NULL,'37.155.239.238','2025-10-15 06:21:53'),(7241,NULL,32,NULL,'37.155.239.238','2025-10-15 06:21:54'),(7242,NULL,31
+,NULL,'37.155.239.238','2025-10-15 06:21:55'),(7243,NULL,30,NULL,'37.155.239.238','2025-10-15 06:21:56'),(7244,NULL,29,
+NULL,'37.155.239.238','2025-10-15 06:21:56'),(7245,NULL,28,NULL,'37.155.239.238','2025-10-15 06:21:57'),(7246,NULL,27,N
+ULL,'37.155.239.238','2025-10-15 06:21:58'),(7247,NULL,26,NULL,'37.155.239.238','2025-10-15 06:22:02'),(7248,NULL,25,NU
+LL,'37.155.239.238','2025-10-15 06:22:02'),(7249,NULL,24,NULL,'37.155.239.238','2025-10-15 06:22:04'),(7250,NULL,23,NUL
+L,'37.155.239.238','2025-10-15 06:22:04'),(7251,NULL,22,NULL,'37.155.239.238','2025-10-15 06:22:05'),(7252,NULL,21,NULL
+,'37.155.239.238','2025-10-15 06:22:06'),(7253,NULL,20,NULL,'37.155.239.238','2025-10-15 06:22:07'),(7254,NULL,19,NULL,
+'37.155.239.238','2025-10-15 06:22:08'),(7255,NULL,18,NULL,'37.155.239.238','2025-10-15 06:22:09'),(7256,NULL,16,NULL,'
+37.155.239.238','2025-10-15 06:22:09'),(7257,NULL,17,NULL,'37.155.239.238','2025-10-15 06:22:54'),(7258,NULL,34,NULL,'3
+7.155.239.238','2025-10-15 06:22:55'),(7259,NULL,35,NULL,'37.155.239.238','2025-10-15 06:22:56'),(7260,NULL,36,NULL,'37
+.155.239.238','2025-10-15 06:22:57'),(7261,NULL,37,NULL,'37.155.239.238','2025-10-15 06:22:58'),(7262,NULL,38,NULL,'37.
+155.239.238','2025-10-15 06:22:59'),(7264,NULL,52,NULL,'176.54.180.47','2025-10-15 07:57:23'),(7265,38,NULL,NULL,'149.8
+6.143.186','2025-10-15 08:17:22'),(7266,NULL,53,NULL,'176.54.180.47','2025-10-15 08:40:53'),(7267,NULL,54,NULL,'176.54.
+180.47','2025-10-15 09:31:23'),(7268,NULL,18,NULL,'78.190.14.2','2025-10-15 09:38:48'),(7269,NULL,55,NULL,'176.54.180.4
+7','2025-10-15 09:58:18'),(7270,NULL,56,NULL,'176.54.180.47','2025-10-15 10:46:00'),(7271,NULL,57,NULL,'176.54.180.47',
+'2025-10-15 11:47:42'),(7272,NULL,58,NULL,'46.155.54.85','2025-10-15 12:41:32'),(7273,NULL,57,NULL,'46.155.54.85','2025
+-10-15 12:41:33'),(7274,NULL,56,NULL,'46.155.54.85','2025-10-15 12:41:35'),(7275,NULL,55,NULL,'46.155.54.85','2025-10-1
+5 12:41:35'),(7276,NULL,54,NULL,'46.155.54.85','2025-10-15 12:41:36'),(7277,NULL,53,NULL,'46.155.54.85','2025-10-15 12:
+41:37'),(7278,NULL,52,NULL,'46.155.54.85','2025-10-15 12:41:37'),(7279,NULL,51,NULL,'46.155.54.85','2025-10-15 12:41:38
+'),(7280,NULL,50,NULL,'46.155.54.85','2025-10-15 12:41:39'),(7281,NULL,49,NULL,'46.155.54.85','2025-10-15 12:41:40'),(7
+282,NULL,48,NULL,'46.155.54.85','2025-10-15 12:41:41'),(7283,NULL,47,NULL,'46.155.54.85','2025-10-15 12:41:41'),(7284,N
+ULL,46,NULL,'46.155.54.85','2025-10-15 12:41:42'),(7285,NULL,45,NULL,'46.155.54.85','2025-10-15 12:41:43'),(7286,NULL,4
+4,NULL,'46.155.54.85','2025-10-15 12:41:43'),(7287,NULL,43,NULL,'46.155.54.85','2025-10-15 12:41:44'),(7288,NULL,43,NUL
+L,'46.155.54.85','2025-10-15 12:41:44'),(7289,NULL,42,NULL,'46.155.54.85','2025-10-15 12:41:45'),(7290,NULL,41,NULL,'46
+.155.54.85','2025-10-15 12:41:46'),(7291,NULL,40,NULL,'46.155.54.85','2025-10-15 12:41:47'),(7292,NULL,33,NULL,'46.155.
+54.85','2025-10-15 12:41:47'),(7293,NULL,32,NULL,'46.155.54.85','2025-10-15 12:41:48'),(7294,NULL,31,NULL,'46.155.54.85
+','2025-10-15 12:41:49'),(7295,NULL,30,NULL,'46.155.54.85','2025-10-15 12:41:50'),(7296,NULL,29,NULL,'46.155.54.85','20
+25-10-15 12:41:50'),(7297,NULL,28,NULL,'46.155.54.85','2025-10-15 12:41:51'),(7298,NULL,27,NULL,'46.155.54.85','2025-10
+-15 12:41:52'),(7299,NULL,26,NULL,'46.155.54.85','2025-10-15 12:41:54'),(7300,NULL,25,NULL,'46.155.54.85','2025-10-15 1
+2:41:56'),(7301,NULL,24,NULL,'46.155.54.85','2025-10-15 12:41:56'),(7302,NULL,23,NULL,'46.155.54.85','2025-10-15 12:41:
+59'),(7303,NULL,22,NULL,'46.155.54.85','2025-10-15 12:42:00'),(7304,NULL,21,NULL,'46.155.54.85','2025-10-15 12:42:00'),
+(7305,NULL,20,NULL,'46.155.54.85','2025-10-15 12:42:01'),(7306,NULL,19,NULL,'46.155.54.85','2025-10-15 12:42:01'),(7307
+,NULL,18,NULL,'46.155.54.85','2025-10-15 12:42:02'),(7308,NULL,16,NULL,'46.155.54.85','2025-10-15 12:42:03'),(7309,38,N
+ULL,NULL,'31.143.243.117','2025-10-15 13:19:18'),(7312,NULL,46,702,'85.104.68.184','2025-10-15 13:44:13'),(7313,NULL,47
+,219,'85.104.68.184','2025-10-15 13:50:51'),(7315,NULL,47,343,'85.104.68.184','2025-10-15 14:08:34'),(7316,NULL,47,363,
+'85.104.68.184','2025-10-15 14:09:47'),(7317,NULL,47,379,'85.104.68.184','2025-10-15 14:10:37'),(7318,NULL,58,NULL,'176
+.54.180.47','2025-10-15 14:23:13'),(7320,38,NULL,NULL,'94.121.254.85','2025-10-15 15:57:12'),(7322,38,NULL,NULL,'176.54
+.180.47','2025-10-15 16:16:41'),(7323,NULL,58,NULL,'95.15.61.50','2025-10-15 17:06:43'),(7324,NULL,57,NULL,'95.15.61.50
+','2025-10-15 17:06:44'),(7325,38,NULL,NULL,'176.216.169.69','2025-10-15 17:29:21'),(7327,38,NULL,NULL,'88.242.220.78',
+'2025-10-15 18:22:43'),(7329,NULL,38,NULL,'78.185.115.75','2025-10-15 18:26:05'),(7330,NULL,37,NULL,'78.185.115.75','20
+25-10-15 18:26:06'),(7331,NULL,36,NULL,'78.185.115.75','2025-10-15 18:26:08'),(7332,NULL,35,NULL,'78.185.115.75','2025-
+10-15 18:26:09'),(7333,NULL,34,NULL,'78.185.115.75','2025-10-15 18:26:10'),(7334,NULL,17,NULL,'78.185.115.75','2025-10-
+15 18:26:12'),(7335,NULL,16,NULL,'78.185.115.75','2025-10-15 18:26:34'),(7336,NULL,18,NULL,'78.185.115.75','2025-10-15 
+18:26:35'),(7337,NULL,19,NULL,'78.185.115.75','2025-10-15 18:26:36'),(7338,NULL,20,NULL,'78.185.115.75','2025-10-15 18:
+26:37'),(7339,NULL,21,NULL,'78.185.115.75','2025-10-15 18:26:38'),(7340,NULL,19,NULL,'78.185.115.75','2025-10-15 18:26:
+39'),(7341,NULL,18,NULL,'78.185.115.75','2025-10-15 18:26:40'),(7342,NULL,16,NULL,'78.185.115.75','2025-10-15 18:26:41'
+),(7343,NULL,22,NULL,'78.185.115.75','2025-10-15 18:26:43'),(7344,NULL,23,NULL,'78.185.115.75','2025-10-15 18:26:44'),(
+7345,NULL,24,NULL,'78.185.115.75','2025-10-15 18:26:46'),(7346,NULL,25,NULL,'78.185.115.75','2025-10-15 18:26:47'),(734
+7,NULL,26,NULL,'78.185.115.75','2025-10-15 18:26:48'),(7348,NULL,27,NULL,'78.185.115.75','2025-10-15 18:26:52'),(7349,N
+ULL,28,NULL,'78.185.115.75','2025-10-15 18:26:56'),(7350,NULL,29,NULL,'78.185.115.75','2025-10-15 18:26:56'),(7351,NULL
+,30,NULL,'78.185.115.75','2025-10-15 18:26:58'),(7352,NULL,31,NULL,'78.185.115.75','2025-10-15 18:27:00'),(7353,NULL,32
+,NULL,'78.185.115.75','2025-10-15 18:27:01'),(7354,NULL,33,NULL,'78.185.115.75','2025-10-15 18:27:02'),(7355,NULL,40,NU
+LL,'78.185.115.75','2025-10-15 18:27:03'),(7356,NULL,41,NULL,'78.185.115.75','2025-10-15 18:27:04'),(7357,NULL,42,NULL,
+'78.185.115.75','2025-10-15 18:27:07'),(7358,NULL,44,NULL,'78.185.115.75','2025-10-15 18:27:08'),(7359,NULL,45,NULL,'78
+.185.115.75','2025-10-15 18:27:10'),(7360,NULL,46,NULL,'78.185.115.75','2025-10-15 18:27:13'),(7361,NULL,47,NULL,'78.18
+5.115.75','2025-10-15 18:27:14'),(7362,NULL,48,NULL,'78.185.115.75','2025-10-15 18:27:16'),(7363,NULL,49,NULL,'78.185.1
+15.75','2025-10-15 18:27:17'),(7364,NULL,50,NULL,'78.185.115.75','2025-10-15 18:27:19'),(7365,NULL,51,NULL,'78.185.115.
+75','2025-10-15 18:27:21'),(7366,NULL,52,NULL,'78.185.115.75','2025-10-15 18:27:22'),(7367,NULL,53,NULL,'78.185.115.75'
+,'2025-10-15 18:27:24'),(7368,NULL,54,NULL,'78.185.115.75','2025-10-15 18:27:26'),(7369,NULL,55,NULL,'78.185.115.75','2
+025-10-15 18:27:27'),(7370,NULL,56,NULL,'78.185.115.75','2025-10-15 18:27:29'),(7371,NULL,57,NULL,'78.185.115.75','2025
+-10-15 18:27:30'),(7372,NULL,58,NULL,'78.185.115.75','2025-10-15 18:27:32'),(7373,2,NULL,NULL,'78.185.115.75','2025-10-
+15 18:27:47'),(7374,38,NULL,NULL,'78.185.115.75','2025-10-15 18:27:49'),(7375,NULL,48,NULL,'78.182.135.116','2025-10-15
+ 18:29:08'),(7377,NULL,50,NULL,'88.236.169.91','2025-10-15 20:11:51'),(7378,2,NULL,NULL,'78.185.115.75','2025-10-15 20:
+12:26'),(7384,NULL,53,149,'85.104.68.184','2025-10-15 20:16:58'),(7386,38,NULL,NULL,'88.230.130.106','2025-10-15 21:20:
+53'),(7387,38,NULL,NULL,'46.155.35.199','2025-10-16 03:53:17'),(7388,2,NULL,NULL,'88.238.40.235','2025-10-16 04:16:08')
+,(7389,38,NULL,NULL,'88.238.40.235','2025-10-16 04:16:10'),(7390,NULL,53,423,'85.104.68.184','2025-10-16 04:17:31'),(73
+91,NULL,53,469,'176.227.82.209','2025-10-16 04:50:44'),(7392,NULL,53,471,'176.227.82.209','2025-10-16 04:50:46'),(7393,
+NULL,53,473,'176.227.82.209','2025-10-16 04:50:47'),(7394,NULL,53,475,'176.227.82.209','2025-10-16 04:50:48'),(7395,NUL
+L,53,477,'176.227.82.209','2025-10-16 04:50:50'),(7396,NULL,53,479,'176.227.82.209','2025-10-16 04:50:51'),(7397,NULL,5
+3,483,'176.227.82.209','2025-10-16 04:51:08'),(7398,NULL,53,517,'176.227.82.209','2025-10-16 04:53:52'),(7400,NULL,53,5
+15,'176.227.82.209','2025-10-16 04:53:54'),(7401,NULL,54,443,'176.227.82.137','2025-10-16 09:47:08'),(7402,38,NULL,NULL
+,'88.238.52.7','2025-10-16 10:44:12'),(7404,NULL,58,735,'178.245.82.88','2025-10-16 12:43:04'),(7405,NULL,17,NULL,'31.2
+06.138.238','2025-10-16 12:56:15'),(7406,NULL,34,NULL,'31.206.138.238','2025-10-16 12:56:17'),(7407,NULL,35,NULL,'31.20
+6.138.238','2025-10-16 12:56:18'),(7408,NULL,36,NULL,'31.206.138.238','2025-10-16 12:56:18'),(7409,NULL,37,NULL,'31.206
+.138.238','2025-10-16 12:56:20'),(7410,NULL,38,NULL,'31.206.138.238','2025-10-16 12:56:21'),(7412,2,NULL,NULL,'31.206.1
+38.238','2025-10-16 12:58:04'),(7413,NULL,58,739,'178.245.82.88','2025-10-16 13:14:39'),(7414,NULL,58,797,'178.245.82.8
+8','2025-10-16 13:16:17'),(7415,NULL,58,801,'178.245.82.88','2025-10-16 13:16:37'),(7416,2,NULL,NULL,'5.47.224.132','20
+25-10-16 13:40:22'),(7417,38,NULL,NULL,'5.47.224.132','2025-10-16 13:40:24'),(7418,38,NULL,NULL,'5.229.114.16','2025-10
+-16 14:02:11'),(7419,2,NULL,NULL,'5.229.114.16','2025-10-16 14:02:13'),(7422,NULL,46,NULL,'88.230.160.64','2025-10-16 1
+6:36:06'),(7423,2,NULL,NULL,'81.214.164.220','2025-10-16 18:10:48'),(7424,38,NULL,NULL,'81.214.164.220','2025-10-16 18:
+10:52'),(7426,38,NULL,NULL,'85.104.68.184','2025-10-16 19:00:38'),(7427,NULL,58,NULL,'46.155.18.247','2025-10-17 10:20:
+49'),(7428,38,NULL,NULL,'176.54.191.96','2025-10-17 11:06:00'),(7429,2,NULL,NULL,'176.54.191.96','2025-10-17 11:06:02')
+,(7430,NULL,57,NULL,'5.176.158.165','2025-10-17 11:50:57'),(7433,NULL,28,221,'178.245.70.44','2025-10-17 11:56:09'),(74
+34,NULL,28,223,'178.245.70.44','2025-10-17 11:56:10'),(7436,NULL,44,NULL,'176.33.66.247','2025-10-17 14:59:48'),(7437,N
+ULL,57,191,'85.104.68.184','2025-10-17 15:31:29'),(7438,NULL,57,385,'85.104.68.184','2025-10-17 15:44:10'),(7441,2,NULL
+,NULL,'94.120.180.252','2025-10-17 17:46:36'),(7442,38,NULL,NULL,'94.120.180.252','2025-10-17 17:46:38'),(7443,2,NULL,N
+ULL,'94.123.198.8','2025-10-17 18:27:53'),(7444,38,NULL,NULL,'94.123.198.8','2025-10-17 18:27:57'),(7446,NULL,56,NULL,'
+176.88.143.189','2025-10-17 18:57:41'),(7447,NULL,48,NULL,'78.184.20.182','2025-10-17 20:01:35'),(7448,NULL,58,NULL,'21
+2.253.191.142','2025-10-17 20:09:00'),(7449,NULL,16,NULL,'159.65.119.50','2025-10-17 20:50:57'),(7451,NULL,58,NULL,'46.
+221.100.134','2025-10-18 06:21:05'),(7452,NULL,57,NULL,'46.221.100.134','2025-10-18 06:21:06'),(7453,NULL,56,NULL,'46.2
+21.100.134','2025-10-18 06:21:06'),(7454,NULL,55,NULL,'46.221.100.134','2025-10-18 06:21:07'),(7455,NULL,54,NULL,'46.22
+1.100.134','2025-10-18 06:21:08'),(7456,NULL,53,NULL,'46.221.100.134','2025-10-18 06:21:09'),(7457,NULL,19,NULL,'78.174
+.205.29','2025-10-18 06:39:25'),(7458,NULL,19,155,'78.174.205.29','2025-10-18 06:40:49'),(7461,38,NULL,NULL,'46.196.252
+.61','2025-10-18 06:51:44'),(7462,NULL,22,NULL,'46.196.252.61','2025-10-18 06:51:48'),(7463,NULL,21,NULL,'46.196.252.61
+','2025-10-18 06:51:49'),(7464,NULL,20,NULL,'46.196.252.61','2025-10-18 06:51:50'),(7465,NULL,19,NULL,'46.196.252.61','
+2025-10-18 06:51:51'),(7466,NULL,18,NULL,'46.196.252.61','2025-10-18 06:51:52'),(7467,NULL,16,NULL,'46.196.252.61','202
+5-10-18 06:51:54'),(7468,NULL,23,NULL,'46.196.252.61','2025-10-18 06:51:59'),(7469,NULL,24,NULL,'46.196.252.61','2025-1
+0-18 06:51:59'),(7470,NULL,25,NULL,'46.196.252.61','2025-10-18 06:52:00'),(7471,NULL,26,NULL,'46.196.252.61','2025-10-1
+8 06:52:00'),(7472,NULL,27,NULL,'46.196.252.61','2025-10-18 06:52:03'),(7473,NULL,28,NULL,'46.196.252.61','2025-10-18 0
+6:52:04'),(7474,NULL,29,NULL,'46.196.252.61','2025-10-18 06:52:05'),(7475,NULL,30,NULL,'46.196.252.61','2025-10-18 06:5
+2:06'),(7476,NULL,31,NULL,'46.196.252.61','2025-10-18 06:52:07'),(7477,NULL,32,NULL,'46.196.252.61','2025-10-18 06:52:0
+8'),(7478,NULL,33,NULL,'46.196.252.61','2025-10-18 06:52:09'),(7479,NULL,40,NULL,'46.196.252.61','2025-10-18 06:52:11')
+,(7480,NULL,41,NULL,'46.196.252.61','2025-10-18 06:52:12'),(7481,NULL,42,NULL,'46.196.252.61','2025-10-18 06:52:13'),(7
+482,NULL,43,NULL,'46.196.252.61','2025-10-18 06:52:15'),(7483,NULL,44,NULL,'46.196.252.61','2025-10-18 06:52:16'),(7484
+,NULL,45,NULL,'46.196.252.61','2025-10-18 06:52:17'),(7485,NULL,46,NULL,'46.196.252.61','2025-10-18 06:52:19'),(7486,NU
+LL,47,NULL,'46.196.252.61','2025-10-18 06:52:20'),(7487,NULL,48,NULL,'46.196.252.61','2025-10-18 06:52:22'),(7488,NULL,
+49,NULL,'46.196.252.61','2025-10-18 06:52:23'),(7489,NULL,50,NULL,'46.196.252.61','2025-10-18 06:52:24'),(7490,NULL,51,
+NULL,'46.196.252.61','2025-10-18 06:52:25'),(7491,NULL,52,NULL,'46.196.252.61','2025-10-18 06:52:26'),(7492,NULL,53,NUL
+L,'46.196.252.61','2025-10-18 06:52:28'),(7493,NULL,54,NULL,'46.196.252.61','2025-10-18 06:52:29'),(7494,NULL,55,NULL,'
+46.196.252.61','2025-10-18 06:52:30'),(7495,NULL,56,NULL,'46.196.252.61','2025-10-18 06:52:31'),(7496,NULL,57,NULL,'46.
+196.252.61','2025-10-18 06:52:33'),(7497,NULL,58,NULL,'46.196.252.61','2025-10-18 06:52:34'),(7498,2,NULL,NULL,'46.196.
+252.61','2025-10-18 06:53:23'),(7499,NULL,17,NULL,'46.196.252.61','2025-10-18 06:53:28'),(7500,NULL,34,NULL,'46.196.252
+.61','2025-10-18 06:53:29'),(7501,NULL,35,NULL,'46.196.252.61','2025-10-18 06:53:30'),(7502,NULL,36,NULL,'46.196.252.61
+','2025-10-18 06:53:31'),(7503,NULL,37,NULL,'46.196.252.61','2025-10-18 06:53:31'),(7504,NULL,38,NULL,'46.196.252.61','
+2025-10-18 06:53:33'),(7505,2,NULL,NULL,'88.238.47.204','2025-10-18 08:14:31'),(7506,38,NULL,NULL,'88.238.47.204','2025
+-10-18 08:14:33'),(7507,38,NULL,NULL,'176.89.175.223','2025-10-18 09:38:07'),(7508,2,NULL,NULL,'176.89.175.223','2025-1
+0-18 09:38:10'),(7509,2,NULL,NULL,'31.206.139.186','2025-10-18 12:51:38'),(7510,38,NULL,NULL,'31.206.139.186','2025-10-
+18 12:51:40'),(7511,NULL,17,NULL,'31.206.139.186','2025-10-18 12:51:49'),(7512,NULL,34,NULL,'31.206.139.186','2025-10-1
+8 12:51:53'),(7513,NULL,35,NULL,'31.206.139.186','2025-10-18 12:51:55'),(7514,NULL,36,NULL,'31.206.139.186','2025-10-18
+ 12:51:57'),(7515,NULL,37,NULL,'31.206.139.186','2025-10-18 12:52:00'),(7516,NULL,38,NULL,'31.206.139.186','2025-10-18 
+12:52:01'),(7517,38,NULL,NULL,'57.129.14.127','2025-10-18 15:09:52'),(7518,NULL,16,NULL,'57.129.14.127','2025-10-18 15:
+10:01'),(7519,NULL,18,NULL,'57.129.14.127','2025-10-18 15:10:02'),(7520,38,NULL,NULL,'176.33.101.12','2025-10-18 16:43:
+02'),(7521,NULL,58,NULL,'176.88.143.189','2025-10-18 17:56:25'),(7522,NULL,57,NULL,'176.88.143.189','2025-10-18 17:56:2
+6'),(7523,NULL,56,NULL,'176.88.143.189','2025-10-18 17:56:27'),(7524,NULL,55,NULL,'176.88.143.189','2025-10-18 17:56:28
+'),(7525,NULL,54,NULL,'176.88.143.189','2025-10-18 17:56:29'),(7526,NULL,53,NULL,'176.88.143.189','2025-10-18 17:56:30'
+),(7527,NULL,52,NULL,'176.88.143.189','2025-10-18 17:56:31'),(7528,NULL,51,NULL,'176.88.143.189','2025-10-18 17:56:37')
+,(7529,NULL,50,NULL,'176.88.143.189','2025-10-18 17:56:38'),(7530,NULL,49,NULL,'176.88.143.189','2025-10-18 17:56:39'),
+(7531,NULL,48,NULL,'176.88.143.189','2025-10-18 17:56:40'),(7532,NULL,47,NULL,'176.88.143.189','2025-10-18 17:56:41'),(
+7533,NULL,46,NULL,'176.88.143.189','2025-10-18 17:56:42'),(7534,NULL,45,NULL,'176.88.143.189','2025-10-18 17:56:43'),(7
+535,NULL,44,NULL,'176.88.143.189','2025-10-18 17:56:45'),(7536,NULL,43,NULL,'176.88.143.189','2025-10-18 17:56:46'),(75
+37,NULL,42,NULL,'176.88.143.189','2025-10-18 17:56:47'),(7538,NULL,41,NULL,'176.88.143.189','2025-10-18 17:56:48'),(753
+9,NULL,40,NULL,'176.88.143.189','2025-10-18 17:56:50'),(7540,NULL,33,NULL,'176.88.143.189','2025-10-18 17:56:50'),(7541
+,NULL,32,NULL,'176.88.143.189','2025-10-18 17:56:52'),(7542,NULL,31,NULL,'176.88.143.189','2025-10-18 17:56:53'),(7543,
+NULL,30,NULL,'176.88.143.189','2025-10-18 17:56:54'),(7544,NULL,50,NULL,'78.182.135.116','2025-10-18 21:12:20'),(7546,N
+ULL,51,NULL,'78.182.135.116','2025-10-18 21:23:26'),(7548,NULL,52,NULL,'78.182.135.116','2025-10-18 22:56:11'),(7549,38
+,NULL,NULL,'178.55.250.191','2025-10-19 01:35:49'),(7550,38,NULL,NULL,'5.47.173.134','2025-10-19 09:05:47'),(7551,38,NU
+LL,NULL,'5.47.173.134','2025-10-19 09:06:06'),(7552,NULL,53,NULL,'78.182.135.116','2025-10-19 09:45:11'),(7554,NULL,27,
+541,'85.104.68.184','2025-10-19 09:47:03'),(7556,NULL,27,543,'85.104.68.184','2025-10-19 09:47:07'),(7557,NULL,27,889,'
+85.104.68.184','2025-10-19 10:15:59'),(7558,NULL,54,NULL,'78.182.135.116','2025-10-19 12:47:01'),(7560,38,NULL,NULL,'14
+6.19.141.19','2025-10-19 19:30:19'),(7561,NULL,55,NULL,'78.182.135.116','2025-10-19 19:57:05'),(7565,NULL,38,NULL,'31.2
+06.138.124','2025-10-19 22:48:57'),(7566,NULL,37,NULL,'31.206.138.124','2025-10-19 22:48:59'),(7567,NULL,36,NULL,'31.20
+6.138.124','2025-10-19 22:49:00'),(7568,NULL,35,NULL,'31.206.138.124','2025-10-19 22:49:02'),(7569,NULL,34,NULL,'31.206
+.138.124','2025-10-19 22:49:04'),(7570,NULL,17,NULL,'31.206.138.124','2025-10-19 22:49:05'),(7571,2,NULL,NULL,'31.206.1
+38.124','2025-10-19 22:49:09'),(7572,NULL,32,197,'88.242.211.16','2025-10-20 13:19:09'),(7573,NULL,32,199,'88.242.211.1
+6','2025-10-20 13:19:10'),(7574,NULL,32,237,'88.242.211.16','2025-10-20 13:21:19'),(7575,NULL,32,239,'88.242.211.16','2
+025-10-20 13:21:26'),(7576,NULL,32,495,'88.242.211.16','2025-10-20 13:31:23'),(7577,NULL,32,497,'88.242.211.16','2025-1
+0-20 13:31:27'),(7578,NULL,32,505,'88.242.211.16','2025-10-20 13:32:05'),(7579,NULL,32,507,'88.242.211.16','2025-10-20 
+13:32:09'),(7580,NULL,32,509,'88.242.211.16','2025-10-20 13:32:10'),(7581,NULL,32,511,'88.242.211.16','2025-10-20 13:32
+:12'),(7582,NULL,32,513,'88.242.211.16','2025-10-20 13:32:14'),(7583,NULL,32,515,'88.242.211.16','2025-10-20 13:32:19')
+,(7584,NULL,32,677,'88.242.211.16','2025-10-20 13:39:54'),(7585,NULL,32,733,'88.242.211.16','2025-10-20 13:41:57'),(758
+6,NULL,33,297,'88.242.211.16','2025-10-20 15:12:13'),(7587,NULL,33,299,'88.242.211.16','2025-10-20 15:12:14'),(7588,NUL
+L,33,305,'88.242.211.16','2025-10-20 15:12:39'),(7589,NULL,33,307,'88.242.211.16','2025-10-20 15:12:41'),(7590,NULL,33,
+309,'88.242.211.16','2025-10-20 15:12:46'),(7591,NULL,33,311,'88.242.211.16','2025-10-20 15:12:47'),(7593,NULL,33,333,'
+88.242.211.16','2025-10-20 15:13:28'),(7594,NULL,33,335,'88.242.211.16','2025-10-20 15:13:29'),(7595,NULL,33,337,'88.24
+2.211.16','2025-10-20 15:13:29'),(7596,NULL,33,339,'88.242.211.16','2025-10-20 15:13:31'),(7597,NULL,33,341,'88.242.211
+.16','2025-10-20 15:13:32'),(7598,NULL,33,343,'88.242.211.16','2025-10-20 15:13:34'),(7599,NULL,33,375,'88.242.211.16',
+'2025-10-20 15:15:32'),(7600,NULL,33,373,'88.242.211.16','2025-10-20 15:15:34'),(7601,NULL,33,371,'88.242.211.16','2025
+-10-20 15:15:37'),(7602,NULL,33,435,'88.242.211.16','2025-10-20 15:17:37'),(7603,NULL,33,437,'88.242.211.16','2025-10-2
+0 15:17:38'),(7604,NULL,33,439,'88.242.211.16','2025-10-20 15:17:50'),(7605,NULL,40,9,'88.242.211.16','2025-10-20 15:19
+:17'),(7606,NULL,40,71,'88.242.211.16','2025-10-20 15:23:42'),(7607,2,NULL,NULL,'95.85.101.15','2025-10-20 15:58:16'),(
+7608,NULL,56,NULL,'78.182.135.116','2025-10-20 16:05:14'),(7609,38,NULL,NULL,'87.95.21.202','2025-10-20 16:52:04'),(761
+0,38,NULL,NULL,'87.95.21.202','2025-10-20 16:52:10'),(7611,NULL,40,965,'88.242.211.16','2025-10-20 17:37:47'),(7612,NUL
+L,40,967,'88.242.211.16','2025-10-20 17:37:48'),(7613,NULL,40,979,'88.242.211.16','2025-10-20 17:38:26'),(7614,NULL,40,
+981,'88.242.211.16','2025-10-20 17:38:26'),(7615,NULL,40,983,'88.242.211.16','2025-10-20 17:38:28'),(7616,NULL,40,985,'
+88.242.211.16','2025-10-20 17:38:30'),(7617,NULL,40,987,'88.242.211.16','2025-10-20 17:38:32'),(7618,NULL,40,989,'88.24
+2.211.16','2025-10-20 17:38:33'),(7619,NULL,40,991,'88.242.211.16','2025-10-20 17:38:34'),(7620,NULL,40,993,'88.242.211
+.16','2025-10-20 17:38:42'),(7621,NULL,40,1019,'88.242.211.16','2025-10-20 17:39:29'),(7622,NULL,40,1017,'88.242.211.16
+','2025-10-20 17:39:31'),(7623,NULL,40,1021,'88.242.211.16','2025-10-20 17:39:32'),(7624,NULL,40,1025,'88.242.211.16','
+2025-10-20 17:39:36'),(7625,NULL,40,1027,'88.242.211.16','2025-10-20 17:39:37'),(7626,NULL,40,1029,'88.242.211.16','202
+5-10-20 17:39:48'),(7627,NULL,40,1031,'88.242.211.16','2025-10-20 17:39:49'),(7628,NULL,40,1041,'88.242.211.16','2025-1
+0-20 17:40:36'),(7629,NULL,40,1039,'88.242.211.16','2025-10-20 17:40:38'),(7630,NULL,40,1047,'88.242.211.16','2025-10-2
+0 17:41:18'),(7631,NULL,40,1049,'88.242.211.16','2025-10-20 17:41:21'),(7632,NULL,40,1055,'88.242.211.16','2025-10-20 1
+7:41:54'),(7633,NULL,40,1057,'88.242.211.16','2025-10-20 17:41:55'),(7634,NULL,40,1059,'88.242.211.16','2025-10-20 17:4
+2:00'),(7635,NULL,40,1065,'88.242.211.16','2025-10-20 17:42:53'),(7636,NULL,40,1063,'88.242.211.16','2025-10-20 17:42:5
+4'),(7637,NULL,40,1067,'88.242.211.16','2025-10-20 17:42:59'),(7639,NULL,40,1069,'88.242.211.16','2025-10-20 17:43:10')
+,(7640,NULL,40,1071,'88.242.211.16','2025-10-20 17:43:17'),(7641,NULL,40,1075,'88.242.211.16','2025-10-20 17:43:33'),(7
+642,NULL,40,1073,'88.242.211.16','2025-10-20 17:43:34'),(7643,NULL,40,1093,'88.242.211.16','2025-10-20 17:44:22'),(7644
+,NULL,40,1095,'88.242.211.16','2025-10-20 17:44:23'),(7645,NULL,40,1097,'88.242.211.16','2025-10-20 17:44:28'),(7647,NU
+LL,40,1099,'88.242.211.16','2025-10-20 17:44:36'),(7648,NULL,40,1101,'88.242.211.16','2025-10-20 17:44:54'),(7649,NULL,
+40,1103,'88.242.211.16','2025-10-20 17:44:56'),(7650,NULL,40,1129,'88.242.211.16','2025-10-20 17:46:01'),(7651,NULL,40,
+1127,'88.242.211.16','2025-10-20 17:46:03'),(7652,NULL,40,1125,'88.242.211.16','2025-10-20 17:46:05'),(7653,NULL,40,112
+3,'88.242.211.16','2025-10-20 17:46:07'),(7655,NULL,41,31,'88.242.211.16','2025-10-20 17:47:51'),(7656,NULL,41,33,'88.2
+42.211.16','2025-10-20 17:47:53'),(7657,NULL,41,41,'88.242.211.16','2025-10-20 17:48:13'),(7658,NULL,41,39,'88.242.211.
+16','2025-10-20 17:48:18'),(7659,NULL,41,43,'88.242.211.16','2025-10-20 17:48:20'),(7660,NULL,41,45,'88.242.211.16','20
+25-10-20 17:48:22'),(7661,NULL,41,47,'88.242.211.16','2025-10-20 17:48:26'),(7662,NULL,41,49,'88.242.211.16','2025-10-2
+0 17:48:26'),(7663,NULL,41,89,'88.242.211.16','2025-10-20 17:49:48'),(7665,NULL,41,91,'88.242.211.16','2025-10-20 17:49
+:52'),(7666,NULL,41,97,'88.242.211.16','2025-10-20 17:50:02'),(7667,NULL,41,95,'88.242.211.16','2025-10-20 17:50:03'),(
+7668,NULL,41,93,'88.242.211.16','2025-10-20 17:50:04'),(7669,NULL,41,109,'88.242.211.16','2025-10-20 17:50:30'),(7670,N
+ULL,41,119,'88.242.211.16','2025-10-20 17:50:53'),(7671,NULL,41,121,'88.242.211.16','2025-10-20 17:50:57'),(7673,NULL,4
+1,169,'88.242.211.16','2025-10-20 17:52:23'),(7674,NULL,41,171,'88.242.211.16','2025-10-20 17:52:27'),(7675,NULL,41,173
+,'88.242.211.16','2025-10-20 17:53:04'),(7676,NULL,41,185,'88.242.211.16','2025-10-20 17:53:26'),(7677,NULL,41,187,'88.
+242.211.16','2025-10-20 17:53:38'),(7678,NULL,41,189,'88.242.211.16','2025-10-20 17:53:46'),(7679,NULL,41,191,'88.242.2
+11.16','2025-10-20 17:53:51'),(7680,NULL,41,193,'88.242.211.16','2025-10-20 17:54:03'),(7682,NULL,41,197,'88.242.211.16
+','2025-10-20 17:54:18'),(7683,NULL,41,195,'88.242.211.16','2025-10-20 17:54:20'),(7684,NULL,41,213,'88.242.211.16','20
+25-10-20 17:54:58'),(7685,NULL,41,211,'88.242.211.16','2025-10-20 17:54:59'),(7686,NULL,41,281,'88.242.211.16','2025-10
+-20 17:56:37'),(7687,NULL,41,283,'88.242.211.16','2025-10-20 17:56:40'),(7688,NULL,41,285,'88.242.211.16','2025-10-20 1
+7:56:43'),(7689,NULL,41,287,'88.242.211.16','2025-10-20 17:56:46'),(7690,NULL,41,289,'88.242.211.16','2025-10-20 17:56:
+50'),(7691,NULL,41,291,'88.242.211.16','2025-10-20 17:56:51'),(7692,NULL,41,295,'88.242.211.16','2025-10-20 17:56:54'),
+(7694,NULL,41,293,'88.242.211.16','2025-10-20 17:56:55'),(7695,NULL,41,337,'88.242.211.16','2025-10-20 17:57:32'),(7696
+,NULL,41,339,'88.242.211.16','2025-10-20 17:57:33'),(7697,NULL,41,341,'88.242.211.16','2025-10-20 17:57:37'),(7698,NULL
+,41,399,'88.242.211.16','2025-10-20 17:58:58'),(7699,NULL,41,397,'88.242.211.16','2025-10-20 17:59:01'),(7700,NULL,41,4
+01,'88.242.211.16','2025-10-20 17:59:04'),(7701,NULL,41,405,'88.242.211.16','2025-10-20 17:59:12'),(7702,NULL,41,427,'8
+8.242.211.16','2025-10-20 17:59:30'),(7703,NULL,41,429,'88.242.211.16','2025-10-20 17:59:31'),(7704,NULL,41,485,'88.242
+.211.16','2025-10-20 17:59:46'),(7705,NULL,41,487,'88.242.211.16','2025-10-20 17:59:48'),(7706,NULL,41,491,'88.242.211.
+16','2025-10-20 17:59:52'),(7707,NULL,41,499,'88.242.211.16','2025-10-20 17:59:57'),(7708,NULL,41,497,'88.242.211.16','
+2025-10-20 17:59:58'),(7709,NULL,41,493,'88.242.211.16','2025-10-20 18:00:02'),(7710,NULL,41,495,'88.242.211.16','2025-
+10-20 18:00:03'),(7711,NULL,41,679,'88.242.211.16','2025-10-20 18:00:48'),(7712,NULL,41,681,'88.242.211.16','2025-10-20
+ 18:00:51'),(7713,NULL,41,683,'88.242.211.16','2025-10-20 18:01:17'),(7714,NULL,41,707,'88.242.211.16','2025-10-20 18:0
+1:52'),(7715,NULL,41,701,'88.242.211.16','2025-10-20 18:01:56'),(7716,NULL,41,703,'88.242.211.16','2025-10-20 18:01:57'
+),(7717,NULL,41,705,'88.242.211.16','2025-10-20 18:01:57'),(7718,NULL,41,709,'88.242.211.16','2025-10-20 18:02:01'),(77
+20,NULL,41,711,'88.242.211.16','2025-10-20 18:02:04'),(7721,NULL,41,713,'88.242.211.16','2025-10-20 18:02:07'),(7722,NU
+LL,41,715,'88.242.211.16','2025-10-20 18:02:09'),(7723,NULL,41,717,'88.242.211.16','2025-10-20 18:02:12'),(7724,NULL,41
+,719,'88.242.211.16','2025-10-20 18:02:13'),(7725,NULL,41,721,'88.242.211.16','2025-10-20 18:02:20'),(7726,NULL,41,723,
+'88.242.211.16','2025-10-20 18:02:22'),(7727,NULL,41,725,'88.242.211.16','2025-10-20 18:02:25'),(7728,NULL,41,727,'88.2
+42.211.16','2025-10-20 18:02:26'),(7729,NULL,41,729,'88.242.211.16','2025-10-20 18:02:30'),(7730,NULL,41,855,'88.242.21
+1.16','2025-10-20 18:03:19'),(7731,NULL,41,851,'88.242.211.16','2025-10-20 18:03:23'),(7732,NULL,41,853,'88.242.211.16'
+,'2025-10-20 18:03:24'),(7733,NULL,41,859,'88.242.211.16','2025-10-20 18:03:35'),(7734,NULL,41,861,'88.242.211.16','202
+5-10-20 18:03:46'),(7735,NULL,41,863,'88.242.211.16','2025-10-20 18:03:49'),(7736,NULL,41,865,'88.242.211.16','2025-10-
+20 18:03:53'),(7737,NULL,41,881,'88.242.211.16','2025-10-20 18:04:09'),(7738,NULL,41,883,'88.242.211.16','2025-10-20 18
+:04:12'),(7739,NULL,41,885,'88.242.211.16','2025-10-20 18:04:14'),(7740,NULL,41,887,'88.242.211.16','2025-10-20 18:04:1
+6'),(7741,NULL,41,889,'88.242.211.16','2025-10-20 18:04:18'),(7742,NULL,41,891,'88.242.211.16','2025-10-20 18:04:22'),(
+7743,NULL,41,893,'88.242.211.16','2025-10-20 18:04:23'),(7744,NULL,41,895,'88.242.211.16','2025-10-20 18:04:26'),(7745,
+NULL,41,897,'88.242.211.16','2025-10-20 18:04:27'),(7746,NULL,41,899,'88.242.211.16','2025-10-20 18:04:29'),(7747,NULL,
+41,901,'88.242.211.16','2025-10-20 18:04:33'),(7748,NULL,41,903,'88.242.211.16','2025-10-20 18:04:35'),(7749,NULL,41,90
+7,'88.242.211.16','2025-10-20 18:04:37'),(7750,NULL,41,905,'88.242.211.16','2025-10-20 18:04:37'),(7751,NULL,41,909,'88
+.242.211.16','2025-10-20 18:04:39'),(7752,NULL,41,911,'88.242.211.16','2025-10-20 18:04:41'),(7753,NULL,41,913,'88.242.
+211.16','2025-10-20 18:04:41'),(7754,NULL,41,915,'88.242.211.16','2025-10-20 18:04:44'),(7755,NULL,41,917,'88.242.211.1
+6','2025-10-20 18:04:45'),(7756,NULL,41,919,'88.242.211.16','2025-10-20 18:04:45'),(7757,NULL,41,921,'88.242.211.16','2
+025-10-20 18:04:48'),(7758,NULL,41,923,'88.242.211.16','2025-10-20 18:04:50'),(7759,NULL,41,925,'88.242.211.16','2025-1
+0-20 18:04:53'),(7760,NULL,41,927,'88.242.211.16','2025-10-20 18:04:54'),(7761,NULL,41,929,'88.242.211.16','2025-10-20 
+18:04:56'),(7763,NULL,41,937,'88.242.211.16','2025-10-20 18:05:08'),(7764,NULL,41,939,'88.242.211.16','2025-10-20 18:05
+:12'),(7765,NULL,41,973,'88.242.211.16','2025-10-20 18:05:33'),(7766,NULL,41,991,'88.242.211.16','2025-10-20 18:05:46')
+,(7767,NULL,41,993,'88.242.211.16','2025-10-20 18:05:49'),(7768,NULL,41,995,'88.242.211.16','2025-10-20 18:05:53'),(776
+9,NULL,41,997,'88.242.211.16','2025-10-20 18:05:55'),(7770,NULL,41,999,'88.242.211.16','2025-10-20 18:05:57'),(7771,NUL
+L,41,1061,'88.242.211.16','2025-10-20 18:06:32'),(7772,NULL,41,1065,'88.242.211.16','2025-10-20 18:06:40'),(7773,NULL,4
+1,1063,'88.242.211.16','2025-10-20 18:06:43'),(7774,NULL,41,1067,'88.242.211.16','2025-10-20 18:06:59'),(7775,NULL,41,1
+077,'88.242.211.16','2025-10-20 18:07:28'),(7776,NULL,41,1121,'88.242.211.16','2025-10-20 18:07:52'),(7777,NULL,41,1123
+,'88.242.211.16','2025-10-20 18:07:52'),(7778,NULL,41,1127,'88.242.211.16','2025-10-20 18:07:57'),(7779,NULL,41,1129,'8
+8.242.211.16','2025-10-20 18:07:58'),(7780,NULL,41,1145,'88.242.211.16','2025-10-20 18:08:10'),(7781,NULL,41,1147,'88.2
+42.211.16','2025-10-20 18:08:12'),(7782,NULL,41,1185,'88.242.211.16','2025-10-20 18:08:56'),(7783,NULL,41,1187,'88.242.
+211.16','2025-10-20 18:08:58'),(7784,NULL,41,1189,'88.242.211.16','2025-10-20 18:09:00'),(7785,NULL,41,1191,'88.242.211
+.16','2025-10-20 18:09:02'),(7786,NULL,42,143,'88.242.211.16','2025-10-20 18:21:58'),(7787,NULL,42,145,'88.242.211.16',
+'2025-10-20 18:22:00'),(7788,NULL,42,147,'88.242.211.16','2025-10-20 18:22:02'),(7789,NULL,42,149,'88.242.211.16','2025
+-10-20 18:22:05'),(7790,NULL,42,151,'88.242.211.16','2025-10-20 18:22:06'),(7791,NULL,42,153,'88.242.211.16','2025-10-2
+0 18:22:09'),(7792,NULL,42,155,'88.242.211.16','2025-10-20 18:22:11'),(7793,NULL,42,157,'88.242.211.16','2025-10-20 18:
+22:13'),(7794,NULL,42,159,'88.242.211.16','2025-10-20 18:22:14'),(7795,NULL,42,163,'88.242.211.16','2025-10-20 18:22:17
+'),(7796,NULL,42,161,'88.242.211.16','2025-10-20 18:22:17'),(7797,NULL,42,165,'88.242.211.16','2025-10-20 18:22:21'),(7
+798,NULL,42,171,'88.242.211.16','2025-10-20 18:22:37'),(7799,NULL,42,173,'88.242.211.16','2025-10-20 18:22:38'),(7800,N
+ULL,42,175,'88.242.211.16','2025-10-20 18:22:39'),(7801,NULL,42,193,'88.242.211.16','2025-10-20 18:22:57'),(7802,NULL,4
+2,195,'88.242.211.16','2025-10-20 18:22:59'),(7803,NULL,42,197,'88.242.211.16','2025-10-20 18:23:03'),(7804,NULL,42,235
+,'88.242.211.16','2025-10-20 18:23:36'),(7805,NULL,42,233,'88.242.211.16','2025-10-20 18:23:38'),(7806,NULL,42,237,'88.
+242.211.16','2025-10-20 18:24:08'),(7807,NULL,42,241,'88.242.211.16','2025-10-20 18:24:14'),(7808,NULL,42,243,'88.242.2
+11.16','2025-10-20 18:24:25'),(7809,NULL,57,33,'88.242.211.16','2025-10-20 19:26:09'),(7810,NULL,57,37,'88.242.211.16',
+'2025-10-20 19:26:11'),(7811,NULL,57,39,'88.242.211.16','2025-10-20 19:26:13'),(7812,NULL,57,63,'88.242.211.16','2025-1
+0-20 19:26:53'),(7813,NULL,57,65,'88.242.211.16','2025-10-20 19:26:54'),(7814,NULL,57,61,'88.242.211.16','2025-10-20 19
+:26:59'),(7815,NULL,57,67,'88.242.211.16','2025-10-20 19:27:01'),(7816,NULL,57,69,'88.242.211.16','2025-10-20 19:27:03'
+),(7817,NULL,57,71,'88.242.211.16','2025-10-20 19:27:04'),(7818,NULL,57,119,'88.242.211.16','2025-10-20 19:28:13'),(781
+9,NULL,57,121,'88.242.211.16','2025-10-20 19:28:16'),(7820,NULL,57,147,'88.242.211.16','2025-10-20 19:29:05'),(7821,NUL
+L,57,149,'88.242.211.16','2025-10-20 19:29:06'),(7822,NULL,57,151,'88.242.211.16','2025-10-20 19:29:07'),(7823,NULL,57,
+153,'88.242.211.16','2025-10-20 19:29:08'),(7824,NULL,57,155,'88.242.211.16','2025-10-20 19:29:10'),(7825,NULL,57,157,'
+88.242.211.16','2025-10-20 19:29:11'),(7826,NULL,57,159,'88.242.211.16','2025-10-20 19:29:13'),(7827,NULL,57,161,'88.24
+2.211.16','2025-10-20 19:29:14'),(7828,NULL,57,193,'88.242.211.16','2025-10-20 19:29:54'),(7829,NULL,57,195,'88.242.211
+.16','2025-10-20 19:29:55'),(7830,NULL,57,199,'88.242.211.16','2025-10-20 19:30:13'),(7831,NULL,57,201,'88.242.211.16',
+'2025-10-20 19:30:16'),(7832,NULL,57,203,'88.242.211.16','2025-10-20 19:30:19'),(7833,NULL,57,205,'88.242.211.16','2025
+-10-20 19:30:25'),(7834,NULL,57,207,'88.242.211.16','2025-10-20 19:30:27'),(7836,NULL,57,225,'88.242.211.16','2025-10-2
+0 19:30:56'),(7837,NULL,57,227,'88.242.211.16','2025-10-20 19:30:59'),(7838,NULL,57,229,'88.242.211.16','2025-10-20 19:
+31:00'),(7839,NULL,57,233,'88.242.211.16','2025-10-20 19:31:03'),(7840,NULL,57,235,'88.242.211.16','2025-10-20 19:31:05
+'),(7841,NULL,57,245,'88.242.211.16','2025-10-20 19:31:11'),(7842,NULL,57,247,'88.242.211.16','2025-10-20 19:31:14'),(7
+843,NULL,57,249,'88.242.211.16','2025-10-20 19:31:15'),(7844,NULL,57,251,'88.242.211.16','2025-10-20 19:31:18'),(7845,N
+ULL,57,253,'88.242.211.16','2025-10-20 19:31:42'),(7846,NULL,57,255,'88.242.211.16','2025-10-20 19:31:44'),(7847,NULL,5
+7,257,'88.242.211.16','2025-10-20 19:31:45'),(7848,NULL,57,259,'88.242.211.16','2025-10-20 19:32:24'),(7849,NULL,57,261
+,'88.242.211.16','2025-10-20 19:32:33'),(7850,NULL,57,265,'88.242.211.16','2025-10-20 19:33:01'),(7851,NULL,57,273,'88.
+242.211.16','2025-10-20 19:33:12'),(7852,NULL,57,275,'88.242.211.16','2025-10-20 19:33:14'),(7853,NULL,57,339,'88.242.2
+11.16','2025-10-20 19:33:48'),(7854,NULL,57,341,'88.242.211.16','2025-10-20 19:33:51'),(7855,NULL,57,343,'88.242.211.16
+','2025-10-20 19:34:01'),(7856,NULL,57,403,'88.242.211.16','2025-10-20 19:34:23'),(7857,NULL,57,405,'88.242.211.16','20
+25-10-20 19:34:24'),(7858,NULL,57,407,'88.242.211.16','2025-10-20 19:34:25'),(7859,NULL,57,409,'88.242.211.16','2025-10
+-20 19:34:27'),(7861,NULL,57,413,'88.242.211.16','2025-10-20 19:34:32'),(7862,NULL,57,417,'88.242.211.16','2025-10-20 1
+9:34:36'),(7863,NULL,57,419,'88.242.211.16','2025-10-20 19:34:37'),(7864,NULL,57,421,'88.242.211.16','2025-10-20 19:34:
+39'),(7865,NULL,57,423,'88.242.211.16','2025-10-20 19:34:41'),(7866,2,NULL,NULL,'88.241.66.20','2025-10-21 04:04:28'),(
+7867,NULL,18,NULL,'88.241.66.20','2025-10-21 04:33:23'),(7868,NULL,16,NULL,'176.240.224.229','2025-10-21 05:06:28'),(78
+69,NULL,58,NULL,'188.57.57.140','2025-10-21 07:44:23'),(7870,2,NULL,NULL,'62.217.148.6','2025-10-21 15:44:58'),(7871,38
+,NULL,NULL,'62.217.148.6','2025-10-21 15:45:00'),(7872,NULL,16,NULL,'88.241.66.20','2025-10-21 16:14:58'),(7873,NULL,18
+,NULL,'88.241.66.20','2025-10-21 16:14:58'),(7874,NULL,19,NULL,'88.241.66.20','2025-10-21 16:14:59'),(7875,NULL,20,NULL
+,'88.241.66.20','2025-10-21 16:15:00'),(7876,NULL,21,NULL,'88.241.66.20','2025-10-21 16:15:00'),(7877,NULL,18,125,'88.2
+41.66.20','2025-10-21 16:17:31'),(7878,NULL,18,133,'88.241.66.20','2025-10-21 16:17:34'),(7879,NULL,18,129,'88.241.66.2
+0','2025-10-21 16:17:37'),(7880,NULL,18,117,'88.241.66.20','2025-10-21 16:17:44'),(7881,38,NULL,NULL,'102.158.216.193',
+'2025-10-21 18:54:54'),(7882,NULL,58,NULL,'102.158.216.193','2025-10-21 18:57:56'),(7883,38,NULL,NULL,'78.190.8.131','2
+025-10-21 19:30:00'),(7884,2,NULL,NULL,'176.88.142.86','2025-10-21 20:17:50'),(7885,2,NULL,NULL,'37.154.1.224','2025-10
+-21 22:15:41'),(7886,NULL,58,NULL,'176.220.168.136','2025-10-22 14:13:25'),(7887,NULL,57,NULL,'46.221.216.129','2025-10
+-22 15:15:37'),(7888,NULL,44,NULL,'85.153.229.216','2025-10-22 15:20:03'),(7889,NULL,45,NULL,'85.153.229.216','2025-10-
+22 15:22:35'),(7890,NULL,46,NULL,'85.153.229.216','2025-10-22 15:35:06'),(7891,NULL,24,NULL,'176.216.176.68','2025-10-2
+2 16:49:13'),(7892,NULL,25,NULL,'176.216.176.68','2025-10-22 17:23:06'),(7893,NULL,57,NULL,'88.254.7.159','2025-10-22 1
+7:53:22'),(7894,NULL,26,NULL,'176.216.176.68','2025-10-22 18:07:22'),(7895,NULL,27,NULL,'176.216.176.68','2025-10-22 18
+:53:00'),(7897,38,NULL,NULL,'176.54.238.119','2025-10-22 19:14:53'),(7899,NULL,57,NULL,'78.182.135.116','2025-10-22 20:
+27:00'),(7900,38,NULL,NULL,'81.213.42.60','2025-10-22 21:28:22'),(7901,38,NULL,NULL,'81.213.42.60','2025-10-22 21:28:22
+'),(7902,NULL,28,NULL,'176.216.176.68','2025-10-22 21:29:58'),(7903,NULL,29,NULL,'176.216.176.68','2025-10-22 22:16:27'
+),(7905,2,NULL,NULL,'88.241.73.62','2025-10-23 04:35:58'),(7906,38,NULL,NULL,'37.130.86.206','2025-10-23 17:00:39'),(79
+07,38,NULL,NULL,'37.130.86.206','2025-10-23 17:00:53'),(7908,NULL,16,NULL,'37.130.86.206','2025-10-23 17:00:57'),(7909,
+NULL,18,NULL,'37.130.86.206','2025-10-23 17:00:58'),(7910,NULL,19,NULL,'37.130.86.206','2025-10-23 17:00:59'),(7911,NUL
+L,20,NULL,'37.130.86.206','2025-10-23 17:00:59'),(7912,NULL,21,NULL,'37.130.86.206','2025-10-23 17:01:01'),(7913,NULL,2
+2,NULL,'37.130.86.206','2025-10-23 17:01:01'),(7914,NULL,26,NULL,'37.130.86.206','2025-10-23 17:01:04'),(7915,NULL,25,N
+ULL,'37.130.86.206','2025-10-23 17:01:05'),(7916,NULL,24,NULL,'37.130.86.206','2025-10-23 17:01:06'),(7917,NULL,23,NULL
+,'37.130.86.206','2025-10-23 17:01:06'),(7918,NULL,58,NULL,'37.130.86.206','2025-10-23 17:01:33'),(7919,NULL,57,NULL,'3
+7.130.86.206','2025-10-23 17:01:34'),(7920,NULL,56,NULL,'37.130.86.206','2025-10-23 17:01:35'),(7921,NULL,55,NULL,'37.1
+30.86.206','2025-10-23 17:01:35'),(7922,NULL,54,NULL,'37.130.86.206','2025-10-23 17:01:36'),(7923,NULL,53,NULL,'37.130.
+86.206','2025-10-23 17:01:36'),(7924,NULL,52,NULL,'37.130.86.206','2025-10-23 17:01:37'),(7925,NULL,51,NULL,'37.130.86.
+206','2025-10-23 17:01:38'),(7926,NULL,50,NULL,'37.130.86.206','2025-10-23 17:01:39'),(7927,NULL,49,NULL,'37.130.86.206
+','2025-10-23 17:01:39'),(7928,NULL,48,NULL,'37.130.86.206','2025-10-23 17:01:40'),(7929,NULL,47,NULL,'37.130.86.206','
+2025-10-23 17:01:40'),(7930,NULL,46,NULL,'37.130.86.206','2025-10-23 17:01:41'),(7931,NULL,45,NULL,'37.130.86.206','202
+5-10-23 17:01:41'),(7932,NULL,44,NULL,'37.130.86.206','2025-10-23 17:01:43'),(7933,NULL,43,NULL,'37.130.86.206','2025-1
+0-23 17:01:44'),(7934,NULL,42,NULL,'37.130.86.206','2025-10-23 17:01:44'),(7935,NULL,41,NULL,'37.130.86.206','2025-10-2
+3 17:01:45'),(7936,NULL,40,NULL,'37.130.86.206','2025-10-23 17:01:45'),(7937,NULL,33,NULL,'37.130.86.206','2025-10-23 1
+7:01:46'),(7938,NULL,32,NULL,'37.130.86.206','2025-10-23 17:01:46'),(7939,NULL,31,NULL,'37.130.86.206','2025-10-23 17:0
+1:47'),(7940,NULL,30,NULL,'37.130.86.206','2025-10-23 17:01:49'),(7941,NULL,29,NULL,'37.130.86.206','2025-10-23 17:01:4
+9'),(7942,NULL,28,NULL,'37.130.86.206','2025-10-23 17:01:50'),(7943,NULL,27,NULL,'37.130.86.206','2025-10-23 17:01:50')
+,(7944,38,NULL,NULL,'31.143.114.194','2025-10-23 17:09:37'),(7945,2,NULL,NULL,'31.143.114.194','2025-10-23 17:09:39'),(
+7946,NULL,58,NULL,'31.143.114.194','2025-10-23 17:09:59'),(7947,NULL,57,NULL,'31.143.114.194','2025-10-23 17:10:01'),(7
+948,NULL,56,NULL,'31.143.114.194','2025-10-23 17:10:02'),(7949,NULL,55,NULL,'31.143.114.194','2025-10-23 17:10:04'),(79
+50,NULL,54,NULL,'31.143.114.194','2025-10-23 17:10:05'),(7951,NULL,53,NULL,'31.143.114.194','2025-10-23 17:10:06'),(795
+2,NULL,52,NULL,'31.143.114.194','2025-10-23 17:10:08'),(7953,NULL,51,NULL,'31.143.114.194','2025-10-23 17:10:08'),(7954
+,NULL,50,NULL,'31.143.114.194','2025-10-23 17:10:09'),(7955,NULL,49,NULL,'31.143.114.194','2025-10-23 17:10:10'),(7956,
+NULL,48,NULL,'31.143.114.194','2025-10-23 17:10:11'),(7957,NULL,47,NULL,'31.143.114.194','2025-10-23 17:10:11'),(7958,N
+ULL,46,NULL,'31.143.114.194','2025-10-23 17:10:12'),(7959,NULL,45,NULL,'31.143.114.194','2025-10-23 17:10:13'),(7960,NU
+LL,44,NULL,'31.143.114.194','2025-10-23 17:10:14'),(7961,NULL,43,NULL,'31.143.114.194','2025-10-23 17:10:14'),(7962,NUL
+L,42,NULL,'31.143.114.194','2025-10-23 17:10:16'),(7963,NULL,41,NULL,'31.143.114.194','2025-10-23 17:10:16'),(7964,NULL
+,40,NULL,'31.143.114.194','2025-10-23 17:10:17'),(7965,NULL,33,NULL,'31.143.114.194','2025-10-23 17:10:18'),(7966,NULL,
+32,NULL,'31.143.114.194','2025-10-23 17:10:19'),(7967,NULL,31,NULL,'31.143.114.194','2025-10-23 17:10:20'),(7968,NULL,3
+0,NULL,'31.143.114.194','2025-10-23 17:10:21'),(7969,NULL,29,NULL,'31.143.114.194','2025-10-23 17:10:22'),(7970,NULL,28
+,NULL,'31.143.114.194','2025-10-23 17:10:22'),(7971,NULL,27,NULL,'31.143.114.194','2025-10-23 17:10:24'),(7972,NULL,26,
+NULL,'31.143.114.194','2025-10-23 17:10:25'),(7973,NULL,25,NULL,'31.143.114.194','2025-10-23 17:10:27'),(7974,NULL,24,N
+ULL,'31.143.114.194','2025-10-23 17:10:27'),(7975,NULL,23,NULL,'31.143.114.194','2025-10-23 17:10:28'),(7976,NULL,22,NU
+LL,'31.143.114.194','2025-10-23 17:10:28'),(7977,NULL,21,NULL,'31.143.114.194','2025-10-23 17:10:29'),(7978,NULL,20,NUL
+L,'31.143.114.194','2025-10-23 17:10:30'),(7979,NULL,19,NULL,'31.143.114.194','2025-10-23 17:10:30'),(7980,NULL,18,NULL
+,'31.143.114.194','2025-10-23 17:10:31'),(7981,NULL,16,NULL,'31.143.114.194','2025-10-23 17:10:32'),(7982,2,NULL,NULL,'
+78.182.135.116','2025-10-23 18:53:19'),(7983,NULL,58,NULL,'176.88.138.131','2025-10-23 21:21:38'),(7987,38,NULL,NULL,'5
+.24.39.15','2025-10-24 17:26:26'),(7990,38,NULL,NULL,'178.246.250.84','2025-10-24 18:34:23'),(7991,NULL,58,NULL,'176.23
+7.109.36','2025-10-24 20:26:40'),(7992,NULL,29,NULL,'46.106.166.40','2025-10-24 21:08:18'),(7993,38,NULL,NULL,'88.241.7
+3.62','2025-10-25 05:34:35'),(7994,38,NULL,NULL,'37.155.163.0','2025-10-25 06:11:20'),(7996,NULL,34,1,'5.24.39.15','202
+5-10-25 10:57:14'),(7997,38,NULL,NULL,'87.249.133.164','2025-10-25 13:01:28'),(7998,38,NULL,NULL,'197.0.217.139','2025-
+10-25 18:29:15'),(7999,38,NULL,NULL,'197.0.217.139','2025-10-25 18:29:21'),(8000,NULL,58,NULL,'197.0.217.139','2025-10-
+25 18:29:43'),(8001,NULL,57,NULL,'197.0.217.139','2025-10-25 18:29:44'),(8002,NULL,55,NULL,'197.0.217.139','2025-10-25 
+18:29:47'),(8003,NULL,56,NULL,'197.0.217.139','2025-10-25 18:29:48'),(8004,38,NULL,NULL,'37.33.228.250','2025-10-25 19:
+26:56'),(8006,NULL,21,NULL,'78.182.135.116','2025-10-25 22:13:25'),(8007,38,NULL,NULL,'188.57.12.28','2025-10-26 07:09:
+45'),(8008,2,NULL,NULL,'188.57.12.28','2025-10-26 07:09:48'),(8009,38,NULL,NULL,'188.57.12.28','2025-10-26 07:10:00'),(
+8010,NULL,16,NULL,'188.57.12.28','2025-10-26 07:10:01'),(8011,NULL,18,NULL,'188.57.12.28','2025-10-26 07:10:02'),(8012,
+NULL,16,NULL,'188.57.12.28','2025-10-26 07:10:03'),(8013,NULL,19,NULL,'188.57.12.28','2025-10-26 07:10:05'),(8014,NULL,
+20,NULL,'188.57.12.28','2025-10-26 07:10:06'),(8015,NULL,21,NULL,'188.57.12.28','2025-10-26 07:10:07'),(8016,NULL,22,NU
+LL,'188.57.12.28','2025-10-26 07:10:08'),(8017,NULL,23,NULL,'188.57.12.28','2025-10-26 07:10:08'),(8018,NULL,24,NULL,'1
+88.57.12.28','2025-10-26 07:10:09'),(8019,NULL,25,NULL,'188.57.12.28','2025-10-26 07:10:10'),(8020,NULL,26,NULL,'188.57
+.12.28','2025-10-26 07:10:12'),(8021,NULL,27,NULL,'188.57.12.28','2025-10-26 07:10:14'),(8022,NULL,28,NULL,'188.57.12.2
+8','2025-10-26 07:10:14'),(8023,NULL,29,NULL,'188.57.12.28','2025-10-26 07:10:15'),(8024,NULL,30,NULL,'188.57.12.28','2
+025-10-26 07:10:16'),(8025,NULL,31,NULL,'188.57.12.28','2025-10-26 07:10:17'),(8026,NULL,32,NULL,'188.57.12.28','2025-1
+0-26 07:10:18'),(8027,NULL,33,NULL,'188.57.12.28','2025-10-26 07:10:19'),(8028,NULL,40,NULL,'188.57.12.28','2025-10-26 
+07:10:20'),(8029,NULL,41,NULL,'188.57.12.28','2025-10-26 07:10:21'),(8030,NULL,42,NULL,'188.57.12.28','2025-10-26 07:10
+:22'),(8031,NULL,43,NULL,'188.57.12.28','2025-10-26 07:10:23'),(8032,NULL,44,NULL,'188.57.12.28','2025-10-26 07:10:25')
+,(8033,NULL,45,NULL,'188.57.12.28','2025-10-26 07:10:25'),(8034,NULL,46,NULL,'188.57.12.28','2025-10-26 07:10:27'),(803
+5,NULL,47,NULL,'188.57.12.28','2025-10-26 07:10:27'),(8036,NULL,48,NULL,'188.57.12.28','2025-10-26 07:10:28'),(8037,NUL
+L,49,NULL,'188.57.12.28','2025-10-26 07:10:29'),(8038,NULL,50,NULL,'188.57.12.28','2025-10-26 07:10:29'),(8039,NULL,51,
+NULL,'188.57.12.28','2025-10-26 07:10:31'),(8040,NULL,52,NULL,'188.57.12.28','2025-10-26 07:10:32'),(8041,NULL,53,NULL,
+'188.57.12.28','2025-10-26 07:10:32'),(8042,NULL,54,NULL,'188.57.12.28','2025-10-26 07:10:33'),(8043,NULL,55,NULL,'188.
+57.12.28','2025-10-26 07:10:34'),(8044,NULL,56,NULL,'188.57.12.28','2025-10-26 07:10:35'),(8045,NULL,57,NULL,'188.57.12
+.28','2025-10-26 07:10:36'),(8046,NULL,58,NULL,'188.57.12.28','2025-10-26 07:10:38'),(8047,NULL,57,NULL,'176.89.236.143
+','2025-10-26 10:07:59'),(8048,2,NULL,NULL,'146.59.232.39','2025-10-26 12:22:01'),(8050,NULL,33,NULL,'176.216.79.55','2
+025-10-26 15:11:40'),(8051,NULL,33,33,'176.216.79.55','2025-10-26 15:11:53'),(8052,NULL,33,35,'176.216.79.55','2025-10-
+26 15:11:56'),(8053,NULL,33,49,'176.216.79.55','2025-10-26 15:12:43'),(8054,NULL,33,47,'176.216.79.55','2025-10-26 15:1
+2:44'),(8055,NULL,33,45,'176.216.79.55','2025-10-26 15:12:47'),(8056,NULL,33,43,'176.216.79.55','2025-10-26 15:12:54'),
+(8057,NULL,33,41,'176.216.79.55','2025-10-26 15:12:56'),(8058,NULL,33,39,'176.216.79.55','2025-10-26 15:12:58'),(8059,N
+ULL,33,37,'176.216.79.55','2025-10-26 15:13:00'),(8060,NULL,33,51,'176.216.79.55','2025-10-26 15:13:38'),(8061,NULL,33,
+53,'176.216.79.55','2025-10-26 15:13:39'),(8062,NULL,33,55,'176.216.79.55','2025-10-26 15:13:41'),(8063,NULL,33,57,'176
+.216.79.55','2025-10-26 15:13:53'),(8064,NULL,33,59,'176.216.79.55','2025-10-26 15:13:54'),(8065,NULL,33,61,'176.216.79
+.55','2025-10-26 15:14:23'),(8066,NULL,33,63,'176.216.79.55','2025-10-26 15:14:24'),(8067,NULL,33,65,'176.216.79.55','2
+025-10-26 15:14:29'),(8068,NULL,33,67,'176.216.79.55','2025-10-26 15:14:37'),(8069,NULL,33,69,'176.216.79.55','2025-10-
+26 15:14:38'),(8070,NULL,33,71,'176.216.79.55','2025-10-26 15:14:41'),(8071,NULL,33,73,'176.216.79.55','2025-10-26 15:1
+4:48'),(8072,NULL,33,75,'176.216.79.55','2025-10-26 15:14:53'),(8073,NULL,33,77,'176.216.79.55','2025-10-26 15:14:57'),
+(8074,NULL,33,79,'176.216.79.55','2025-10-26 15:15:00'),(8075,NULL,33,81,'176.216.79.55','2025-10-26 15:15:14'),(8076,N
+ULL,33,83,'176.216.79.55','2025-10-26 15:15:24'),(8077,NULL,33,85,'176.216.79.55','2025-10-26 15:16:09'),(8078,NULL,33,
+87,'176.216.79.55','2025-10-26 15:16:45'),(8079,NULL,33,89,'176.216.79.55','2025-10-26 15:16:53'),(8080,NULL,33,91,'176
+.216.79.55','2025-10-26 15:17:02'),(8081,NULL,33,93,'176.216.79.55','2025-10-26 15:17:08'),(8082,NULL,33,95,'176.216.79
+.55','2025-10-26 15:17:15'),(8083,NULL,33,97,'176.216.79.55','2025-10-26 15:17:17'),(8084,NULL,33,99,'176.216.79.55','2
+025-10-26 15:17:25'),(8085,NULL,33,101,'176.216.79.55','2025-10-26 15:17:27'),(8086,NULL,33,103,'176.216.79.55','2025-1
+0-26 15:17:42'),(8087,NULL,33,105,'176.216.79.55','2025-10-26 15:17:51'),(8088,NULL,33,107,'176.216.79.55','2025-10-26 
+15:17:58'),(8089,NULL,33,109,'176.216.79.55','2025-10-26 15:18:18'),(8090,NULL,33,111,'176.216.79.55','2025-10-26 15:18
+:32'),(8091,NULL,33,113,'176.216.79.55','2025-10-26 15:18:51'),(8092,NULL,33,115,'176.216.79.55','2025-10-26 15:19:07')
+,(8093,NULL,33,117,'176.216.79.55','2025-10-26 15:19:23'),(8094,NULL,33,119,'176.216.79.55','2025-10-26 15:19:41'),(809
+5,NULL,33,121,'176.216.79.55','2025-10-26 15:20:10'),(8096,NULL,33,123,'176.216.79.55','2025-10-26 15:20:11'),(8097,NUL
+L,33,125,'176.216.79.55','2025-10-26 15:20:24'),(8098,NULL,33,127,'176.216.79.55','2025-10-26 15:20:45'),(8099,NULL,33,
+129,'176.216.79.55','2025-10-26 15:21:31'),(8100,NULL,33,131,'176.216.79.55','2025-10-26 15:21:33'),(8101,NULL,33,133,'
+176.216.79.55','2025-10-26 15:21:48'),(8102,NULL,33,135,'176.216.79.55','2025-10-26 15:21:50'),(8103,NULL,33,137,'176.2
+16.79.55','2025-10-26 15:22:16'),(8104,NULL,33,139,'176.216.79.55','2025-10-26 15:22:24'),(8105,NULL,33,141,'176.216.79
+.55','2025-10-26 15:22:28'),(8106,NULL,33,143,'176.216.79.55','2025-10-26 15:22:37'),(8107,NULL,33,145,'176.216.79.55',
+'2025-10-26 15:22:46'),(8108,NULL,33,147,'176.216.79.55','2025-10-26 15:22:48'),(8109,NULL,33,149,'176.216.79.55','2025
+-10-26 15:23:03'),(8110,NULL,33,151,'176.216.79.55','2025-10-26 15:23:06'),(8111,NULL,33,153,'176.216.79.55','2025-10-2
+6 15:23:30'),(8112,NULL,33,155,'176.216.79.55','2025-10-26 15:23:38'),(8113,NULL,33,157,'176.216.79.55','2025-10-26 15:
+23:41'),(8114,NULL,33,159,'176.216.79.55','2025-10-26 15:23:45'),(8115,NULL,33,161,'176.216.79.55','2025-10-26 15:23:48
+'),(8116,NULL,33,163,'176.216.79.55','2025-10-26 15:23:53'),(8117,NULL,33,165,'176.216.79.55','2025-10-26 15:24:00'),(8
+118,NULL,33,167,'176.216.79.55','2025-10-26 15:24:04'),(8119,NULL,33,169,'176.216.79.55','2025-10-26 15:24:08'),(8120,N
+ULL,33,171,'176.216.79.55','2025-10-26 15:24:59'),(8121,NULL,33,173,'176.216.79.55','2025-10-26 15:25:01'),(8122,NULL,3
+3,175,'176.216.79.55','2025-10-26 15:25:23'),(8123,NULL,33,177,'176.216.79.55','2025-10-26 15:25:43'),(8124,NULL,33,179
+,'176.216.79.55','2025-10-26 15:25:46'),(8125,NULL,33,181,'176.216.79.55','2025-10-26 15:26:06'),(8126,NULL,33,183,'176
+.216.79.55','2025-10-26 15:26:08'),(8127,NULL,33,185,'176.216.79.55','2025-10-26 15:26:30'),(8128,NULL,33,187,'176.216.
+79.55','2025-10-26 15:26:49'),(8129,NULL,33,189,'176.216.79.55','2025-10-26 15:27:07'),(8130,NULL,33,191,'176.216.79.55
+','2025-10-26 15:27:09'),(8131,NULL,33,193,'176.216.79.55','2025-10-26 15:27:29'),(8132,NULL,33,195,'176.216.79.55','20
+25-10-26 15:28:06'),(8133,NULL,33,197,'176.216.79.55','2025-10-26 15:28:10'),(8134,NULL,33,199,'176.216.79.55','2025-10
+-26 15:28:27'),(8135,NULL,33,201,'176.216.79.55','2025-10-26 15:28:30'),(8136,NULL,33,203,'176.216.79.55','2025-10-26 1
+5:28:31'),(8137,NULL,33,207,'176.216.79.55','2025-10-26 15:28:40'),(8138,NULL,33,205,'176.216.79.55','2025-10-26 15:28:
+40'),(8139,NULL,33,209,'176.216.79.55','2025-10-26 15:28:55'),(8140,NULL,33,211,'176.216.79.55','2025-10-26 15:29:09'),
+(8141,NULL,33,213,'176.216.79.55','2025-10-26 15:29:18'),(8142,NULL,33,215,'176.216.79.55','2025-10-26 15:29:29'),(8143
+,NULL,33,217,'176.216.79.55','2025-10-26 15:29:39'),(8144,NULL,33,219,'176.216.79.55','2025-10-26 15:29:56'),(8145,NULL
+,33,221,'176.216.79.55','2025-10-26 15:30:09'),(8146,NULL,33,223,'176.216.79.55','2025-10-26 15:30:37'),(8147,NULL,33,2
+25,'176.216.79.55','2025-10-26 15:30:49'),(8148,NULL,33,227,'176.216.79.55','2025-10-26 15:31:06'),(8149,NULL,33,229,'1
+76.216.79.55','2025-10-26 15:31:19'),(8150,NULL,33,231,'176.216.79.55','2025-10-26 15:31:20'),(8151,NULL,33,233,'176.21
+6.79.55','2025-10-26 15:31:22'),(8152,NULL,33,235,'176.216.79.55','2025-10-26 15:31:31'),(8153,NULL,33,237,'176.216.79.
+55','2025-10-26 15:32:09'),(8154,NULL,33,239,'176.216.79.55','2025-10-26 15:35:44'),(8155,NULL,33,241,'176.216.79.55','
+2025-10-26 15:36:06'),(8156,NULL,33,243,'176.216.79.55','2025-10-26 15:36:19'),(8157,NULL,33,245,'176.216.79.55','2025-
+10-26 15:36:32'),(8158,NULL,33,247,'176.216.79.55','2025-10-26 15:36:35'),(8159,NULL,33,249,'176.216.79.55','2025-10-26
+ 15:36:41'),(8160,NULL,33,251,'176.216.79.55','2025-10-26 15:37:00'),(8161,NULL,33,253,'176.216.79.55','2025-10-26 15:3
+7:25'),(8162,NULL,33,255,'176.216.79.55','2025-10-26 15:37:37'),(8163,NULL,33,257,'176.216.79.55','2025-10-26 15:38:00'
+),(8164,NULL,33,259,'176.216.79.55','2025-10-26 15:38:19'),(8165,NULL,33,261,'176.216.79.55','2025-10-26 15:38:20'),(81
+66,NULL,33,263,'176.216.79.55','2025-10-26 15:38:43'),(8167,NULL,33,265,'176.216.79.55','2025-10-26 15:38:51'),(8168,NU
+LL,33,267,'176.216.79.55','2025-10-26 15:38:53'),(8169,NULL,33,269,'176.216.79.55','2025-10-26 15:39:01'),(8170,NULL,33
+,271,'176.216.79.55','2025-10-26 15:39:03'),(8171,NULL,33,273,'176.216.79.55','2025-10-26 15:39:08'),(8172,NULL,33,275,
+'176.216.79.55','2025-10-26 15:39:17'),(8173,NULL,33,277,'176.216.79.55','2025-10-26 15:39:23'),(8174,NULL,33,279,'176.
+216.79.55','2025-10-26 15:39:35'),(8175,NULL,33,281,'176.216.79.55','2025-10-26 15:39:39'),(8176,NULL,33,283,'176.216.7
+9.55','2025-10-26 15:39:43'),(8177,NULL,33,285,'176.216.79.55','2025-10-26 15:39:55'),(8178,NULL,33,287,'176.216.79.55'
+,'2025-10-26 15:39:58'),(8179,NULL,33,289,'176.216.79.55','2025-10-26 15:40:14'),(8180,NULL,33,291,'176.216.79.55','202
+5-10-26 15:40:17'),(8181,NULL,33,293,'176.216.79.55','2025-10-26 15:40:37'),(8183,NULL,33,297,'176.216.79.55','2025-10-
+26 15:41:04'),(8184,NULL,33,299,'176.216.79.55','2025-10-26 15:41:15'),(8186,NULL,33,295,'176.216.79.55','2025-10-26 15
+:41:23'),(8187,NULL,33,301,'176.216.79.55','2025-10-26 15:41:40'),(8188,NULL,33,303,'176.216.79.55','2025-10-26 15:42:0
+5'),(8189,NULL,33,305,'176.216.79.55','2025-10-26 15:42:15'),(8190,NULL,33,307,'176.216.79.55','2025-10-26 15:42:23'),(
+8191,NULL,33,309,'176.216.79.55','2025-10-26 15:42:37'),(8192,NULL,33,311,'176.216.79.55','2025-10-26 15:42:44'),(8194,
+NULL,33,315,'176.216.79.55','2025-10-26 15:42:59'),(8196,NULL,33,313,'176.216.79.55','2025-10-26 15:43:04'),(8197,NULL,
+33,317,'176.216.79.55','2025-10-26 15:43:12'),(8198,NULL,33,319,'176.216.79.55','2025-10-26 15:43:36'),(8199,NULL,33,32
+1,'176.216.79.55','2025-10-26 15:43:47'),(8200,NULL,33,323,'176.216.79.55','2025-10-26 15:44:02'),(8201,NULL,33,325,'17
+6.216.79.55','2025-10-26 15:44:30'),(8202,NULL,33,327,'176.216.79.55','2025-10-26 15:44:45'),(8203,NULL,33,329,'176.216
+.79.55','2025-10-26 15:44:47'),(8204,NULL,33,331,'176.216.79.55','2025-10-26 15:45:00'),(8205,NULL,33,333,'176.216.79.5
+5','2025-10-26 15:45:09'),(8206,NULL,33,335,'176.216.79.55','2025-10-26 15:45:13'),(8207,NULL,33,337,'176.216.79.55','2
+025-10-26 15:45:21'),(8208,NULL,33,339,'176.216.79.55','2025-10-26 15:45:29'),(8209,NULL,33,341,'176.216.79.55','2025-1
+0-26 15:45:36'),(8210,NULL,33,343,'176.216.79.55','2025-10-26 15:45:41'),(8211,NULL,33,345,'176.216.79.55','2025-10-26 
+15:45:52'),(8212,NULL,33,347,'176.216.79.55','2025-10-26 15:46:14'),(8213,NULL,33,349,'176.216.79.55','2025-10-26 15:46
+:34'),(8214,NULL,33,351,'176.216.79.55','2025-10-26 15:46:53'),(8215,NULL,33,353,'176.216.79.55','2025-10-26 15:46:56')
+,(8216,NULL,33,355,'176.216.79.55','2025-10-26 15:47:06'),(8217,NULL,33,357,'176.216.79.55','2025-10-26 15:47:09'),(821
+8,NULL,33,359,'176.216.79.55','2025-10-26 15:47:12'),(8219,NULL,33,361,'176.216.79.55','2025-10-26 15:47:20'),(8220,NUL
+L,33,363,'176.216.79.55','2025-10-26 15:47:23'),(8221,NULL,33,365,'176.216.79.55','2025-10-26 15:47:35'),(8222,NULL,33,
+367,'176.216.79.55','2025-10-26 15:47:41'),(8223,NULL,33,369,'176.216.79.55','2025-10-26 15:47:46'),(8224,NULL,33,371,'
+176.216.79.55','2025-10-26 15:48:02'),(8225,NULL,33,373,'176.216.79.55','2025-10-26 15:48:17'),(8226,NULL,33,375,'176.2
+16.79.55','2025-10-26 15:48:22'),(8227,NULL,33,377,'176.216.79.55','2025-10-26 15:48:25'),(8228,NULL,33,379,'176.216.79
+.55','2025-10-26 15:48:33'),(8229,NULL,33,381,'176.216.79.55','2025-10-26 15:48:38'),(8230,NULL,33,383,'176.216.79.55',
+'2025-10-26 15:48:42'),(8231,NULL,33,385,'176.216.79.55','2025-10-26 15:48:44'),(8232,NULL,33,387,'176.216.79.55','2025
+-10-26 15:48:48'),(8233,NULL,33,389,'176.216.79.55','2025-10-26 15:48:53'),(8234,NULL,33,391,'176.216.79.55','2025-10-2
+6 15:49:00'),(8235,NULL,33,393,'176.216.79.55','2025-10-26 15:49:01'),(8236,NULL,33,395,'176.216.79.55','2025-10-26 15:
+49:17'),(8237,NULL,33,397,'176.216.79.55','2025-10-26 15:49:27'),(8238,NULL,33,399,'176.216.79.55','2025-10-26 15:49:28
+'),(8239,NULL,33,401,'176.216.79.55','2025-10-26 15:49:39'),(8240,NULL,33,403,'176.216.79.55','2025-10-26 15:49:55'),(8
+241,NULL,33,405,'176.216.79.55','2025-10-26 15:50:06'),(8242,NULL,33,407,'176.216.79.55','2025-10-26 15:50:13'),(8243,N
+ULL,33,409,'176.216.79.55','2025-10-26 15:50:23'),(8244,NULL,33,411,'176.216.79.55','2025-10-26 15:50:28'),(8245,NULL,3
+3,413,'176.216.79.55','2025-10-26 15:50:31'),(8246,NULL,33,415,'176.216.79.55','2025-10-26 15:50:40'),(8247,NULL,33,417
+,'176.216.79.55','2025-10-26 15:50:43'),(8248,NULL,33,419,'176.216.79.55','2025-10-26 15:50:46'),(8249,NULL,33,421,'176
+.216.79.55','2025-10-26 15:50:52'),(8250,NULL,33,423,'176.216.79.55','2025-10-26 15:51:13'),(8251,NULL,33,425,'176.216.
+79.55','2025-10-26 15:51:16'),(8252,NULL,33,427,'176.216.79.55','2025-10-26 15:51:22'),(8253,NULL,33,429,'176.216.79.55
+','2025-10-26 15:51:27'),(8254,NULL,33,431,'176.216.79.55','2025-10-26 15:51:37'),(8255,NULL,33,433,'176.216.79.55','20
+25-10-26 15:51:39'),(8256,NULL,33,435,'176.216.79.55','2025-10-26 15:51:58'),(8257,NULL,33,437,'176.216.79.55','2025-10
+-26 15:52:25'),(8258,NULL,33,439,'176.216.79.55','2025-10-26 15:53:28'),(8259,NULL,33,441,'176.216.79.55','2025-10-26 1
+5:54:15'),(8260,NULL,33,443,'176.216.79.55','2025-10-26 15:54:19'),(8261,NULL,33,445,'176.216.79.55','2025-10-26 15:54:
+52'),(8262,NULL,40,NULL,'176.216.79.55','2025-10-26 15:55:08'),(8263,NULL,40,3,'176.216.79.55','2025-10-26 15:55:59'),(
+8264,NULL,40,5,'176.216.79.55','2025-10-26 15:56:18'),(8265,NULL,40,7,'176.216.79.55','2025-10-26 15:57:54'),(8266,NULL
+,40,9,'176.216.79.55','2025-10-26 15:57:56'),(8267,NULL,40,11,'176.216.79.55','2025-10-26 15:57:58'),(8268,NULL,40,13,'
+176.216.79.55','2025-10-26 15:58:02'),(8269,NULL,40,15,'176.216.79.55','2025-10-26 15:58:04'),(8270,NULL,40,17,'176.216
+.79.55','2025-10-26 15:58:28'),(8271,NULL,40,19,'176.216.79.55','2025-10-26 15:58:36'),(8272,NULL,40,21,'176.216.79.55'
+,'2025-10-26 15:59:17'),(8273,NULL,40,23,'176.216.79.55','2025-10-26 16:00:07'),(8274,NULL,40,25,'176.216.79.55','2025-
+10-26 16:00:30'),(8275,NULL,40,27,'176.216.79.55','2025-10-26 16:00:53'),(8276,NULL,40,29,'176.216.79.55','2025-10-26 1
+6:00:58'),(8277,NULL,40,31,'176.216.79.55','2025-10-26 16:01:15'),(8278,NULL,40,33,'176.216.79.55','2025-10-26 16:01:37
+'),(8279,NULL,40,35,'176.216.79.55','2025-10-26 16:02:10'),(8280,NULL,40,37,'176.216.79.55','2025-10-26 16:02:34'),(828
+1,NULL,40,39,'176.216.79.55','2025-10-26 16:02:38'),(8282,NULL,40,41,'176.216.79.55','2025-10-26 16:03:17'),(8283,NULL,
+40,43,'176.216.79.55','2025-10-26 16:03:40'),(8284,NULL,40,45,'176.216.79.55','2025-10-26 16:03:43'),(8285,NULL,40,47,'
+176.216.79.55','2025-10-26 16:04:28'),(8286,NULL,40,49,'176.216.79.55','2025-10-26 16:04:30'),(8287,NULL,40,51,'176.216
+.79.55','2025-10-26 16:04:38'),(8289,NULL,40,53,'176.216.79.55','2025-10-26 16:06:41'),(8290,NULL,40,55,'176.216.79.55'
+,'2025-10-26 16:06:44'),(8291,NULL,40,57,'176.216.79.55','2025-10-26 16:07:05'),(8293,NULL,40,59,'176.216.79.55','2025-
+10-26 16:07:24'),(8294,NULL,40,61,'176.216.79.55','2025-10-26 16:07:27'),(8295,NULL,40,63,'176.216.79.55','2025-10-26 1
+6:07:50'),(8296,NULL,40,65,'176.216.79.55','2025-10-26 16:08:11'),(8297,NULL,40,67,'176.216.79.55','2025-10-26 16:08:36
+'),(8298,NULL,40,69,'176.216.79.55','2025-10-26 16:08:43'),(8299,NULL,40,71,'176.216.79.55','2025-10-26 16:08:54'),(830
+0,NULL,40,73,'176.216.79.55','2025-10-26 16:09:13'),(8301,NULL,40,75,'176.216.79.55','2025-10-26 16:09:15'),(8302,NULL,
+40,77,'176.216.79.55','2025-10-26 16:09:26'),(8303,NULL,40,79,'176.216.79.55','2025-10-26 16:09:27'),(8304,NULL,40,81,'
+176.216.79.55','2025-10-26 16:09:42'),(8305,NULL,40,83,'176.216.79.55','2025-10-26 16:09:48'),(8306,NULL,40,85,'176.216
+.79.55','2025-10-26 16:10:08'),(8307,NULL,40,87,'176.216.79.55','2025-10-26 16:10:11'),(8308,NULL,40,89,'176.216.79.55'
+,'2025-10-26 16:10:12'),(8309,NULL,40,91,'176.216.79.55','2025-10-26 16:10:49'),(8310,NULL,40,93,'176.216.79.55','2025-
+10-26 16:11:03'),(8311,NULL,40,95,'176.216.79.55','2025-10-26 16:11:21'),(8312,NULL,40,97,'176.216.79.55','2025-10-26 1
+6:11:49'),(8313,NULL,40,99,'176.216.79.55','2025-10-26 16:12:08'),(8314,NULL,40,101,'176.216.79.55','2025-10-26 16:12:3
+4'),(8315,NULL,40,103,'176.216.79.55','2025-10-26 16:12:54'),(8316,NULL,40,105,'176.216.79.55','2025-10-26 16:13:13'),(
+8317,NULL,40,107,'176.216.79.55','2025-10-26 16:13:21'),(8318,NULL,40,109,'176.216.79.55','2025-10-26 16:13:26'),(8319,
+NULL,40,111,'176.216.79.55','2025-10-26 16:13:38'),(8320,NULL,40,113,'176.216.79.55','2025-10-26 16:13:45'),(8321,NULL,
+40,115,'176.216.79.55','2025-10-26 16:13:59'),(8322,NULL,40,117,'176.216.79.55','2025-10-26 16:14:16'),(8323,NULL,40,11
+9,'176.216.79.55','2025-10-26 16:14:41'),(8324,NULL,40,121,'176.216.79.55','2025-10-26 16:14:47'),(8325,NULL,40,123,'17
+6.216.79.55','2025-10-26 16:14:51'),(8326,NULL,40,125,'176.216.79.55','2025-10-26 16:14:53'),(8327,NULL,40,127,'176.216
+.79.55','2025-10-26 16:14:58'),(8328,NULL,40,129,'176.216.79.55','2025-10-26 16:15:00'),(8329,NULL,40,131,'176.216.79.5
+5','2025-10-26 16:15:26'),(8330,NULL,40,133,'176.216.79.55','2025-10-26 16:15:29'),(8331,NULL,40,135,'176.216.79.55','2
+025-10-26 16:15:32'),(8332,NULL,40,137,'176.216.79.55','2025-10-26 16:15:35'),(8333,NULL,40,139,'176.216.79.55','2025-1
+0-26 16:15:38'),(8334,NULL,40,141,'176.216.79.55','2025-10-26 16:15:56'),(8335,NULL,40,143,'176.216.79.55','2025-10-26 
+16:15:59'),(8336,NULL,40,145,'176.216.79.55','2025-10-26 16:16:01'),(8337,NULL,40,147,'176.216.79.55','2025-10-26 16:16
+:04'),(8338,NULL,40,149,'176.216.79.55','2025-10-26 16:16:15'),(8339,NULL,40,151,'176.216.79.55','2025-10-26 16:16:18')
+,(8340,NULL,40,153,'176.216.79.55','2025-10-26 16:16:26'),(8341,NULL,40,155,'176.216.79.55','2025-10-26 16:16:30'),(834
+2,NULL,40,157,'176.216.79.55','2025-10-26 16:17:03'),(8343,NULL,40,159,'176.216.79.55','2025-10-26 16:17:05'),(8344,NUL
+L,40,161,'176.216.79.55','2025-10-26 16:17:07'),(8345,NULL,40,163,'176.216.79.55','2025-10-26 16:17:11'),(8346,NULL,40,
+165,'176.216.79.55','2025-10-26 16:17:13'),(8347,NULL,40,167,'176.216.79.55','2025-10-26 16:17:33'),(8348,NULL,40,169,'
+176.216.79.55','2025-10-26 16:17:58'),(8349,NULL,40,171,'176.216.79.55','2025-10-26 16:18:08'),(8350,NULL,40,173,'176.2
+16.79.55','2025-10-26 16:18:14'),(8351,NULL,40,175,'176.216.79.55','2025-10-26 16:18:17'),(8352,NULL,40,177,'176.216.79
+.55','2025-10-26 16:18:21'),(8353,NULL,40,179,'176.216.79.55','2025-10-26 16:18:23'),(8354,NULL,40,181,'176.216.79.55',
+'2025-10-26 16:18:31'),(8355,NULL,40,183,'176.216.79.55','2025-10-26 16:18:34'),(8356,NULL,40,185,'176.216.79.55','2025
+-10-26 16:18:39'),(8357,NULL,40,187,'176.216.79.55','2025-10-26 16:18:58'),(8358,NULL,40,189,'176.216.79.55','2025-10-2
+6 16:19:13'),(8359,NULL,40,191,'176.216.79.55','2025-10-26 16:19:26'),(8360,NULL,40,193,'176.216.79.55','2025-10-26 16:
+19:31'),(8361,NULL,40,195,'176.216.79.55','2025-10-26 16:19:43'),(8362,NULL,40,197,'176.216.79.55','2025-10-26 16:19:46
+'),(8363,NULL,40,199,'176.216.79.55','2025-10-26 16:19:53'),(8364,NULL,40,201,'176.216.79.55','2025-10-26 16:20:10'),(8
+365,NULL,40,203,'176.216.79.55','2025-10-26 16:20:14'),(8366,NULL,40,205,'176.216.79.55','2025-10-26 16:20:16'),(8367,N
+ULL,40,207,'176.216.79.55','2025-10-26 16:20:31'),(8368,NULL,40,209,'176.216.79.55','2025-10-26 16:20:34'),(8369,NULL,4
+0,211,'176.216.79.55','2025-10-26 16:21:11'),(8370,NULL,40,213,'176.216.79.55','2025-10-26 16:21:15'),(8371,NULL,40,215
+,'176.216.79.55','2025-10-26 16:21:44'),(8372,NULL,40,217,'176.216.79.55','2025-10-26 16:22:05'),(8373,NULL,40,219,'176
+.216.79.55','2025-10-26 16:22:15'),(8374,NULL,40,221,'176.216.79.55','2025-10-26 16:22:19'),(8375,NULL,40,223,'176.216.
+79.55','2025-10-26 16:22:20'),(8376,NULL,40,225,'176.216.79.55','2025-10-26 16:22:23'),(8377,NULL,40,227,'176.216.79.55
+','2025-10-26 16:22:46'),(8378,NULL,40,229,'176.216.79.55','2025-10-26 16:23:05'),(8379,NULL,40,231,'176.216.79.55','20
+25-10-26 16:23:41'),(8380,NULL,40,233,'176.216.79.55','2025-10-26 16:23:51'),(8381,NULL,40,235,'176.216.79.55','2025-10
+-26 16:25:02'),(8382,NULL,40,237,'176.216.79.55','2025-10-26 16:26:20'),(8383,NULL,40,239,'176.216.79.55','2025-10-26 1
+6:26:33'),(8384,NULL,40,241,'176.216.79.55','2025-10-26 16:26:57'),(8385,NULL,40,243,'176.216.79.55','2025-10-26 16:27:
+06'),(8386,NULL,40,245,'176.216.79.55','2025-10-26 16:27:13'),(8387,NULL,40,247,'176.216.79.55','2025-10-26 16:27:22'),
+(8388,NULL,40,249,'176.216.79.55','2025-10-26 16:27:40'),(8389,NULL,40,251,'176.216.79.55','2025-10-26 16:27:44'),(8390
+,NULL,40,253,'176.216.79.55','2025-10-26 16:28:14'),(8391,NULL,40,255,'176.216.79.55','2025-10-26 16:28:16'),(8392,NULL
+,40,257,'176.216.79.55','2025-10-26 16:28:36'),(8393,NULL,40,259,'176.216.79.55','2025-10-26 16:29:02'),(8394,NULL,40,2
+61,'176.216.79.55','2025-10-26 16:29:26'),(8395,NULL,40,263,'176.216.79.55','2025-10-26 16:29:51'),(8396,NULL,40,265,'1
+76.216.79.55','2025-10-26 16:30:06'),(8397,NULL,40,267,'176.216.79.55','2025-10-26 16:30:34'),(8398,NULL,40,269,'176.21
+6.79.55','2025-10-26 16:31:28'),(8399,NULL,40,271,'176.216.79.55','2025-10-26 16:31:50'),(8400,NULL,40,273,'176.216.79.
+55','2025-10-26 16:31:58'),(8401,NULL,40,275,'176.216.79.55','2025-10-26 16:32:00'),(8402,NULL,40,277,'176.216.79.55','
+2025-10-26 16:32:08'),(8403,NULL,40,279,'176.216.79.55','2025-10-26 16:32:20'),(8404,NULL,40,281,'176.216.79.55','2025-
+10-26 16:32:48'),(8405,NULL,40,283,'176.216.79.55','2025-10-26 16:32:51'),(8406,NULL,40,285,'176.216.79.55','2025-10-26
+ 16:33:05'),(8407,NULL,40,287,'176.216.79.55','2025-10-26 16:33:10'),(8408,NULL,40,289,'176.216.79.55','2025-10-26 16:3
+3:28'),(8409,NULL,40,291,'176.216.79.55','2025-10-26 16:33:31'),(8410,NULL,40,293,'176.216.79.55','2025-10-26 16:33:51'
+),(8411,NULL,40,295,'176.216.79.55','2025-10-26 16:33:54'),(8412,NULL,40,297,'176.216.79.55','2025-10-26 16:34:21'),(84
+13,NULL,40,299,'176.216.79.55','2025-10-26 16:34:46'),(8414,NULL,40,301,'176.216.79.55','2025-10-26 16:34:59'),(8415,NU
+LL,40,303,'176.216.79.55','2025-10-26 16:35:11'),(8416,NULL,40,305,'176.216.79.55','2025-10-26 16:35:41'),(8417,NULL,40
+,307,'176.216.79.55','2025-10-26 16:35:50'),(8418,NULL,40,309,'176.216.79.55','2025-10-26 16:36:05'),(8419,NULL,40,311,
+'176.216.79.55','2025-10-26 16:36:23'),(8420,NULL,40,313,'176.216.79.55','2025-10-26 16:36:35'),(8421,NULL,40,315,'176.
+216.79.55','2025-10-26 16:36:48'),(8422,NULL,40,317,'176.216.79.55','2025-10-26 16:36:53'),(8423,NULL,40,319,'176.216.7
+9.55','2025-10-26 16:37:12'),(8424,NULL,40,321,'176.216.79.55','2025-10-26 16:37:38'),(8425,NULL,40,323,'176.216.79.55'
+,'2025-10-26 16:37:41'),(8426,NULL,40,325,'176.216.79.55','2025-10-26 16:38:22'),(8427,NULL,40,327,'176.216.79.55','202
+5-10-26 16:39:01'),(8428,NULL,40,329,'176.216.79.55','2025-10-26 16:39:17'),(8429,NULL,40,331,'176.216.79.55','2025-10-
+26 16:39:41'),(8430,NULL,40,333,'176.216.79.55','2025-10-26 16:39:51'),(8431,NULL,40,335,'176.216.79.55','2025-10-26 16
+:39:56'),(8432,NULL,40,337,'176.216.79.55','2025-10-26 16:40:07'),(8433,NULL,40,339,'176.216.79.55','2025-10-26 16:40:2
+0'),(8434,NULL,40,341,'176.216.79.55','2025-10-26 16:40:50'),(8435,NULL,40,343,'176.216.79.55','2025-10-26 16:41:14'),(
+8436,NULL,40,345,'176.216.79.55','2025-10-26 16:41:33'),(8437,NULL,40,347,'176.216.79.55','2025-10-26 16:41:49'),(8438,
+NULL,40,349,'176.216.79.55','2025-10-26 16:42:07'),(8439,NULL,40,351,'176.216.79.55','2025-10-26 16:42:20'),(8440,NULL,
+40,353,'176.216.79.55','2025-10-26 16:42:37'),(8441,NULL,40,355,'176.216.79.55','2025-10-26 16:43:01'),(8442,NULL,40,35
+7,'176.216.79.55','2025-10-26 16:43:08'),(8443,NULL,40,359,'176.216.79.55','2025-10-26 16:43:29'),(8444,NULL,40,361,'17
+6.216.79.55','2025-10-26 16:43:36'),(8445,NULL,40,363,'176.216.79.55','2025-10-26 16:43:45'),(8446,NULL,40,365,'176.216
+.79.55','2025-10-26 16:43:56'),(8447,NULL,40,367,'176.216.79.55','2025-10-26 16:44:01'),(8448,NULL,40,369,'176.216.79.5
+5','2025-10-26 16:44:33'),(8449,NULL,40,371,'176.216.79.55','2025-10-26 16:44:55'),(8450,NULL,40,373,'176.216.79.55','2
+025-10-26 16:45:12'),(8451,NULL,40,375,'176.216.79.55','2025-10-26 16:45:18'),(8452,NULL,40,377,'176.216.79.55','2025-1
+0-26 16:45:29'),(8453,NULL,40,379,'176.216.79.55','2025-10-26 16:45:42'),(8454,NULL,40,381,'176.216.79.55','2025-10-26 
+16:46:02'),(8455,NULL,40,383,'176.216.79.55','2025-10-26 16:46:06'),(8456,NULL,40,385,'176.216.79.55','2025-10-26 16:46
+:09'),(8457,NULL,40,387,'176.216.79.55','2025-10-26 16:46:37'),(8458,NULL,40,389,'176.216.79.55','2025-10-26 16:46:38')
+,(8459,NULL,40,391,'176.216.79.55','2025-10-26 16:46:40'),(8460,NULL,40,393,'176.216.79.55','2025-10-26 16:47:45'),(846
+1,NULL,40,395,'176.216.79.55','2025-10-26 16:47:49'),(8462,NULL,40,397,'176.216.79.55','2025-10-26 16:48:10'),(8463,NUL
+L,40,399,'176.216.79.55','2025-10-26 16:48:19'),(8464,NULL,40,401,'176.216.79.55','2025-10-26 16:48:26'),(8465,NULL,40,
+403,'176.216.79.55','2025-10-26 16:48:28'),(8467,NULL,40,405,'176.216.79.55','2025-10-26 16:48:36'),(8468,NULL,40,407,'
+176.216.79.55','2025-10-26 16:48:37'),(8469,NULL,40,409,'176.216.79.55','2025-10-26 16:48:47'),(8470,NULL,40,411,'176.2
+16.79.55','2025-10-26 16:49:09'),(8471,NULL,45,383,'88.242.211.16','2025-10-26 18:18:05'),(8472,NULL,45,387,'88.242.211
+.16','2025-10-26 18:18:14'),(8473,NULL,45,393,'88.242.211.16','2025-10-26 18:18:56'),(8474,NULL,45,401,'88.242.211.16',
+'2025-10-26 18:19:08'),(8475,NULL,45,399,'88.242.211.16','2025-10-26 18:19:10'),(8476,NULL,45,397,'88.242.211.16','2025
+-10-26 18:19:11'),(8477,NULL,45,395,'88.242.211.16','2025-10-26 18:19:17'),(8478,NULL,45,427,'88.242.211.16','2025-10-2
+6 18:20:06'),(8479,NULL,45,425,'88.242.211.16','2025-10-26 18:20:07'),(8480,NULL,45,423,'88.242.211.16','2025-10-26 18:
+20:11'),(8481,NULL,45,493,'88.242.211.16','2025-10-26 18:25:14'),(8483,NULL,45,495,'88.242.211.16','2025-10-26 18:25:16
+'),(8484,NULL,45,499,'88.242.211.16','2025-10-26 18:25:33'),(8485,NULL,45,497,'88.242.211.16','2025-10-26 18:25:36'),(8
+486,NULL,45,501,'88.242.211.16','2025-10-26 18:25:56'),(8487,NULL,45,507,'88.242.211.16','2025-10-26 18:26:49'),(8488,N
+ULL,45,509,'88.242.211.16','2025-10-26 18:26:51'),(8489,NULL,45,511,'88.242.211.16','2025-10-26 18:26:55'),(8490,NULL,4
+5,513,'88.242.211.16','2025-10-26 18:27:03'),(8491,NULL,45,515,'88.242.211.16','2025-10-26 18:27:11'),(8492,NULL,45,517
+,'88.242.211.16','2025-10-26 18:27:14'),(8493,NULL,45,519,'88.242.211.16','2025-10-26 18:27:16'),(8494,NULL,45,521,'88.
+242.211.16','2025-10-26 18:27:18'),(8495,NULL,45,523,'88.242.211.16','2025-10-26 18:27:21'),(8496,NULL,45,525,'88.242.2
+11.16','2025-10-26 18:27:26'),(8497,NULL,45,527,'88.242.211.16','2025-10-26 18:27:27'),(8498,NULL,45,529,'88.242.211.16
+','2025-10-26 18:27:29'),(8499,NULL,45,531,'88.242.211.16','2025-10-26 18:27:32'),(8500,NULL,45,533,'88.242.211.16','20
+25-10-26 18:27:34'),(8501,NULL,45,535,'88.242.211.16','2025-10-26 18:27:35'),(8502,NULL,45,555,'88.242.211.16','2025-10
+-26 18:28:34'),(8503,NULL,45,557,'88.242.211.16','2025-10-26 18:28:39'),(8504,NULL,45,559,'88.242.211.16','2025-10-26 1
+8:28:41'),(8506,NULL,43,NULL,'78.163.113.101','2025-10-26 21:04:36'),(8507,NULL,40,1,'176.216.79.55','2025-10-26 21:34:
+58'),(8508,NULL,40,413,'176.216.79.55','2025-10-26 21:36:05'),(8509,NULL,40,415,'176.216.79.55','2025-10-26 21:36:08'),
+(8510,NULL,40,417,'176.216.79.55','2025-10-26 21:36:09'),(8511,NULL,40,419,'176.216.79.55','2025-10-26 21:36:43'),(8512
+,NULL,40,421,'176.216.79.55','2025-10-26 21:37:09'),(8513,NULL,40,423,'176.216.79.55','2025-10-26 21:37:55'),(8514,NULL
+,40,425,'176.216.79.55','2025-10-26 21:38:23'),(8515,NULL,40,429,'176.216.79.55','2025-10-26 21:38:27'),(8516,NULL,40,4
+27,'176.216.79.55','2025-10-26 21:38:32'),(8517,NULL,40,431,'176.216.79.55','2025-10-26 21:39:14'),(8519,NULL,40,433,'1
+76.216.79.55','2025-10-26 21:39:19'),(8520,NULL,40,435,'176.216.79.55','2025-10-26 21:39:22'),(8521,NULL,40,437,'176.21
+6.79.55','2025-10-26 21:39:25'),(8522,NULL,40,439,'176.216.79.55','2025-10-26 21:39:29'),(8523,NULL,40,441,'176.216.79.
+55','2025-10-26 21:39:31'),(8524,NULL,40,443,'176.216.79.55','2025-10-26 21:39:40'),(8525,NULL,40,445,'176.216.79.55','
+2025-10-26 21:39:42'),(8526,NULL,40,447,'176.216.79.55','2025-10-26 21:40:02'),(8527,NULL,40,449,'176.216.79.55','2025-
+10-26 21:40:05'),(8528,NULL,40,451,'176.216.79.55','2025-10-26 21:40:09'),(8529,NULL,40,453,'176.216.79.55','2025-10-26
+ 21:40:11'),(8530,NULL,40,455,'176.216.79.55','2025-10-26 21:40:14'),(8531,NULL,40,457,'176.216.79.55','2025-10-26 21:4
+0:16'),(8532,NULL,40,459,'176.216.79.55','2025-10-26 21:40:20'),(8533,NULL,40,461,'176.216.79.55','2025-10-26 21:40:23'
+),(8534,NULL,40,463,'176.216.79.55','2025-10-26 21:40:26'),(8535,NULL,40,465,'176.216.79.55','2025-10-26 21:40:29'),(85
+36,NULL,40,467,'176.216.79.55','2025-10-26 21:40:31'),(8537,NULL,40,469,'176.216.79.55','2025-10-26 21:40:40'),(8538,NU
+LL,40,471,'176.216.79.55','2025-10-26 21:40:48'),(8539,NULL,40,473,'176.216.79.55','2025-10-26 21:41:02'),(8540,NULL,40
+,475,'176.216.79.55','2025-10-26 21:41:35'),(8541,NULL,40,477,'176.216.79.55','2025-10-26 21:42:06'),(8543,NULL,40,479,
+'176.216.79.55','2025-10-26 21:42:18'),(8544,NULL,40,481,'176.216.79.55','2025-10-26 21:42:30'),(8545,NULL,40,483,'176.
+216.79.55','2025-10-26 21:42:43'),(8546,NULL,40,485,'176.216.79.55','2025-10-26 21:42:45'),(8547,NULL,40,487,'176.216.7
+9.55','2025-10-26 21:42:59'),(8548,NULL,40,491,'176.216.79.55','2025-10-26 21:43:15'),(8549,NULL,40,489,'176.216.79.55'
+,'2025-10-26 21:43:17'),(8550,NULL,40,493,'176.216.79.55','2025-10-26 21:43:47'),(8551,NULL,40,495,'176.216.79.55','202
+5-10-26 21:44:01'),(8552,NULL,40,497,'176.216.79.55','2025-10-26 21:44:07'),(8553,NULL,40,499,'176.216.79.55','2025-10-
+26 21:44:22'),(8554,NULL,40,501,'176.216.79.55','2025-10-26 21:44:34'),(8555,NULL,40,503,'176.216.79.55','2025-10-26 21
+:44:48'),(8556,NULL,40,505,'176.216.79.55','2025-10-26 21:44:50'),(8557,NULL,40,507,'176.216.79.55','2025-10-26 21:44:5
+2'),(8558,NULL,40,509,'176.216.79.55','2025-10-26 21:44:54'),(8559,NULL,40,511,'176.216.79.55','2025-10-26 21:45:05'),(
+8560,NULL,40,513,'176.216.79.55','2025-10-26 21:45:08'),(8561,NULL,40,515,'176.216.79.55','2025-10-26 21:45:22'),(8562,
+NULL,40,517,'176.216.79.55','2025-10-26 21:45:24'),(8563,NULL,40,519,'176.216.79.55','2025-10-26 21:45:26'),(8564,NULL,
+40,521,'176.216.79.55','2025-10-26 21:46:06'),(8565,NULL,40,523,'176.216.79.55','2025-10-26 21:46:08'),(8566,NULL,40,52
+5,'176.216.79.55','2025-10-26 21:46:56'),(8567,NULL,40,527,'176.216.79.55','2025-10-26 21:47:29'),(8568,NULL,40,529,'17
+6.216.79.55','2025-10-26 21:47:50'),(8569,NULL,40,531,'176.216.79.55','2025-10-26 21:48:26'),(8570,NULL,40,533,'176.216
+.79.55','2025-10-26 21:48:34'),(8571,NULL,40,535,'176.216.79.55','2025-10-26 21:49:15'),(8572,NULL,40,537,'176.216.79.5
+5','2025-10-26 21:49:27'),(8573,NULL,40,539,'176.216.79.55','2025-10-26 21:49:48'),(8574,NULL,40,541,'176.216.79.55','2
+025-10-26 21:50:05'),(8575,NULL,40,543,'176.216.79.55','2025-10-26 21:50:33'),(8576,NULL,40,545,'176.216.79.55','2025-1
+0-26 21:50:36'),(8577,NULL,40,547,'176.216.79.55','2025-10-26 21:50:40'),(8578,NULL,40,549,'176.216.79.55','2025-10-26 
+21:51:01'),(8579,NULL,40,551,'176.216.79.55','2025-10-26 21:51:03'),(8580,NULL,40,553,'176.216.79.55','2025-10-26 21:53
+:13'),(8581,NULL,40,555,'176.216.79.55','2025-10-26 21:53:22'),(8582,NULL,40,557,'176.216.79.55','2025-10-26 21:53:54')
+,(8583,NULL,40,559,'176.216.79.55','2025-10-26 21:53:57'),(8584,NULL,40,561,'176.216.79.55','2025-10-26 21:54:39'),(858
+5,NULL,40,563,'176.216.79.55','2025-10-26 21:54:57'),(8586,NULL,40,565,'176.216.79.55','2025-10-26 21:55:42'),(8587,NUL
+L,40,567,'176.216.79.55','2025-10-26 21:56:14'),(8588,NULL,40,569,'176.216.79.55','2025-10-26 21:56:19'),(8589,NULL,40,
+571,'176.216.79.55','2025-10-26 21:57:00'),(8590,NULL,40,573,'176.216.79.55','2025-10-26 21:57:52'),(8591,NULL,40,575,'
+176.216.79.55','2025-10-26 21:58:15'),(8592,NULL,40,577,'176.216.79.55','2025-10-26 21:58:27'),(8593,NULL,40,579,'176.2
+16.79.55','2025-10-26 21:59:09'),(8594,NULL,40,581,'176.216.79.55','2025-10-26 21:59:50'),(8595,NULL,40,583,'176.216.79
+.55','2025-10-26 21:59:53'),(8596,NULL,40,585,'176.216.79.55','2025-10-26 22:00:54'),(8597,NULL,40,587,'176.216.79.55',
+'2025-10-26 22:01:06'),(8598,NULL,40,589,'176.216.79.55','2025-10-26 22:01:25'),(8599,NULL,40,591,'176.216.79.55','2025
+-10-26 22:01:26'),(8600,NULL,40,593,'176.216.79.55','2025-10-26 22:02:30'),(8601,NULL,40,595,'176.216.79.55','2025-10-2
+6 22:02:35'),(8602,NULL,40,597,'176.216.79.55','2025-10-26 22:03:03'),(8603,NULL,40,599,'176.216.79.55','2025-10-26 22:
+03:13'),(8604,NULL,40,601,'176.216.79.55','2025-10-26 22:04:18'),(8605,NULL,40,603,'176.216.79.55','2025-10-26 22:05:10
+'),(8606,NULL,40,605,'176.216.79.55','2025-10-26 22:05:48'),(8607,NULL,40,607,'176.216.79.55','2025-10-26 22:06:49'),(8
+608,NULL,40,609,'176.216.79.55','2025-10-26 22:06:51'),(8609,NULL,40,611,'176.216.79.55','2025-10-26 22:08:17'),(8610,N
+ULL,40,613,'176.216.79.55','2025-10-26 22:08:21'),(8611,NULL,40,615,'176.216.79.55','2025-10-26 22:08:55'),(8612,NULL,4
+0,617,'176.216.79.55','2025-10-26 22:08:57'),(8613,NULL,40,619,'176.216.79.55','2025-10-26 22:08:59'),(8614,NULL,40,621
+,'176.216.79.55','2025-10-26 22:09:01'),(8615,NULL,40,623,'176.216.79.55','2025-10-26 22:09:44'),(8616,NULL,40,625,'176
+.216.79.55','2025-10-26 22:10:37'),(8617,NULL,40,627,'176.216.79.55','2025-10-26 22:11:16'),(8618,NULL,40,629,'176.216.
+79.55','2025-10-26 22:11:23'),(8640,NULL,40,631,'176.216.79.55','2025-10-26 22:12:33'),(8641,NULL,40,633,'176.216.79.55
+','2025-10-26 22:12:36'),(8642,NULL,40,635,'176.216.79.55','2025-10-26 22:12:51'),(8643,NULL,40,637,'176.216.79.55','20
+25-10-26 22:12:56'),(8644,NULL,40,639,'176.216.79.55','2025-10-26 22:12:58'),(8645,NULL,40,641,'176.216.79.55','2025-10
+-26 22:13:00'),(8646,NULL,40,643,'176.216.79.55','2025-10-26 22:13:09'),(8647,NULL,40,645,'176.216.79.55','2025-10-26 2
+2:13:11'),(8648,NULL,40,647,'176.216.79.55','2025-10-26 22:13:12'),(8649,NULL,40,649,'176.216.79.55','2025-10-26 22:13:
+13'),(8650,NULL,40,651,'176.216.79.55','2025-10-26 22:13:15'),(8651,NULL,40,653,'176.216.79.55','2025-10-26 22:15:13'),
+(8652,NULL,40,655,'176.216.79.55','2025-10-26 22:15:37'),(8653,NULL,40,657,'176.216.79.55','2025-10-26 22:15:38'),(8654
+,NULL,40,661,'176.216.79.55','2025-10-26 22:16:29'),(8655,NULL,40,659,'176.216.79.55','2025-10-26 22:16:32'),(8656,NULL
+,52,NULL,'149.140.132.159','2025-10-27 04:57:04'),(8659,NULL,40,663,'176.216.79.55','2025-10-27 09:14:50'),(8660,NULL,4
+0,665,'176.216.79.55','2025-10-27 09:15:08'),(8661,NULL,40,667,'176.216.79.55','2025-10-27 09:15:18'),(8662,NULL,40,669
+,'176.216.79.55','2025-10-27 09:15:44'),(8663,NULL,40,671,'176.216.79.55','2025-10-27 09:16:20'),(8664,NULL,40,673,'176
+.216.79.55','2025-10-27 09:17:04'),(8665,NULL,40,675,'176.216.79.55','2025-10-27 09:17:26'),(8666,NULL,40,677,'176.216.
+79.55','2025-10-27 09:17:38'),(8667,NULL,40,679,'176.216.79.55','2025-10-27 09:17:59'),(8668,NULL,40,681,'176.216.79.55
+','2025-10-27 09:18:02'),(8669,NULL,40,683,'176.216.79.55','2025-10-27 09:18:30'),(8670,NULL,40,685,'176.216.79.55','20
+25-10-27 09:18:44'),(8671,NULL,40,687,'176.216.79.55','2025-10-27 09:18:52'),(8672,NULL,40,689,'176.216.79.55','2025-10
+-27 09:18:53'),(8673,NULL,40,691,'176.216.79.55','2025-10-27 09:19:30'),(8674,NULL,40,693,'176.216.79.55','2025-10-27 0
+9:19:36'),(8675,NULL,40,695,'176.216.79.55','2025-10-27 09:19:51'),(8676,NULL,40,697,'176.216.79.55','2025-10-27 09:20:
+00'),(8677,NULL,40,699,'176.216.79.55','2025-10-27 09:21:50'),(8678,NULL,40,701,'176.216.79.55','2025-10-27 09:22:26'),
+(8679,NULL,40,703,'176.216.79.55','2025-10-27 09:22:41'),(8680,NULL,40,705,'176.216.79.55','2025-10-27 09:23:29'),(8681
+,NULL,40,707,'176.216.79.55','2025-10-27 09:23:53'),(8682,NULL,40,709,'176.216.79.55','2025-10-27 09:25:33'),(8683,NULL
+,40,711,'176.216.79.55','2025-10-27 09:25:41'),(8684,NULL,40,713,'176.216.79.55','2025-10-27 09:26:06'),(8685,NULL,40,7
+15,'176.216.79.55','2025-10-27 09:26:09'),(8686,NULL,40,717,'176.216.79.55','2025-10-27 09:26:24'),(8687,NULL,40,719,'1
+76.216.79.55','2025-10-27 09:26:33'),(8688,NULL,40,721,'176.216.79.55','2025-10-27 09:26:39'),(8689,NULL,40,723,'176.21
+6.79.55','2025-10-27 09:26:40'),(8690,NULL,40,725,'176.216.79.55','2025-10-27 09:27:15'),(8691,NULL,40,727,'176.216.79.
+55','2025-10-27 09:27:26'),(8692,NULL,40,729,'176.216.79.55','2025-10-27 09:27:32'),(8693,NULL,40,731,'176.216.79.55','
+2025-10-27 09:27:48'),(8694,NULL,40,733,'176.216.79.55','2025-10-27 09:27:54'),(8695,NULL,40,735,'176.216.79.55','2025-
+10-27 09:28:04'),(8696,NULL,40,737,'176.216.79.55','2025-10-27 09:28:17'),(8697,NULL,40,739,'176.216.79.55','2025-10-27
+ 09:28:22'),(8698,NULL,40,741,'176.216.79.55','2025-10-27 09:29:08'),(8699,NULL,40,743,'176.216.79.55','2025-10-27 09:2
+9:32'),(8700,NULL,40,745,'176.216.79.55','2025-10-27 09:30:03'),(8701,NULL,40,747,'176.216.79.55','2025-10-27 09:30:07'
+),(8702,NULL,40,749,'176.216.79.55','2025-10-27 09:30:09'),(8703,NULL,40,751,'176.216.79.55','2025-10-27 09:30:38'),(87
+04,NULL,40,753,'176.216.79.55','2025-10-27 09:30:57'),(8705,NULL,40,755,'176.216.79.55','2025-10-27 09:31:11'),(8706,NU
+LL,40,757,'176.216.79.55','2025-10-27 09:31:20'),(8707,NULL,40,759,'176.216.79.55','2025-10-27 09:31:29'),(8708,NULL,40
+,761,'176.216.79.55','2025-10-27 09:31:34'),(8709,NULL,40,763,'176.216.79.55','2025-10-27 09:31:45'),(8710,NULL,40,765,
+'176.216.79.55','2025-10-27 09:31:54'),(8711,NULL,40,767,'176.216.79.55','2025-10-27 09:31:55'),(8712,NULL,40,769,'176.
+216.79.55','2025-10-27 09:32:04'),(8713,NULL,40,771,'176.216.79.55','2025-10-27 09:32:07'),(8714,NULL,40,773,'176.216.7
+9.55','2025-10-27 09:32:27'),(8715,NULL,40,775,'176.216.79.55','2025-10-27 09:32:40'),(8716,NULL,40,777,'176.216.79.55'
+,'2025-10-27 09:33:11'),(8717,NULL,40,779,'176.216.79.55','2025-10-27 09:33:16'),(8718,NULL,40,781,'176.216.79.55','202
+5-10-27 09:33:28'),(8719,NULL,40,783,'176.216.79.55','2025-10-27 09:33:46'),(8720,NULL,40,785,'176.216.79.55','2025-10-
+27 09:34:22'),(8721,NULL,40,787,'176.216.79.55','2025-10-27 09:34:24'),(8722,NULL,40,789,'176.216.79.55','2025-10-27 09
+:35:08'),(8723,NULL,40,791,'176.216.79.55','2025-10-27 09:35:11'),(8724,NULL,40,793,'176.216.79.55','2025-10-27 09:35:2
+9'),(8725,NULL,40,795,'176.216.79.55','2025-10-27 09:36:03'),(8726,NULL,40,797,'176.216.79.55','2025-10-27 09:36:15'),(
+8727,NULL,40,799,'176.216.79.55','2025-10-27 09:36:42'),(8728,NULL,40,801,'176.216.79.55','2025-10-27 09:36:58'),(8729,
+NULL,40,805,'176.216.79.55','2025-10-27 09:37:38'),(8730,NULL,40,807,'176.216.79.55','2025-10-27 09:37:56'),(8731,NULL,
+40,809,'176.216.79.55','2025-10-27 09:38:20'),(8732,NULL,40,811,'176.216.79.55','2025-10-27 09:38:55'),(8733,NULL,40,81
+3,'176.216.79.55','2025-10-27 09:39:07'),(8734,NULL,40,815,'176.216.79.55','2025-10-27 09:39:15'),(8735,NULL,40,817,'17
+6.216.79.55','2025-10-27 09:39:24'),(8736,NULL,40,819,'176.216.79.55','2025-10-27 09:39:25'),(8737,NULL,57,735,'88.242.
+211.16','2025-10-27 12:05:42'),(8738,NULL,57,739,'88.242.211.16','2025-10-27 12:05:48'),(8739,NULL,57,741,'88.242.211.1
+6','2025-10-27 12:05:49'),(8740,38,NULL,NULL,'178.247.8.158','2025-10-27 14:19:43'),(8741,2,NULL,NULL,'178.247.8.158','
+2025-10-27 14:19:46'),(8742,38,NULL,NULL,'178.247.8.158','2025-10-27 14:34:48'),(8743,NULL,24,NULL,'178.247.8.158','202
+5-10-27 14:34:51'),(8744,NULL,25,NULL,'178.247.8.158','2025-10-27 14:34:52'),(8745,NULL,16,NULL,'178.247.8.158','2025-1
+0-27 14:34:55'),(8746,NULL,18,NULL,'178.247.8.158','2025-10-27 14:34:55'),(8747,NULL,19,NULL,'178.247.8.158','2025-10-2
+7 14:34:56'),(8748,NULL,20,NULL,'178.247.8.158','2025-10-27 14:34:57'),(8749,NULL,58,NULL,'178.247.8.158','2025-10-27 1
+4:44:04'),(8750,NULL,57,863,'88.242.211.16','2025-10-27 15:14:28'),(8751,NULL,57,865,'88.242.211.16','2025-10-27 15:14:
+29'),(8752,NULL,57,891,'88.242.211.16','2025-10-27 15:16:33'),(8753,NULL,57,893,'88.242.211.16','2025-10-27 15:16:34'),
+(8754,NULL,57,895,'88.242.211.16','2025-10-27 15:16:35'),(8755,38,NULL,NULL,'178.247.8.158','2025-10-27 15:50:47'),(875
+8,NULL,31,489,'85.104.68.184','2025-10-27 18:19:01'),(8759,NULL,31,491,'85.104.68.184','2025-10-27 18:19:03'),(8760,NUL
+L,20,NULL,'95.70.129.106','2025-10-27 19:33:00'),(8761,NULL,21,NULL,'95.70.129.106','2025-10-27 19:33:34'),(8762,NULL,2
+2,NULL,'95.70.129.106','2025-10-27 20:33:28'),(8763,NULL,40,NULL,'176.216.79.83','2025-10-28 09:03:26'),(8764,NULL,40,8
+03,'176.216.79.83','2025-10-28 09:04:20'),(8765,NULL,40,821,'176.216.79.83','2025-10-28 09:04:28'),(8766,NULL,40,823,'1
+76.216.79.83','2025-10-28 09:05:00'),(8767,NULL,40,825,'176.216.79.83','2025-10-28 09:05:26'),(8768,NULL,40,827,'176.21
+6.79.83','2025-10-28 09:05:29'),(8769,NULL,40,829,'176.216.79.83','2025-10-28 09:05:50'),(8770,NULL,40,831,'176.216.79.
+83','2025-10-28 09:05:53'),(8771,NULL,40,833,'176.216.79.83','2025-10-28 09:06:02'),(8772,NULL,40,835,'176.216.79.83','
+2025-10-28 09:06:27'),(8773,NULL,40,837,'176.216.79.83','2025-10-28 09:06:46'),(8774,NULL,40,839,'176.216.79.83','2025-
+10-28 09:06:59'),(8775,NULL,40,841,'176.216.79.83','2025-10-28 09:07:17'),(8776,NULL,40,843,'176.216.79.83','2025-10-28
+ 09:07:23'),(8777,NULL,40,845,'176.216.79.83','2025-10-28 09:07:27'),(8778,NULL,40,847,'176.216.79.83','2025-10-28 09:0
+7:28'),(8779,NULL,40,849,'176.216.79.83','2025-10-28 09:07:30'),(8780,NULL,40,851,'176.216.79.83','2025-10-28 09:07:59'
+),(8781,NULL,40,853,'176.216.79.83','2025-10-28 09:08:14'),(8783,NULL,40,855,'176.216.79.83','2025-10-28 09:08:33'),(87
+84,NULL,40,857,'176.216.79.83','2025-10-28 09:08:40'),(8785,NULL,40,859,'176.216.79.83','2025-10-28 09:08:56'),(8786,NU
+LL,58,NULL,'217.20.255.157','2025-10-28 09:08:57'),(8787,NULL,40,861,'176.216.79.83','2025-10-28 09:09:01'),(8788,NULL,
+40,863,'176.216.79.83','2025-10-28 09:09:04'),(8789,NULL,40,865,'176.216.79.83','2025-10-28 09:09:09'),(8790,NULL,40,86
+7,'176.216.79.83','2025-10-28 09:09:10'),(8791,NULL,40,869,'176.216.79.83','2025-10-28 09:09:11'),(8792,NULL,40,871,'17
+6.216.79.83','2025-10-28 09:09:27'),(8793,NULL,40,873,'176.216.79.83','2025-10-28 09:09:51'),(8794,NULL,40,875,'176.216
+.79.83','2025-10-28 09:10:00'),(8795,NULL,40,877,'176.216.79.83','2025-10-28 09:10:02'),(8796,NULL,40,879,'176.216.79.8
+3','2025-10-28 09:10:26'),(8797,NULL,40,881,'176.216.79.83','2025-10-28 09:10:29'),(8798,NULL,40,883,'176.216.79.83','2
+025-10-28 09:10:34'),(8799,NULL,40,885,'176.216.79.83','2025-10-28 09:10:38'),(8800,NULL,40,887,'176.216.79.83','2025-1
+0-28 09:10:40'),(8801,NULL,40,889,'176.216.79.83','2025-10-28 09:10:52'),(8802,NULL,40,891,'176.216.79.83','2025-10-28 
+09:10:58'),(8803,NULL,40,893,'176.216.79.83','2025-10-28 09:11:12'),(8804,NULL,40,895,'176.216.79.83','2025-10-28 09:11
+:14'),(8805,NULL,40,897,'176.216.79.83','2025-10-28 09:11:49'),(8806,NULL,40,899,'176.216.79.83','2025-10-28 09:11:50')
+,(8807,NULL,40,901,'176.216.79.83','2025-10-28 09:11:56'),(8808,NULL,40,903,'176.216.79.83','2025-10-28 09:12:41'),(880
+9,NULL,40,905,'176.216.79.83','2025-10-28 09:12:44'),(8810,NULL,40,907,'176.216.79.83','2025-10-28 09:12:48'),(8811,NUL
+L,40,909,'176.216.79.83','2025-10-28 09:12:50'),(8812,NULL,40,911,'176.216.79.83','2025-10-28 09:12:52'),(8813,NULL,40,
+913,'176.216.79.83','2025-10-28 09:12:52'),(8814,NULL,40,915,'176.216.79.83','2025-10-28 09:12:55'),(8815,NULL,40,917,'
+176.216.79.83','2025-10-28 09:12:57'),(8816,NULL,40,919,'176.216.79.83','2025-10-28 09:13:00'),(8817,NULL,40,921,'176.2
+16.79.83','2025-10-28 09:13:02'),(8818,NULL,40,923,'176.216.79.83','2025-10-28 09:13:06'),(8819,NULL,40,925,'176.216.79
+.83','2025-10-28 09:13:14'),(8820,NULL,40,927,'176.216.79.83','2025-10-28 09:13:16'),(8821,NULL,40,929,'176.216.79.83',
+'2025-10-28 09:13:18'),(8822,NULL,40,931,'176.216.79.83','2025-10-28 09:13:20'),(8823,NULL,40,933,'176.216.79.83','2025
+-10-28 09:13:22'),(8824,NULL,40,935,'176.216.79.83','2025-10-28 09:13:25'),(8825,NULL,40,937,'176.216.79.83','2025-10-2
+8 09:13:28'),(8826,NULL,40,939,'176.216.79.83','2025-10-28 09:13:29'),(8827,NULL,40,941,'176.216.79.83','2025-10-28 09:
+13:33'),(8828,NULL,40,943,'176.216.79.83','2025-10-28 09:13:34'),(8829,NULL,40,945,'176.216.79.83','2025-10-28 09:13:36
+'),(8830,NULL,40,947,'176.216.79.83','2025-10-28 09:13:37'),(8831,NULL,40,949,'176.216.79.83','2025-10-28 09:13:39'),(8
+832,NULL,40,951,'176.216.79.83','2025-10-28 09:13:40'),(8833,NULL,40,953,'176.216.79.83','2025-10-28 09:13:43'),(8834,N
+ULL,40,955,'176.216.79.83','2025-10-28 09:13:44'),(8835,NULL,40,957,'176.216.79.83','2025-10-28 09:13:47'),(8836,NULL,4
+0,959,'176.216.79.83','2025-10-28 09:13:48'),(8837,NULL,40,961,'176.216.79.83','2025-10-28 09:13:50'),(8838,NULL,40,963
+,'176.216.79.83','2025-10-28 09:13:52'),(8839,NULL,40,965,'176.216.79.83','2025-10-28 09:13:54'),(8840,NULL,40,967,'176
+.216.79.83','2025-10-28 09:14:03'),(8841,NULL,40,969,'176.216.79.83','2025-10-28 09:14:17'),(8842,NULL,40,971,'176.216.
+79.83','2025-10-28 09:14:32'),(8843,NULL,40,973,'176.216.79.83','2025-10-28 09:14:35'),(8844,NULL,40,975,'176.216.79.83
+','2025-10-28 09:14:45'),(8845,NULL,40,977,'176.216.79.83','2025-10-28 09:15:16'),(8846,NULL,40,979,'176.216.79.83','20
+25-10-28 09:15:24'),(8847,NULL,40,981,'176.216.79.83','2025-10-28 09:15:37'),(8848,NULL,40,983,'176.216.79.83','2025-10
+-28 09:15:43'),(8849,NULL,40,985,'176.216.79.83','2025-10-28 09:15:45'),(8850,NULL,40,987,'176.216.79.83','2025-10-28 0
+9:15:46'),(8851,NULL,40,989,'176.216.79.83','2025-10-28 09:15:50'),(8852,NULL,40,991,'176.216.79.83','2025-10-28 09:15:
+52'),(8853,NULL,40,993,'176.216.79.83','2025-10-28 09:16:21'),(8854,NULL,40,995,'176.216.79.83','2025-10-28 09:16:23'),
+(8855,NULL,40,997,'176.216.79.83','2025-10-28 09:16:45'),(8856,NULL,40,999,'176.216.79.83','2025-10-28 09:16:48'),(8857
+,NULL,40,1001,'176.216.79.83','2025-10-28 09:16:56'),(8858,NULL,40,1003,'176.216.79.83','2025-10-28 09:16:57'),(8859,NU
+LL,40,1005,'176.216.79.83','2025-10-28 09:17:00'),(8860,NULL,40,1007,'176.216.79.83','2025-10-28 09:17:09'),(8861,NULL,
+40,1009,'176.216.79.83','2025-10-28 09:17:38'),(8862,NULL,40,1011,'176.216.79.83','2025-10-28 09:17:41'),(8863,NULL,40,
+1013,'176.216.79.83','2025-10-28 09:17:57'),(8864,NULL,40,1015,'176.216.79.83','2025-10-28 09:18:00'),(8865,NULL,40,101
+7,'176.216.79.83','2025-10-28 09:18:10'),(8866,NULL,40,1019,'176.216.79.83','2025-10-28 09:18:12'),(8867,NULL,40,1021,'
+176.216.79.83','2025-10-28 09:18:16'),(8868,NULL,40,1023,'176.216.79.83','2025-10-28 09:18:19'),(8869,NULL,40,1025,'176
+.216.79.83','2025-10-28 09:18:32'),(8870,NULL,40,1027,'176.216.79.83','2025-10-28 09:18:34'),(8871,NULL,40,1029,'176.21
+6.79.83','2025-10-28 09:18:41'),(8872,NULL,40,1031,'176.216.79.83','2025-10-28 09:18:43'),(8873,NULL,40,1033,'176.216.7
+9.83','2025-10-28 09:18:53'),(8874,NULL,40,1035,'176.216.79.83','2025-10-28 09:19:04'),(8875,NULL,40,1037,'176.216.79.8
+3','2025-10-28 09:19:06'),(8876,NULL,40,1039,'176.216.79.83','2025-10-28 09:19:42'),(8877,NULL,40,1041,'176.216.79.83',
+'2025-10-28 09:20:04'),(8878,NULL,26,NULL,'85.107.70.166','2025-10-28 09:53:42'),(8879,NULL,26,1,'85.107.70.166','2025-
+10-28 09:53:59'),(8880,NULL,40,1043,'176.216.79.83','2025-10-28 10:35:19'),(8881,NULL,40,1045,'176.216.79.83','2025-10-
+28 10:35:54'),(8882,NULL,40,1047,'176.216.79.83','2025-10-28 10:35:59'),(8883,NULL,40,1049,'176.216.79.83','2025-10-28 
+10:36:22'),(8884,NULL,40,1051,'176.216.79.83','2025-10-28 10:37:12'),(8885,NULL,40,1053,'176.216.79.83','2025-10-28 10:
+37:22'),(8886,NULL,40,1055,'176.216.79.83','2025-10-28 10:37:26'),(8887,NULL,40,1057,'176.216.79.83','2025-10-28 10:37:
+34'),(8888,NULL,40,1059,'176.216.79.83','2025-10-28 10:37:42'),(8889,NULL,40,1061,'176.216.79.83','2025-10-28 10:38:30'
+),(8890,NULL,40,1063,'176.216.79.83','2025-10-28 10:38:52'),(8891,NULL,40,1065,'176.216.79.83','2025-10-28 10:39:01'),(
+8892,NULL,40,1067,'176.216.79.83','2025-10-28 10:39:06'),(8893,NULL,40,1069,'176.216.79.83','2025-10-28 10:39:18'),(889
+4,NULL,40,1071,'176.216.79.83','2025-10-28 10:39:30'),(8895,NULL,40,1073,'176.216.79.83','2025-10-28 10:40:27'),(8896,N
+ULL,40,1075,'176.216.79.83','2025-10-28 10:40:33'),(8897,NULL,40,1077,'176.216.79.83','2025-10-28 10:40:50'),(8898,NULL
+,40,1079,'176.216.79.83','2025-10-28 10:40:55'),(8899,NULL,40,1081,'176.216.79.83','2025-10-28 10:41:24'),(8900,NULL,40
+,1083,'176.216.79.83','2025-10-28 10:41:42'),(8901,NULL,40,1085,'176.216.79.83','2025-10-28 10:41:50'),(8902,NULL,40,10
+87,'176.216.79.83','2025-10-28 10:42:22'),(8903,NULL,40,1089,'176.216.79.83','2025-10-28 10:42:26'),(8904,NULL,40,1091,
+'176.216.79.83','2025-10-28 10:42:39'),(8905,NULL,40,1093,'176.216.79.83','2025-10-28 10:42:56'),(8906,NULL,40,1095,'17
+6.216.79.83','2025-10-28 10:43:07'),(8907,NULL,40,1099,'176.216.79.83','2025-10-28 10:43:47'),(8908,NULL,40,1097,'176.2
+16.79.83','2025-10-28 10:43:50'),(8909,NULL,40,1101,'176.216.79.83','2025-10-28 10:44:30'),(8910,NULL,40,1103,'176.216.
+79.83','2025-10-28 10:44:32'),(8911,NULL,40,1105,'176.216.79.83','2025-10-28 10:44:46'),(8912,NULL,40,1107,'176.216.79.
+83','2025-10-28 10:45:16'),(8913,NULL,40,1109,'176.216.79.83','2025-10-28 10:45:42'),(8914,NULL,40,1111,'176.216.79.83'
+,'2025-10-28 10:45:54'),(8915,NULL,40,1113,'176.216.79.83','2025-10-28 10:45:56'),(8916,NULL,40,1115,'176.216.79.83','2
+025-10-28 10:46:24'),(8917,NULL,40,1117,'176.216.79.83','2025-10-28 10:46:38'),(8918,NULL,40,1119,'176.216.79.83','2025
+-10-28 10:46:41'),(8919,NULL,40,1121,'176.216.79.83','2025-10-28 10:46:54'),(8920,NULL,40,1123,'176.216.79.83','2025-10
+-28 10:47:01'),(8921,NULL,40,1125,'176.216.79.83','2025-10-28 10:47:04'),(8922,NULL,40,1127,'176.216.79.83','2025-10-28
+ 10:47:09'),(8923,NULL,40,1129,'176.216.79.83','2025-10-28 10:47:23'),(8924,NULL,40,1131,'176.216.79.83','2025-10-28 10
+:47:38'),(8925,NULL,40,1133,'176.216.79.83','2025-10-28 10:47:49'),(8926,NULL,40,1135,'176.216.79.83','2025-10-28 10:48
+:05'),(8927,NULL,40,1137,'176.216.79.83','2025-10-28 10:48:07'),(8928,NULL,40,1139,'176.216.79.83','2025-10-28 10:48:39
+'),(8929,NULL,41,NULL,'176.216.79.83','2025-10-28 10:49:02'),(8930,NULL,41,1,'176.216.79.83','2025-10-28 10:49:12'),(89
+31,NULL,41,3,'176.216.79.83','2025-10-28 10:49:22'),(8932,NULL,41,5,'176.216.79.83','2025-10-28 10:50:14'),(8933,NULL,4
+1,7,'176.216.79.83','2025-10-28 10:50:16'),(8934,NULL,41,9,'176.216.79.83','2025-10-28 10:50:39'),(8935,NULL,41,11,'176
+.216.79.83','2025-10-28 10:51:10'),(8936,NULL,41,13,'176.216.79.83','2025-10-28 10:51:12'),(8937,NULL,41,15,'176.216.79
+.83','2025-10-28 10:51:17'),(8938,NULL,41,17,'176.216.79.83','2025-10-28 10:51:18'),(8939,NULL,41,19,'176.216.79.83','2
+025-10-28 10:51:47'),(8940,NULL,41,21,'176.216.79.83','2025-10-28 10:52:14'),(8941,NULL,41,23,'176.216.79.83','2025-10-
+28 10:52:32'),(8942,NULL,41,25,'176.216.79.83','2025-10-28 10:52:33'),(8943,NULL,41,27,'176.216.79.83','2025-10-28 10:5
+2:53'),(8944,NULL,41,29,'176.216.79.83','2025-10-28 10:53:08'),(8945,NULL,41,31,'176.216.79.83','2025-10-28 10:53:28'),
+(8946,NULL,41,33,'176.216.79.83','2025-10-28 10:53:40'),(8947,NULL,41,35,'176.216.79.83','2025-10-28 10:53:52'),(8948,N
+ULL,41,37,'176.216.79.83','2025-10-28 10:54:16'),(8949,NULL,41,39,'176.216.79.83','2025-10-28 10:54:28'),(8950,NULL,41,
+41,'176.216.79.83','2025-10-28 10:54:39'),(8951,NULL,41,43,'176.216.79.83','2025-10-28 10:55:04'),(8952,NULL,41,45,'176
+.216.79.83','2025-10-28 10:55:11'),(8953,NULL,41,47,'176.216.79.83','2025-10-28 10:55:38'),(8954,NULL,41,49,'176.216.79
+.83','2025-10-28 10:55:45'),(8955,NULL,41,51,'176.216.79.83','2025-10-28 10:56:13'),(8956,NULL,41,53,'176.216.79.83','2
+025-10-28 10:56:16'),(8957,NULL,41,55,'176.216.79.83','2025-10-28 10:56:22'),(8958,NULL,41,57,'176.216.79.83','2025-10-
+28 10:56:40'),(8959,NULL,41,59,'176.216.79.83','2025-10-28 10:57:01'),(8960,NULL,41,61,'176.216.79.83','2025-10-28 10:5
+7:16'),(8961,NULL,41,63,'176.216.79.83','2025-10-28 10:57:49'),(8962,NULL,41,65,'176.216.79.83','2025-10-28 10:58:07'),
+(8963,NULL,41,67,'176.216.79.83','2025-10-28 10:58:10'),(8964,NULL,41,69,'176.216.79.83','2025-10-28 10:58:40'),(8965,N
+ULL,41,71,'176.216.79.83','2025-10-28 10:58:54'),(8966,NULL,41,73,'176.216.79.83','2025-10-28 10:59:15'),(8967,NULL,41,
+75,'176.216.79.83','2025-10-28 10:59:53'),(8968,NULL,41,77,'176.216.79.83','2025-10-28 11:00:17'),(8969,NULL,41,79,'176
+.216.79.83','2025-10-28 11:00:23'),(8970,NULL,41,81,'176.216.79.83','2025-10-28 11:00:52'),(8971,NULL,41,83,'176.216.79
+.83','2025-10-28 11:01:03'),(8972,NULL,41,85,'176.216.79.83','2025-10-28 11:01:28'),(8973,NULL,41,87,'176.216.79.83','2
+025-10-28 11:01:39'),(8974,NULL,41,89,'176.216.79.83','2025-10-28 11:01:48'),(8975,NULL,41,91,'176.216.79.83','2025-10-
+28 11:02:12'),(8976,NULL,41,93,'176.216.79.83','2025-10-28 11:02:30'),(8977,NULL,41,95,'176.216.79.83','2025-10-28 11:0
+2:34'),(8978,NULL,41,97,'176.216.79.83','2025-10-28 11:02:47'),(8979,NULL,41,99,'176.216.79.83','2025-10-28 11:03:02'),
+(8980,NULL,41,101,'176.216.79.83','2025-10-28 11:03:10'),(8981,NULL,41,103,'176.216.79.83','2025-10-28 11:03:23'),(8982
+,NULL,41,105,'176.216.79.83','2025-10-28 11:03:25'),(8983,NULL,41,107,'176.216.79.83','2025-10-28 11:03:51'),(8984,NULL
+,41,109,'176.216.79.83','2025-10-28 11:04:10'),(8985,NULL,41,111,'176.216.79.83','2025-10-28 11:04:17'),(8986,NULL,41,1
+15,'176.216.79.83','2025-10-28 11:05:25'),(8987,NULL,41,117,'176.216.79.83','2025-10-28 11:05:29'),(8988,NULL,41,119,'1
+76.216.79.83','2025-10-28 11:05:31'),(8989,NULL,41,123,'176.216.79.83','2025-10-28 11:06:39'),(8990,NULL,41,121,'176.21
+6.79.83','2025-10-28 11:06:40'),(8991,NULL,41,125,'176.216.79.83','2025-10-28 11:07:11'),(8992,NULL,41,127,'176.216.79.
+83','2025-10-28 11:07:44'),(8993,NULL,41,129,'176.216.79.83','2025-10-28 11:07:45'),(8994,NULL,41,131,'176.216.79.83','
+2025-10-28 11:08:13'),(8995,NULL,41,133,'176.216.79.83','2025-10-28 11:08:19'),(8996,NULL,41,135,'176.216.79.83','2025-
+10-28 11:09:07'),(8997,NULL,41,137,'176.216.79.83','2025-10-28 11:09:12'),(8998,NULL,41,139,'176.216.79.83','2025-10-28
+ 11:09:31'),(8999,NULL,41,141,'176.216.79.83','2025-10-28 11:10:33'),(9000,NULL,41,143,'176.216.79.83','2025-10-28 11:1
+0:54'),(9001,NULL,41,145,'176.216.79.83','2025-10-28 11:10:57'),(9002,NULL,41,147,'176.216.79.83','2025-10-28 11:11:32'
+),(9003,NULL,41,149,'176.216.79.83','2025-10-28 11:11:56'),(9004,NULL,41,151,'176.216.79.83','2025-10-28 11:12:03'),(90
+05,NULL,41,153,'176.216.79.83','2025-10-28 11:12:28'),(9006,NULL,41,155,'176.216.79.83','2025-10-28 11:12:30'),(9007,NU
+LL,41,157,'176.216.79.83','2025-10-28 11:13:19'),(9008,NULL,41,159,'176.216.79.83','2025-10-28 11:13:43'),(9009,NULL,41
+,161,'176.216.79.83','2025-10-28 11:14:10'),(9010,NULL,41,163,'176.216.79.83','2025-10-28 11:14:44'),(9011,NULL,41,165,
+'176.216.79.83','2025-10-28 11:15:29'),(9012,NULL,41,167,'176.216.79.83','2025-10-28 11:15:41'),(9013,NULL,41,169,'176.
+216.79.83','2025-10-28 11:15:48'),(9014,NULL,41,171,'176.216.79.83','2025-10-28 11:16:08'),(9015,NULL,41,173,'176.216.7
+9.83','2025-10-28 11:16:46'),(9017,NULL,41,175,'176.216.79.83','2025-10-28 11:16:53'),(9018,NULL,41,177,'176.216.79.83'
+,'2025-10-28 11:17:21'),(9019,NULL,41,179,'176.216.79.83','2025-10-28 11:17:48'),(9020,NULL,41,181,'176.216.79.83','202
+5-10-28 11:17:51'),(9021,NULL,41,183,'176.216.79.83','2025-10-28 11:17:53'),(9022,NULL,41,185,'176.216.79.83','2025-10-
+28 11:18:01'),(9023,NULL,41,187,'176.216.79.83','2025-10-28 11:18:36'),(9024,NULL,41,189,'176.216.79.83','2025-10-28 11
+:19:19'),(9025,NULL,41,191,'176.216.79.83','2025-10-28 11:19:24'),(9026,NULL,41,193,'176.216.79.83','2025-10-28 11:20:0
+4'),(9027,NULL,41,195,'176.216.79.83','2025-10-28 11:20:28'),(9028,NULL,41,197,'176.216.79.83','2025-10-28 11:20:50'),(
+9029,NULL,41,199,'176.216.79.83','2025-10-28 11:20:51'),(9030,NULL,41,201,'176.216.79.83','2025-10-28 11:20:53'),(9031,
+NULL,41,203,'176.216.79.83','2025-10-28 11:21:02'),(9032,NULL,41,205,'176.216.79.83','2025-10-28 11:21:04'),(9033,NULL,
+41,207,'176.216.79.83','2025-10-28 11:21:11'),(9034,NULL,41,209,'176.216.79.83','2025-10-28 11:21:14'),(9035,NULL,41,21
+1,'176.216.79.83','2025-10-28 11:21:35'),(9036,NULL,41,213,'176.216.79.83','2025-10-28 11:22:00'),(9037,NULL,41,215,'17
+6.216.79.83','2025-10-28 11:22:36'),(9038,NULL,41,217,'176.216.79.83','2025-10-28 11:22:49'),(9039,NULL,41,219,'176.216
+.79.83','2025-10-28 11:22:51'),(9040,NULL,41,221,'176.216.79.83','2025-10-28 11:23:46'),(9041,NULL,41,223,'176.216.79.8
+3','2025-10-28 11:24:08'),(9042,NULL,41,225,'176.216.79.83','2025-10-28 11:24:12'),(9043,NULL,41,227,'176.216.79.83','2
+025-10-28 11:25:04'),(9044,NULL,41,229,'176.216.79.83','2025-10-28 11:25:08'),(9045,NULL,41,231,'176.216.79.83','2025-1
+0-28 11:25:17'),(9046,NULL,41,233,'176.216.79.83','2025-10-28 11:26:03'),(9047,NULL,41,235,'176.216.79.83','2025-10-28 
+11:26:06'),(9048,NULL,41,237,'176.216.79.83','2025-10-28 11:26:14'),(9049,NULL,41,239,'176.216.79.83','2025-10-28 11:26
+:18'),(9050,NULL,41,241,'176.216.79.83','2025-10-28 11:28:00'),(9051,NULL,41,243,'176.216.79.83','2025-10-28 11:28:02')
+,(9052,NULL,41,245,'176.216.79.83','2025-10-28 11:28:03'),(9053,NULL,41,247,'176.216.79.83','2025-10-28 11:28:13'),(905
+4,NULL,41,249,'176.216.79.83','2025-10-28 11:28:17'),(9055,NULL,41,251,'176.216.79.83','2025-10-28 11:28:32'),(9056,NUL
+L,41,253,'176.216.79.83','2025-10-28 11:28:35'),(9057,NULL,41,255,'176.216.79.83','2025-10-28 11:28:37'),(9058,NULL,41,
+257,'176.216.79.83','2025-10-28 11:28:40'),(9059,NULL,41,259,'176.216.79.83','2025-10-28 11:28:41'),(9060,NULL,41,261,'
+176.216.79.83','2025-10-28 11:28:50'),(9061,NULL,41,263,'176.216.79.83','2025-10-28 11:29:03'),(9062,NULL,41,265,'176.2
+16.79.83','2025-10-28 11:29:19'),(9063,NULL,41,267,'176.216.79.83','2025-10-28 11:29:48'),(9064,NULL,41,269,'46.155.94.
+67','2025-10-28 12:34:33'),(9065,NULL,41,271,'46.155.94.67','2025-10-28 12:35:18'),(9066,NULL,41,273,'46.155.94.67','20
+25-10-28 12:35:25'),(9067,NULL,41,275,'46.155.94.67','2025-10-28 12:35:32'),(9068,NULL,41,277,'46.155.94.67','2025-10-2
+8 12:35:36'),(9069,NULL,41,279,'46.155.94.67','2025-10-28 12:35:44'),(9070,NULL,41,281,'46.155.94.67','2025-10-28 12:36
+:41'),(9071,NULL,41,283,'46.155.94.67','2025-10-28 12:38:56'),(9072,NULL,41,285,'46.155.94.67','2025-10-28 12:39:11'),(
+9073,NULL,41,287,'46.155.94.67','2025-10-28 12:39:58'),(9074,NULL,22,NULL,'78.182.135.116','2025-10-28 12:42:24'),(9075
+,NULL,41,289,'46.155.94.67','2025-10-28 12:43:13'),(9076,NULL,41,291,'46.155.94.67','2025-10-28 12:43:17'),(9077,NULL,4
+1,293,'46.155.94.67','2025-10-28 12:43:18'),(9078,NULL,41,295,'46.155.94.67','2025-10-28 12:43:20'),(9079,NULL,41,297,'
+46.155.94.67','2025-10-28 12:43:23'),(9080,NULL,41,299,'46.155.94.67','2025-10-28 12:44:54'),(9081,NULL,41,301,'46.155.
+94.67','2025-10-28 12:45:22'),(9082,NULL,41,303,'46.155.94.67','2025-10-28 12:46:03'),(9083,NULL,41,305,'46.155.94.67',
+'2025-10-28 12:46:45'),(9084,NULL,41,307,'46.155.94.67','2025-10-28 12:47:05'),(9085,NULL,41,309,'46.155.94.67','2025-1
+0-28 12:47:16'),(9086,NULL,41,311,'46.155.94.67','2025-10-28 12:47:33'),(9087,NULL,41,313,'46.155.94.67','2025-10-28 12
+:47:38'),(9088,NULL,41,315,'46.155.94.67','2025-10-28 12:47:45'),(9089,NULL,41,317,'46.155.94.67','2025-10-28 12:47:49'
+),(9090,NULL,41,319,'46.155.94.67','2025-10-28 12:47:55'),(9091,NULL,41,321,'46.155.94.67','2025-10-28 12:47:57'),(9092
+,NULL,41,323,'46.155.94.67','2025-10-28 12:47:59'),(9093,NULL,41,325,'46.155.94.67','2025-10-28 12:48:28'),(9094,NULL,4
+1,327,'46.155.94.67','2025-10-28 12:48:42'),(9095,NULL,41,329,'46.155.94.67','2025-10-28 12:49:10'),(9096,NULL,41,331,'
+46.155.94.67','2025-10-28 12:49:19'),(9097,NULL,41,333,'46.155.94.67','2025-10-28 12:49:35'),(9098,NULL,41,335,'46.155.
+94.67','2025-10-28 12:50:06'),(9099,NULL,41,337,'46.155.94.67','2025-10-28 12:50:36'),(9100,NULL,41,339,'46.155.94.67',
+'2025-10-28 12:51:18'),(9101,NULL,41,341,'46.155.94.67','2025-10-28 12:51:27'),(9102,NULL,41,343,'46.155.94.67','2025-1
+0-28 12:51:49'),(9103,NULL,41,345,'46.155.94.67','2025-10-28 12:52:08'),(9104,NULL,41,347,'46.155.94.67','2025-10-28 12
+:52:19'),(9105,NULL,41,349,'46.155.94.67','2025-10-28 12:54:39'),(9106,NULL,41,351,'46.155.94.67','2025-10-28 12:55:30'
+),(9107,NULL,41,353,'46.155.94.67','2025-10-28 12:55:51'),(9108,NULL,41,355,'46.155.94.67','2025-10-28 12:56:03'),(9109
+,NULL,41,357,'46.155.94.67','2025-10-28 12:56:13'),(9110,NULL,41,359,'46.155.94.67','2025-10-28 12:56:41'),(9111,NULL,4
+1,361,'46.155.94.67','2025-10-28 12:57:28'),(9112,NULL,41,363,'46.155.94.67','2025-10-28 12:57:52'),(9113,NULL,41,365,'
+46.155.94.67','2025-10-28 12:58:23'),(9114,NULL,41,367,'46.155.94.67','2025-10-28 12:58:50'),(9115,NULL,41,369,'46.155.
+94.67','2025-10-28 12:59:18'),(9116,NULL,41,371,'46.155.94.67','2025-10-28 12:59:56'),(9117,NULL,41,373,'46.155.94.67',
+'2025-10-28 13:00:28'),(9118,NULL,41,375,'46.155.94.67','2025-10-28 13:00:33'),(9119,NULL,41,377,'46.155.94.67','2025-1
+0-28 13:00:40'),(9120,NULL,41,379,'46.155.94.67','2025-10-28 13:00:54'),(9121,NULL,41,381,'46.155.94.67','2025-10-28 13
+:01:14'),(9122,NULL,41,383,'46.155.94.67','2025-10-28 13:01:28'),(9123,NULL,41,385,'46.155.94.67','2025-10-28 13:01:51'
+),(9124,NULL,41,387,'46.155.94.67','2025-10-28 13:02:13'),(9125,NULL,41,389,'46.155.94.67','2025-10-28 13:02:40'),(9126
+,NULL,41,391,'46.155.94.67','2025-10-28 13:02:43'),(9127,NULL,41,393,'46.155.94.67','2025-10-28 13:31:27'),(9128,NULL,4
+1,395,'46.155.94.67','2025-10-28 13:31:30'),(9129,NULL,41,397,'46.155.94.67','2025-10-28 13:41:02'),(9130,NULL,41,399,'
+46.155.94.67','2025-10-28 13:41:13'),(9131,NULL,41,401,'46.155.94.67','2025-10-28 13:41:34'),(9132,NULL,41,403,'46.155.
+94.67','2025-10-28 13:41:42'),(9133,NULL,41,405,'46.155.94.67','2025-10-28 13:41:55'),(9134,NULL,41,407,'46.155.94.67',
+'2025-10-28 13:43:15'),(9135,NULL,41,409,'46.155.94.67','2025-10-28 13:43:18'),(9136,NULL,41,411,'46.155.94.67','2025-1
+0-28 13:43:46'),(9137,NULL,41,413,'46.155.94.67','2025-10-28 13:44:16'),(9138,NULL,41,415,'46.155.94.67','2025-10-28 13
+:44:39'),(9139,NULL,41,417,'46.155.94.67','2025-10-28 13:45:05'),(9140,NULL,41,419,'46.155.94.67','2025-10-28 13:45:12'
+),(9141,NULL,41,421,'46.155.94.67','2025-10-28 13:45:31'),(9142,NULL,41,423,'46.155.94.67','2025-10-28 13:45:35'),(9143
+,NULL,41,425,'46.155.94.67','2025-10-28 13:45:36'),(9144,NULL,41,427,'46.155.94.67','2025-10-28 13:45:38'),(9145,NULL,4
+1,429,'46.155.94.67','2025-10-28 13:45:51'),(9146,NULL,41,431,'46.155.94.67','2025-10-28 13:46:06'),(9147,NULL,41,433,'
+46.155.94.67','2025-10-28 13:46:08'),(9148,NULL,23,NULL,'78.182.135.116','2025-10-28 14:50:06'),(9149,NULL,32,199,'188.
+57.91.30','2025-10-28 18:05:31'),(9150,NULL,32,197,'188.57.91.30','2025-10-28 18:05:32'),(9151,NULL,32,359,'188.57.91.3
+0','2025-10-28 18:13:12'),(9152,38,NULL,NULL,'2.58.42.162','2025-10-28 18:49:50'),(9153,NULL,41,NULL,'46.155.94.184','2
+025-10-28 20:27:12'),(9154,NULL,41,435,'46.155.94.184','2025-10-28 20:27:38'),(9155,NULL,41,437,'46.155.94.184','2025-1
+0-28 20:27:44'),(9156,NULL,41,439,'46.155.94.184','2025-10-28 20:27:47'),(9157,NULL,41,441,'46.155.94.184','2025-10-28 
+20:27:55'),(9158,NULL,41,443,'46.155.94.184','2025-10-28 20:27:58'),(9159,NULL,41,445,'46.155.94.184','2025-10-28 20:28
+:14'),(9160,NULL,41,447,'46.155.94.184','2025-10-28 20:28:30'),(9161,NULL,41,449,'46.155.94.184','2025-10-28 20:28:34')
+,(9162,NULL,41,451,'46.155.94.184','2025-10-28 20:29:09'),(9163,NULL,41,453,'46.155.94.184','2025-10-28 20:29:29'),(916
+4,NULL,41,455,'46.155.94.184','2025-10-28 20:30:36'),(9165,NULL,41,457,'46.155.94.184','2025-10-28 20:30:45'),(9166,NUL
+L,41,459,'46.155.94.184','2025-10-28 20:31:08'),(9167,NULL,41,461,'46.155.94.184','2025-10-28 20:31:19'),(9168,NULL,41,
+463,'46.155.94.184','2025-10-28 20:31:24'),(9169,NULL,41,465,'46.155.94.184','2025-10-28 20:31:29'),(9170,NULL,41,467,'
+46.155.94.184','2025-10-28 20:31:32'),(9171,NULL,41,469,'46.155.94.184','2025-10-28 20:31:35'),(9172,NULL,41,471,'46.15
+5.94.184','2025-10-28 20:31:37'),(9173,NULL,41,473,'46.155.94.184','2025-10-28 20:31:41'),(9174,NULL,41,475,'46.155.94.
+184','2025-10-28 20:31:43'),(9175,NULL,41,477,'46.155.94.184','2025-10-28 20:31:46'),(9176,NULL,41,479,'46.155.94.184',
+'2025-10-28 20:31:48'),(9177,NULL,41,481,'46.155.94.184','2025-10-28 20:31:53'),(9178,NULL,41,483,'46.155.94.184','2025
+-10-28 20:31:57'),(9179,NULL,41,485,'46.155.94.184','2025-10-28 20:32:00'),(9180,NULL,41,487,'46.155.94.184','2025-10-2
+8 20:32:03'),(9181,NULL,41,489,'46.155.94.184','2025-10-28 20:32:05'),(9182,NULL,41,491,'46.155.94.184','2025-10-28 20:
+32:08'),(9183,NULL,41,493,'46.155.94.184','2025-10-28 20:32:09'),(9184,NULL,41,495,'46.155.94.184','2025-10-28 20:32:12
+'),(9185,NULL,41,497,'46.155.94.184','2025-10-28 20:32:14'),(9186,NULL,41,499,'46.155.94.184','2025-10-28 20:32:16'),(9
+187,NULL,41,501,'46.155.94.184','2025-10-28 20:32:19'),(9188,NULL,41,503,'46.155.94.184','2025-10-28 20:32:22'),(9189,N
+ULL,41,505,'46.155.94.184','2025-10-28 20:32:25'),(9190,NULL,41,507,'46.155.94.184','2025-10-28 20:32:28'),(9191,NULL,4
+1,509,'46.155.94.184','2025-10-28 20:32:29'),(9192,NULL,41,511,'46.155.94.184','2025-10-28 20:32:32'),(9193,NULL,41,513
+,'46.155.94.184','2025-10-28 20:32:33'),(9194,NULL,41,515,'46.155.94.184','2025-10-28 20:32:38'),(9195,NULL,41,517,'46.
+155.94.184','2025-10-28 20:32:51'),(9196,NULL,41,519,'46.155.94.184','2025-10-28 20:32:57'),(9197,NULL,41,521,'46.155.9
+4.184','2025-10-28 20:33:04'),(9198,NULL,41,523,'46.155.94.184','2025-10-28 20:33:07'),(9199,NULL,41,525,'46.155.94.184
+','2025-10-28 20:33:10'),(9200,NULL,41,527,'46.155.94.184','2025-10-28 20:33:31'),(9201,NULL,41,529,'46.155.94.184','20
+25-10-28 20:34:18'),(9202,NULL,41,531,'46.155.94.184','2025-10-28 20:34:27'),(9203,NULL,41,533,'46.155.94.184','2025-10
+-28 20:34:48'),(9204,NULL,41,535,'46.155.94.184','2025-10-28 20:34:55'),(9205,NULL,41,537,'46.155.94.184','2025-10-28 2
+0:35:19'),(9206,NULL,41,539,'46.155.94.184','2025-10-28 20:36:13'),(9207,NULL,41,541,'46.155.94.184','2025-10-28 20:36:
+20'),(9208,NULL,41,543,'46.155.94.184','2025-10-28 20:36:32'),(9209,NULL,41,545,'46.155.94.184','2025-10-28 20:36:51'),
+(9210,NULL,41,547,'46.155.94.184','2025-10-28 20:36:54'),(9211,NULL,41,549,'46.155.94.184','2025-10-28 20:36:57'),(9212
+,NULL,41,551,'46.155.94.184','2025-10-28 20:37:07'),(9213,NULL,41,553,'46.155.94.184','2025-10-28 20:37:15'),(9214,NULL
+,41,555,'46.155.94.184','2025-10-28 20:37:17'),(9215,NULL,41,557,'46.155.94.184','2025-10-28 20:37:20'),(9216,NULL,41,5
+59,'46.155.94.184','2025-10-28 20:37:25'),(9217,NULL,41,561,'46.155.94.184','2025-10-28 20:37:39'),(9218,NULL,41,563,'4
+6.155.94.184','2025-10-28 20:37:42'),(9219,NULL,41,565,'46.155.94.184','2025-10-28 20:37:45'),(9220,NULL,41,567,'46.155
+.94.184','2025-10-28 20:37:51'),(9221,NULL,41,569,'46.155.94.184','2025-10-28 20:38:06'),(9222,NULL,41,571,'46.155.94.1
+84','2025-10-28 20:38:12'),(9223,NULL,41,573,'46.155.94.184','2025-10-28 20:38:17'),(9224,NULL,41,575,'46.155.94.184','
+2025-10-28 20:38:24'),(9225,NULL,41,577,'46.155.94.184','2025-10-28 20:38:36'),(9226,NULL,41,579,'46.155.94.184','2025-
+10-28 20:38:43'),(9227,NULL,41,581,'46.155.94.184','2025-10-28 20:38:47'),(9228,NULL,41,583,'46.155.94.184','2025-10-28
+ 20:38:51'),(9229,NULL,41,585,'46.155.94.184','2025-10-28 20:38:55'),(9230,NULL,41,587,'46.155.94.184','2025-10-28 20:3
+8:58'),(9231,NULL,41,589,'46.155.94.184','2025-10-28 20:39:22'),(9232,NULL,41,591,'46.155.94.184','2025-10-28 20:39:25'
+),(9233,NULL,41,593,'46.155.94.184','2025-10-28 20:39:28'),(9234,NULL,41,595,'46.155.94.184','2025-10-28 20:39:37'),(92
+35,NULL,41,597,'46.155.94.184','2025-10-28 20:39:48'),(9236,NULL,41,599,'46.155.94.184','2025-10-28 20:39:56'),(9237,NU
+LL,41,601,'46.155.94.184','2025-10-28 20:40:20'),(9238,NULL,41,603,'46.155.94.184','2025-10-28 20:40:29'),(9239,NULL,41
+,605,'46.155.94.184','2025-10-28 20:40:32'),(9240,NULL,41,607,'46.155.94.184','2025-10-28 20:40:55'),(9241,NULL,41,609,
+'46.155.94.184','2025-10-28 20:41:51'),(9242,NULL,41,611,'46.155.94.184','2025-10-28 20:41:55'),(9243,NULL,41,613,'46.1
+55.94.184','2025-10-28 20:42:02'),(9244,NULL,41,615,'46.155.94.184','2025-10-28 20:42:11'),(9245,NULL,41,617,'46.155.94
+.184','2025-10-28 20:42:17'),(9246,NULL,41,621,'46.155.94.184','2025-10-28 20:42:28'),(9247,NULL,41,619,'46.155.94.184'
+,'2025-10-28 20:42:30'),(9248,NULL,41,623,'46.155.94.184','2025-10-28 20:42:31'),(9249,NULL,41,625,'46.155.94.184','202
+5-10-28 20:42:46'),(9250,NULL,41,627,'46.155.94.184','2025-10-28 20:42:51'),(9251,NULL,41,629,'46.155.94.184','2025-10-
+28 20:43:00'),(9252,NULL,41,631,'46.155.94.184','2025-10-28 20:43:11'),(9253,NULL,41,633,'46.155.94.184','2025-10-28 20
+:43:23'),(9254,NULL,41,635,'46.155.94.184','2025-10-28 20:43:28'),(9255,NULL,41,637,'46.155.94.184','2025-10-28 20:43:3
+6'),(9256,NULL,41,639,'46.155.94.184','2025-10-28 20:43:40'),(9257,NULL,41,641,'46.155.94.184','2025-10-28 20:43:50'),(
+9258,NULL,41,643,'46.155.94.184','2025-10-28 20:43:52'),(9259,NULL,41,645,'46.155.94.184','2025-10-28 20:44:00'),(9260,
+NULL,41,647,'46.155.94.184','2025-10-28 20:44:08'),(9261,NULL,41,649,'46.155.94.184','2025-10-28 20:44:17'),(9262,NULL,
+41,653,'46.155.94.184','2025-10-28 20:44:27'),(9263,NULL,41,651,'46.155.94.184','2025-10-28 20:44:29'),(9264,NULL,41,65
+5,'46.155.94.184','2025-10-28 20:44:34'),(9265,NULL,41,657,'46.155.94.184','2025-10-28 20:44:44'),(9266,NULL,41,659,'46
+.155.94.184','2025-10-28 20:44:49'),(9267,NULL,41,661,'46.155.94.184','2025-10-28 20:44:56'),(9268,NULL,41,663,'46.155.
+94.184','2025-10-28 20:45:20'),(9269,NULL,41,665,'46.155.94.184','2025-10-28 20:46:15'),(9270,NULL,41,667,'46.155.94.18
+4','2025-10-28 20:46:56'),(9271,NULL,41,669,'46.155.94.184','2025-10-28 20:47:02'),(9272,NULL,41,671,'46.155.94.184','2
+025-10-28 20:47:27'),(9273,NULL,41,673,'46.155.94.184','2025-10-28 20:47:50'),(9274,NULL,41,675,'46.155.94.184','2025-1
+0-28 20:47:52'),(9275,NULL,41,677,'46.155.94.184','2025-10-28 20:48:13'),(9276,NULL,41,679,'46.155.94.184','2025-10-28 
+20:48:58'),(9277,NULL,41,681,'46.155.94.184','2025-10-28 20:49:16'),(9278,NULL,41,683,'46.155.94.184','2025-10-28 20:49
+:30'),(9279,NULL,41,685,'46.155.94.184','2025-10-28 20:50:05'),(9280,NULL,41,687,'46.155.94.184','2025-10-28 20:50:21')
+,(9281,NULL,41,689,'46.155.94.184','2025-10-28 20:50:30'),(9282,NULL,41,691,'46.155.94.184','2025-10-28 20:50:35'),(928
+3,NULL,41,693,'46.155.94.184','2025-10-28 20:50:38'),(9284,NULL,41,695,'46.155.94.184','2025-10-28 20:50:45'),(9285,NUL
+L,41,697,'46.155.94.184','2025-10-28 20:50:55'),(9286,NULL,41,699,'46.155.94.184','2025-10-28 20:50:58'),(9287,NULL,41,
+701,'46.155.94.184','2025-10-28 20:51:18'),(9288,NULL,41,703,'46.155.94.184','2025-10-28 20:51:23'),(9289,NULL,41,705,'
+46.155.94.184','2025-10-28 20:51:27'),(9290,NULL,41,707,'46.155.94.184','2025-10-28 20:51:44'),(9291,NULL,41,709,'46.15
+5.94.184','2025-10-28 20:51:46'),(9292,NULL,41,711,'46.155.94.184','2025-10-28 20:51:53'),(9293,NULL,41,713,'46.155.94.
+184','2025-10-28 20:52:02'),(9294,NULL,41,715,'46.155.94.184','2025-10-28 20:52:44'),(9295,NULL,41,717,'46.155.94.184',
+'2025-10-28 20:52:48'),(9296,NULL,41,719,'46.155.94.184','2025-10-28 20:52:58'),(9297,NULL,41,721,'46.155.94.184','2025
+-10-28 20:53:13'),(9298,NULL,41,723,'46.155.94.184','2025-10-28 20:53:17'),(9299,NULL,41,725,'46.155.94.184','2025-10-2
+8 20:53:25'),(9300,NULL,41,727,'46.155.94.184','2025-10-28 20:53:28'),(9301,NULL,41,729,'46.155.94.184','2025-10-28 20:
+53:38'),(9302,NULL,41,731,'46.155.94.184','2025-10-28 20:54:16'),(9303,NULL,41,733,'46.155.94.184','2025-10-28 20:54:30
+'),(9304,NULL,41,735,'46.155.94.184','2025-10-28 20:54:32'),(9305,NULL,41,737,'46.155.94.184','2025-10-28 20:54:37'),(9
+306,NULL,41,739,'46.155.94.184','2025-10-28 21:01:16'),(9307,NULL,41,741,'46.155.94.184','2025-10-28 21:01:20'),(9308,N
+ULL,41,743,'46.155.94.184','2025-10-28 21:01:27'),(9309,NULL,41,745,'46.155.94.184','2025-10-28 21:01:39'),(9310,NULL,4
+1,747,'46.155.94.184','2025-10-28 21:01:45'),(9311,NULL,41,749,'46.155.94.184','2025-10-28 21:01:50'),(9312,NULL,41,751
+,'46.155.94.184','2025-10-28 21:02:03'),(9313,NULL,41,753,'46.155.94.184','2025-10-28 21:02:14'),(9314,NULL,41,755,'46.
+155.94.184','2025-10-28 21:02:31'),(9315,NULL,41,757,'46.155.94.184','2025-10-28 21:02:36'),(9316,NULL,41,759,'46.155.9
+4.184','2025-10-28 21:02:50'),(9317,NULL,41,761,'46.155.94.184','2025-10-28 21:03:02'),(9318,NULL,41,763,'46.155.94.184
+','2025-10-28 21:03:05'),(9319,NULL,41,765,'46.155.94.184','2025-10-28 21:03:18'),(9320,NULL,41,767,'46.155.94.184','20
+25-10-28 21:03:22'),(9321,NULL,41,769,'46.155.94.184','2025-10-28 21:03:24'),(9322,NULL,41,771,'46.155.94.184','2025-10
+-28 21:03:27'),(9323,NULL,41,773,'46.155.94.184','2025-10-28 21:03:45'),(9324,NULL,41,775,'46.155.94.184','2025-10-28 2
+1:03:59'),(9325,NULL,41,777,'46.155.94.184','2025-10-28 21:04:02'),(9326,NULL,41,779,'46.155.94.184','2025-10-28 21:04:
+12'),(9327,NULL,41,781,'46.155.94.184','2025-10-28 21:04:15'),(9328,NULL,41,783,'46.155.94.184','2025-10-28 21:04:26'),
+(9329,NULL,41,785,'46.155.94.184','2025-10-28 21:04:33'),(9330,NULL,41,787,'46.155.94.184','2025-10-28 21:04:37'),(9331
+,NULL,41,789,'46.155.94.184','2025-10-28 21:04:42'),(9332,NULL,41,791,'46.155.94.184','2025-10-28 21:04:46'),(9333,NULL
+,41,793,'46.155.94.184','2025-10-28 21:04:54'),(9334,NULL,41,795,'46.155.94.184','2025-10-28 21:05:21'),(9335,NULL,41,7
+97,'46.155.94.184','2025-10-28 21:05:26'),(9336,NULL,41,799,'46.155.94.184','2025-10-28 21:05:31'),(9337,NULL,41,801,'4
+6.155.94.184','2025-10-28 21:05:47'),(9338,NULL,41,803,'46.155.94.184','2025-10-28 21:05:52'),(9339,NULL,41,805,'46.155
+.94.184','2025-10-28 21:05:56'),(9340,NULL,41,807,'46.155.94.184','2025-10-28 21:06:08'),(9341,NULL,41,809,'46.155.94.1
+84','2025-10-28 21:06:28'),(9342,NULL,41,811,'46.155.94.184','2025-10-28 21:06:32'),(9343,NULL,41,813,'46.155.94.184','
+2025-10-28 21:06:59'),(9344,NULL,41,815,'46.155.94.184','2025-10-28 21:07:18'),(9345,NULL,41,817,'46.155.94.184','2025-
+10-28 21:07:40'),(9346,NULL,41,819,'46.155.94.184','2025-10-28 21:07:45'),(9347,NULL,41,821,'46.155.94.184','2025-10-28
+ 21:07:56'),(9348,NULL,41,823,'46.155.94.184','2025-10-28 21:07:58'),(9349,NULL,41,825,'46.155.94.184','2025-10-28 21:0
+8:02'),(9350,NULL,41,827,'46.155.94.184','2025-10-28 21:08:18'),(9351,NULL,41,829,'46.155.94.184','2025-10-28 21:08:22'
+),(9352,NULL,41,831,'46.155.94.184','2025-10-28 21:08:28'),(9353,NULL,41,833,'46.155.94.184','2025-10-28 21:08:40'),(93
+54,NULL,41,835,'46.155.94.184','2025-10-28 21:08:43'),(9355,NULL,41,837,'46.155.94.184','2025-10-28 21:08:45'),(9356,NU
+LL,41,839,'46.155.94.184','2025-10-28 21:09:16'),(9357,NULL,41,841,'46.155.94.184','2025-10-28 21:09:25'),(9358,NULL,41
+,843,'46.155.94.184','2025-10-28 21:09:31'),(9359,NULL,41,845,'46.155.94.184','2025-10-28 21:09:41'),(9360,NULL,41,847,
+'46.155.94.184','2025-10-28 21:09:56'),(9361,NULL,41,849,'46.155.94.184','2025-10-28 21:10:23'),(9362,NULL,41,851,'46.1
+55.94.184','2025-10-28 21:10:40'),(9363,NULL,41,853,'46.155.94.184','2025-10-28 21:10:49'),(9364,NULL,41,855,'46.155.94
+.184','2025-10-28 21:10:56'),(9365,NULL,41,857,'46.155.94.184','2025-10-28 21:11:10'),(9366,NULL,41,859,'46.155.94.184'
+,'2025-10-28 21:11:18'),(9367,NULL,41,861,'46.155.94.184','2025-10-28 21:11:49'),(9368,NULL,41,863,'46.155.94.184','202
+5-10-28 21:12:06'),(9369,NULL,41,865,'46.155.94.184','2025-10-28 21:12:42'),(9370,NULL,41,867,'46.155.94.184','2025-10-
+28 21:12:53'),(9371,NULL,41,869,'46.155.94.184','2025-10-28 21:13:06'),(9372,NULL,41,871,'46.155.94.184','2025-10-28 21
+:13:32'),(9373,NULL,41,873,'46.155.94.184','2025-10-28 21:14:17'),(9374,NULL,41,875,'46.155.94.184','2025-10-28 21:14:2
+0'),(9375,NULL,41,877,'46.155.94.184','2025-10-28 21:14:43'),(9376,NULL,41,879,'46.155.94.184','2025-10-28 21:15:00'),(
+9377,NULL,41,881,'46.155.94.184','2025-10-28 21:15:46'),(9378,NULL,41,883,'46.155.94.184','2025-10-28 21:15:48'),(9379,
+NULL,41,885,'46.155.94.184','2025-10-28 21:16:23'),(9380,NULL,41,887,'46.155.94.184','2025-10-28 21:16:40'),(9381,NULL,
+41,889,'46.155.94.184','2025-10-28 21:16:43'),(9382,NULL,41,891,'46.155.94.184','2025-10-28 21:16:46'),(9383,NULL,41,89
+3,'46.155.94.184','2025-10-28 21:17:19'),(9384,NULL,41,895,'46.155.94.184','2025-10-28 21:17:22'),(9385,NULL,41,897,'46
+.155.94.184','2025-10-28 21:17:48'),(9386,NULL,41,899,'46.155.94.184','2025-10-28 21:17:50'),(9387,NULL,41,901,'46.155.
+94.184','2025-10-28 21:17:52'),(9388,NULL,41,903,'46.155.94.184','2025-10-28 21:18:09'),(9389,NULL,41,905,'46.155.94.18
+4','2025-10-28 21:18:11'),(9390,NULL,41,907,'46.155.94.184','2025-10-28 21:18:13'),(9391,NULL,41,909,'46.155.94.184','2
+025-10-28 21:18:14'),(9392,NULL,41,911,'46.155.94.184','2025-10-28 21:18:17'),(9393,NULL,41,913,'46.155.94.184','2025-1
+0-28 21:18:19'),(9394,NULL,41,915,'46.155.94.184','2025-10-28 21:18:21'),(9395,NULL,41,917,'46.155.94.184','2025-10-28 
+21:18:26'),(9396,NULL,41,919,'46.155.94.184','2025-10-28 21:18:27'),(9397,NULL,41,921,'46.155.94.184','2025-10-28 21:19
+:26'),(9398,NULL,41,923,'46.155.94.184','2025-10-28 21:19:36'),(9399,NULL,41,925,'46.155.94.184','2025-10-28 21:20:00')
+,(9400,NULL,41,927,'46.155.94.184','2025-10-28 21:20:02'),(9401,NULL,41,929,'46.155.94.184','2025-10-28 21:20:05'),(940
+2,NULL,41,931,'46.155.94.184','2025-10-28 21:20:36'),(9403,NULL,41,933,'46.155.94.184','2025-10-28 21:21:22'),(9404,NUL
+L,41,935,'46.155.94.184','2025-10-28 21:21:25'),(9405,NULL,41,937,'46.155.94.184','2025-10-29 07:46:18'),(9406,NULL,41,
+939,'46.155.94.184','2025-10-29 07:46:42'),(9407,NULL,41,941,'46.155.94.184','2025-10-29 07:46:44'),(9408,NULL,41,943,'
+46.155.94.184','2025-10-29 07:46:46'),(9409,NULL,41,945,'46.155.94.184','2025-10-29 07:48:15'),(9410,NULL,41,947,'46.15
+5.94.184','2025-10-29 07:48:45'),(9411,NULL,41,949,'46.155.94.184','2025-10-29 07:49:10'),(9412,NULL,41,951,'46.155.94.
+184','2025-10-29 07:49:41'),(9413,NULL,41,953,'46.155.94.184','2025-10-29 07:50:12'),(9414,NULL,41,955,'46.155.94.184',
+'2025-10-29 07:50:55'),(9415,NULL,41,957,'46.155.94.184','2025-10-29 07:51:15'),(9416,NULL,41,959,'46.155.94.184','2025
+-10-29 07:51:22'),(9417,NULL,41,961,'46.155.94.184','2025-10-29 07:51:26'),(9418,NULL,41,963,'46.155.94.184','2025-10-2
+9 07:51:33'),(9419,NULL,41,965,'46.155.94.184','2025-10-29 07:51:45'),(9420,NULL,41,967,'46.155.94.184','2025-10-29 07:
+52:18'),(9421,NULL,41,969,'46.155.94.184','2025-10-29 07:52:28'),(9422,2,NULL,NULL,'2.58.42.162','2025-10-29 07:52:40')
+,(9423,NULL,41,971,'46.155.94.184','2025-10-29 07:53:15'),(9424,NULL,41,973,'46.155.94.184','2025-10-29 07:53:37'),(942
+5,NULL,41,975,'46.155.94.184','2025-10-29 07:54:13'),(9426,NULL,41,977,'46.155.94.184','2025-10-29 07:54:34'),(9427,NUL
+L,41,979,'46.155.94.184','2025-10-29 07:54:57'),(9428,NULL,41,981,'46.155.94.184','2025-10-29 07:55:03'),(9429,NULL,41,
+983,'46.155.94.184','2025-10-29 07:55:05'),(9430,NULL,41,985,'46.155.94.184','2025-10-29 07:55:20'),(9431,NULL,41,987,'
+46.155.94.184','2025-10-29 07:55:36'),(9432,NULL,41,989,'46.155.94.184','2025-10-29 07:55:49'),(9433,NULL,41,991,'46.15
+5.94.184','2025-10-29 07:56:17'),(9434,NULL,41,993,'46.155.94.184','2025-10-29 07:56:36'),(9435,NULL,41,995,'46.155.94.
+184','2025-10-29 07:57:12'),(9436,NULL,41,997,'46.155.94.184','2025-10-29 07:57:16'),(9437,NULL,41,999,'46.155.94.184',
+'2025-10-29 07:57:36'),(9438,NULL,41,1001,'46.155.94.184','2025-10-29 07:58:01'),(9439,NULL,41,1003,'46.155.94.184','20
+25-10-29 07:58:18'),(9440,NULL,41,1005,'46.155.94.184','2025-10-29 07:58:42'),(9441,NULL,41,1007,'46.155.94.184','2025-
+10-29 07:59:01'),(9442,NULL,41,1009,'46.155.94.184','2025-10-29 07:59:21'),(9443,NULL,41,1011,'46.155.94.184','2025-10-
+29 07:59:24'),(9444,NULL,41,1013,'46.155.94.184','2025-10-29 07:59:28'),(9445,NULL,41,1015,'46.155.94.184','2025-10-29 
+07:59:38'),(9446,NULL,41,1017,'46.155.94.184','2025-10-29 07:59:40'),(9447,NULL,41,1019,'46.155.94.184','2025-10-29 07:
+59:51'),(9448,NULL,41,1021,'46.155.94.184','2025-10-29 07:59:53'),(9449,NULL,41,1023,'46.155.94.184','2025-10-29 08:00:
+21'),(9450,NULL,41,1025,'46.155.94.184','2025-10-29 08:00:28'),(9451,NULL,41,1027,'46.155.94.184','2025-10-29 08:00:34'
+),(9452,NULL,41,1029,'46.155.94.184','2025-10-29 08:00:42'),(9453,NULL,41,1031,'46.155.94.184','2025-10-29 08:00:44'),(
+9454,NULL,41,1033,'46.155.94.184','2025-10-29 08:00:48'),(9455,NULL,41,1035,'46.155.94.184','2025-10-29 08:00:55'),(945
+6,NULL,41,1037,'46.155.94.184','2025-10-29 08:01:05'),(9457,NULL,41,1039,'46.155.94.184','2025-10-29 08:01:23'),(9458,N
+ULL,41,1041,'46.155.94.184','2025-10-29 08:01:25'),(9459,NULL,41,1043,'46.155.94.184','2025-10-29 08:01:27'),(9460,NULL
+,41,1045,'46.155.94.184','2025-10-29 08:01:35'),(9461,NULL,41,1047,'46.155.94.184','2025-10-29 08:01:39'),(9462,NULL,41
+,1049,'46.155.94.184','2025-10-29 08:01:41'),(9463,NULL,41,1051,'46.155.94.184','2025-10-29 08:01:43'),(9464,NULL,41,10
+53,'46.155.94.184','2025-10-29 08:01:45'),(9465,NULL,41,1055,'46.155.94.184','2025-10-29 08:01:47'),(9466,NULL,41,1057,
+'46.155.94.184','2025-10-29 08:01:50'),(9467,NULL,41,1059,'46.155.94.184','2025-10-29 08:02:13'),(9468,NULL,41,1061,'46
+.155.94.184','2025-10-29 08:02:22'),(9469,NULL,41,1063,'46.155.94.184','2025-10-29 08:02:29'),(9470,NULL,41,1065,'46.15
+5.94.184','2025-10-29 08:02:33'),(9471,NULL,41,1067,'46.155.94.184','2025-10-29 08:02:58'),(9472,NULL,41,1069,'46.155.9
+4.184','2025-10-29 08:03:19'),(9473,NULL,41,1071,'46.155.94.184','2025-10-29 08:03:31'),(9474,NULL,41,1073,'46.155.94.1
+84','2025-10-29 08:03:55'),(9475,NULL,41,1075,'46.155.94.184','2025-10-29 08:04:43'),(9476,NULL,41,1077,'46.155.94.184'
+,'2025-10-29 08:05:13'),(9477,NULL,41,1079,'46.155.94.184','2025-10-29 08:05:15'),(9478,NULL,41,1081,'46.155.94.184','2
+025-10-29 08:05:56'),(9479,NULL,41,1083,'46.155.94.184','2025-10-29 08:06:05'),(9480,NULL,41,1085,'46.155.94.184','2025
+-10-29 08:06:25'),(9481,NULL,41,1087,'46.155.94.184','2025-10-29 08:06:45'),(9482,NULL,41,1089,'46.155.94.184','2025-10
+-29 08:07:06'),(9483,NULL,41,1091,'46.155.94.184','2025-10-29 08:07:54'),(9484,NULL,41,1093,'46.155.94.184','2025-10-29
+ 08:08:15'),(9485,NULL,41,1095,'46.155.94.184','2025-10-29 08:08:51'),(9486,NULL,41,1097,'46.155.94.184','2025-10-29 08
+:09:54'),(9487,NULL,41,1099,'46.155.94.184','2025-10-29 08:10:11'),(9488,NULL,41,1101,'46.155.94.184','2025-10-29 08:10
+:37'),(9489,NULL,41,1103,'46.155.94.184','2025-10-29 08:10:50'),(9490,NULL,41,1105,'46.155.94.184','2025-10-29 08:11:11
+'),(9491,NULL,41,1107,'46.155.94.184','2025-10-29 08:11:23'),(9492,NULL,41,1109,'46.155.94.184','2025-10-29 08:11:29'),
+(9493,NULL,41,1111,'46.155.94.184','2025-10-29 08:11:36'),(9494,NULL,41,1113,'46.155.94.184','2025-10-29 08:11:42'),(94
+95,NULL,41,1115,'46.155.94.184','2025-10-29 08:11:51'),(9496,NULL,41,1117,'46.155.94.184','2025-10-29 08:12:09'),(9497,
+NULL,41,1119,'46.155.94.184','2025-10-29 08:21:57'),(9498,NULL,41,1121,'46.155.94.184','2025-10-29 08:23:37'),(9499,NUL
+L,41,1123,'46.155.94.184','2025-10-29 08:23:39'),(9500,NULL,41,1125,'46.155.94.184','2025-10-29 08:24:10'),(9501,NULL,4
+1,1127,'46.155.94.184','2025-10-29 08:24:12'),(9502,NULL,41,1129,'46.155.94.184','2025-10-29 08:25:58'),(9503,NULL,41,1
+131,'46.155.94.184','2025-10-29 08:26:00'),(9504,NULL,41,1133,'46.155.94.184','2025-10-29 08:26:01'),(9505,NULL,41,1135
+,'46.155.94.184','2025-10-29 08:26:03'),(9506,NULL,41,1137,'46.155.94.184','2025-10-29 08:26:04'),(9507,NULL,41,1139,'4
+6.155.94.184','2025-10-29 08:26:41'),(9508,NULL,41,1141,'46.155.94.184','2025-10-29 08:26:43'),(9509,NULL,41,1143,'46.1
+55.94.184','2025-10-29 08:26:45'),(9510,NULL,41,1147,'46.155.94.184','2025-10-29 08:28:36'),(9511,NULL,41,1149,'46.155.
+94.184','2025-10-29 08:28:57'),(9512,NULL,41,1151,'46.155.94.184','2025-10-29 08:29:06'),(9513,NULL,41,1153,'46.155.94.
+184','2025-10-29 08:29:33'),(9514,NULL,41,1155,'46.155.94.184','2025-10-29 08:29:49'),(9515,NULL,41,1157,'46.155.94.184
+','2025-10-29 08:29:59'),(9516,NULL,41,1159,'46.155.94.184','2025-10-29 08:30:00'),(9517,NULL,41,1161,'46.155.94.184','
+2025-10-29 08:33:07'),(9518,NULL,41,1163,'46.155.94.184','2025-10-29 08:33:34'),(9519,NULL,41,1165,'46.155.94.184','202
+5-10-29 08:33:39'),(9520,38,NULL,NULL,'178.247.55.78','2025-10-29 08:35:22'),(9521,NULL,41,1167,'46.155.94.184','2025-1
+0-29 08:39:47'),(9522,NULL,41,1169,'46.155.94.184','2025-10-29 08:39:54'),(9523,NULL,41,1171,'46.155.94.184','2025-10-2
+9 08:39:59'),(9524,NULL,41,1173,'46.155.94.184','2025-10-29 08:40:06'),(9525,NULL,41,1175,'46.155.94.184','2025-10-29 0
+8:40:12'),(9526,NULL,41,1177,'46.155.94.184','2025-10-29 08:40:16'),(9527,NULL,41,1179,'46.155.94.184','2025-10-29 08:4
+0:19'),(9528,NULL,41,1181,'46.155.94.184','2025-10-29 08:40:28'),(9529,NULL,41,1183,'46.155.94.184','2025-10-29 08:40:3
+1'),(9530,NULL,41,1185,'46.155.94.184','2025-10-29 08:40:34'),(9531,NULL,41,1187,'46.155.94.184','2025-10-29 08:40:36')
+,(9532,NULL,41,1189,'46.155.94.184','2025-10-29 08:40:46'),(9533,NULL,41,1191,'46.155.94.184','2025-10-29 08:41:17'),(9
+534,NULL,42,NULL,'46.155.94.184','2025-10-29 08:42:37'),(9535,NULL,42,1,'46.155.94.184','2025-10-29 08:42:49'),(9536,NU
+LL,42,3,'46.155.94.184','2025-10-29 08:42:53'),(9537,NULL,42,5,'46.155.94.184','2025-10-29 08:42:57'),(9538,NULL,42,7,'
+46.155.94.184','2025-10-29 08:43:01'),(9539,NULL,42,9,'46.155.94.184','2025-10-29 08:43:03'),(9540,NULL,42,11,'46.155.9
+4.184','2025-10-29 08:43:06'),(9541,NULL,42,13,'46.155.94.184','2025-10-29 08:43:09'),(9542,NULL,42,15,'46.155.94.184',
+'2025-10-29 08:43:10'),(9543,NULL,42,17,'46.155.94.184','2025-10-29 08:43:12'),(9544,NULL,42,19,'46.155.94.184','2025-1
+0-29 08:43:14'),(9545,NULL,42,21,'46.155.94.184','2025-10-29 08:43:16'),(9546,NULL,42,23,'46.155.94.184','2025-10-29 08
+:43:18'),(9547,NULL,42,25,'46.155.94.184','2025-10-29 08:43:21'),(9548,NULL,42,27,'46.155.94.184','2025-10-29 08:43:23'
+),(9549,NULL,42,29,'46.155.94.184','2025-10-29 08:43:25'),(9550,NULL,42,31,'46.155.94.184','2025-10-29 08:43:27'),(9551
+,NULL,42,33,'46.155.94.184','2025-10-29 08:43:29'),(9552,NULL,42,35,'46.155.94.184','2025-10-29 08:43:32'),(9553,NULL,4
+2,37,'46.155.94.184','2025-10-29 08:43:36'),(9554,NULL,42,39,'46.155.94.184','2025-10-29 08:43:39'),(9555,NULL,42,41,'4
+6.155.94.184','2025-10-29 08:43:41'),(9556,NULL,42,43,'46.155.94.184','2025-10-29 08:43:43'),(9557,NULL,42,45,'46.155.9
+4.184','2025-10-29 08:43:46'),(9558,NULL,42,47,'46.155.94.184','2025-10-29 08:43:48'),(9559,NULL,42,49,'46.155.94.184',
+'2025-10-29 08:43:50'),(9560,NULL,42,51,'46.155.94.184','2025-10-29 08:43:53'),(9561,NULL,42,53,'46.155.94.184','2025-1
+0-29 08:43:58'),(9562,NULL,42,55,'46.155.94.184','2025-10-29 08:44:04'),(9563,NULL,42,57,'46.155.94.184','2025-10-29 08
+:44:06'),(9564,NULL,42,59,'46.155.94.184','2025-10-29 08:44:08'),(9565,NULL,42,61,'46.155.94.184','2025-10-29 08:44:10'
+),(9566,NULL,42,63,'46.155.94.184','2025-10-29 08:44:24'),(9567,NULL,42,65,'46.155.94.184','2025-10-29 08:44:33'),(9568
+,NULL,42,67,'46.155.94.184','2025-10-29 08:44:35'),(9569,NULL,42,69,'46.155.94.184','2025-10-29 08:44:37'),(9570,NULL,4
+2,71,'46.155.94.184','2025-10-29 08:44:39'),(9571,NULL,42,73,'46.155.94.184','2025-10-29 08:44:42'),(9572,NULL,42,75,'4
+6.155.94.184','2025-10-29 08:44:44'),(9573,NULL,42,77,'46.155.94.184','2025-10-29 08:44:47'),(9574,NULL,42,79,'46.155.9
+4.184','2025-10-29 08:44:49'),(9575,NULL,42,81,'46.155.94.184','2025-10-29 08:44:51'),(9576,NULL,42,83,'46.155.94.184',
+'2025-10-29 08:44:53'),(9577,NULL,42,85,'46.155.94.184','2025-10-29 08:44:56'),(9578,NULL,42,87,'46.155.94.184','2025-1
+0-29 08:44:57'),(9579,NULL,42,89,'46.155.94.184','2025-10-29 08:44:59'),(9580,NULL,42,91,'46.155.94.184','2025-10-29 08
+:45:01'),(9581,NULL,42,93,'46.155.94.184','2025-10-29 08:45:02'),(9582,NULL,42,95,'46.155.94.184','2025-10-29 08:45:04'
+),(9583,NULL,42,97,'46.155.94.184','2025-10-29 08:45:06'),(9584,NULL,42,99,'46.155.94.184','2025-10-29 08:45:09'),(9585
+,NULL,42,101,'46.155.94.184','2025-10-29 08:45:11'),(9586,NULL,42,103,'46.155.94.184','2025-10-29 08:45:15'),(9587,NULL
+,42,105,'46.155.94.184','2025-10-29 08:45:18'),(9588,NULL,42,107,'46.155.94.184','2025-10-29 08:45:20'),(9589,NULL,42,1
+09,'46.155.94.184','2025-10-29 08:45:22'),(9590,NULL,42,111,'46.155.94.184','2025-10-29 08:45:24'),(9591,NULL,42,113,'4
+6.155.94.184','2025-10-29 08:45:26'),(9592,NULL,42,115,'46.155.94.184','2025-10-29 08:45:28'),(9593,NULL,42,117,'46.155
+.94.184','2025-10-29 08:46:03'),(9594,NULL,42,119,'46.155.94.184','2025-10-29 08:46:38'),(9595,NULL,42,121,'46.155.94.1
+84','2025-10-29 08:47:28'),(9596,NULL,42,123,'46.155.94.184','2025-10-29 08:47:57'),(9597,NULL,42,125,'46.155.94.184','
+2025-10-29 08:48:25'),(9598,NULL,42,127,'46.155.94.184','2025-10-29 08:49:11'),(9599,NULL,42,129,'46.155.94.184','2025-
+10-29 08:49:52'),(9600,NULL,42,131,'46.155.94.184','2025-10-29 08:50:06'),(9601,NULL,42,133,'46.155.94.184','2025-10-29
+ 08:50:31'),(9602,NULL,42,135,'46.155.94.184','2025-10-29 08:50:51'),(9603,NULL,42,137,'46.155.94.184','2025-10-29 08:5
+1:46'),(9604,NULL,42,139,'46.155.94.184','2025-10-29 08:52:27'),(9605,NULL,42,141,'46.155.94.184','2025-10-29 08:52:32'
+),(9606,NULL,42,143,'46.155.94.184','2025-10-29 08:53:10'),(9607,NULL,42,145,'46.155.94.184','2025-10-29 08:53:45'),(96
+08,NULL,42,147,'46.155.94.184','2025-10-29 08:53:48'),(9609,NULL,42,149,'46.155.94.184','2025-10-29 08:54:20'),(9610,NU
+LL,42,151,'46.155.94.184','2025-10-29 08:54:43'),(9611,NULL,42,153,'46.155.94.184','2025-10-29 08:55:04'),(9612,NULL,42
+,155,'46.155.94.184','2025-10-29 08:55:44'),(9613,NULL,42,157,'46.155.94.184','2025-10-29 08:55:53'),(9614,NULL,42,159,
+'46.155.94.184','2025-10-29 08:55:59'),(9615,NULL,42,161,'46.155.94.184','2025-10-29 08:56:01'),(9616,NULL,42,163,'46.1
+55.94.184','2025-10-29 08:56:25'),(9617,NULL,42,165,'46.155.94.184','2025-10-29 08:56:29'),(9618,NULL,42,167,'46.155.94
+.184','2025-10-29 08:57:01'),(9619,NULL,42,169,'46.155.94.184','2025-10-29 08:57:23'),(9620,NULL,42,171,'46.155.94.184'
+,'2025-10-29 08:57:44'),(9621,NULL,42,173,'46.155.94.184','2025-10-29 08:58:11'),(9622,NULL,42,175,'46.155.94.184','202
+5-10-29 08:58:14'),(9623,NULL,42,177,'46.155.94.184','2025-10-29 08:58:15'),(9624,NULL,42,179,'46.155.94.184','2025-10-
+29 08:58:18'),(9625,NULL,42,181,'46.155.94.184','2025-10-29 08:58:44'),(9626,NULL,42,183,'46.155.94.184','2025-10-29 08
+:58:47'),(9627,NULL,42,185,'46.155.94.184','2025-10-29 08:59:30'),(9628,NULL,22,NULL,'178.247.55.78','2025-10-29 09:00:
+16'),(9629,NULL,21,NULL,'178.247.55.78','2025-10-29 09:00:16'),(9630,NULL,20,NULL,'178.247.55.78','2025-10-29 09:00:17'
+),(9631,38,NULL,NULL,'178.247.55.78','2025-10-29 09:00:20'),(9632,NULL,42,187,'46.155.94.184','2025-10-29 09:00:24'),(9
+633,NULL,42,189,'46.155.94.184','2025-10-29 09:00:46'),(9634,NULL,42,191,'46.155.94.184','2025-10-29 09:01:24'),(9635,N
+ULL,42,193,'46.155.94.184','2025-10-29 09:03:39'),(9636,NULL,42,195,'46.155.94.184','2025-10-29 09:03:42'),(9637,2,NULL
+,NULL,'178.247.55.78','2025-10-29 09:03:56'),(9638,NULL,42,197,'46.155.94.184','2025-10-29 09:04:10'),(9639,NULL,42,199
+,'46.155.94.184','2025-10-29 09:04:38'),(9640,NULL,42,201,'46.155.94.184','2025-10-29 09:05:02'),(9641,NULL,42,203,'46.
+155.94.184','2025-10-29 09:05:38'),(9642,NULL,42,205,'46.155.94.184','2025-10-29 09:06:06'),(9643,NULL,42,207,'46.155.9
+4.184','2025-10-29 09:06:41'),(9644,NULL,42,209,'46.155.94.184','2025-10-29 09:06:42'),(9645,NULL,42,211,'46.155.94.184
+','2025-10-29 09:06:58'),(9646,NULL,42,213,'46.155.94.184','2025-10-29 09:07:32'),(9647,NULL,42,215,'46.155.94.184','20
+25-10-29 09:07:35'),(9648,NULL,42,217,'46.155.94.184','2025-10-29 09:07:40'),(9649,NULL,42,219,'46.155.94.184','2025-10
+-29 09:07:56'),(9650,NULL,42,221,'46.155.94.184','2025-10-29 09:08:17'),(9651,NULL,42,223,'46.155.94.184','2025-10-29 0
+9:08:28'),(9652,NULL,42,225,'46.155.94.184','2025-10-29 09:08:31'),(9653,NULL,42,227,'46.155.94.184','2025-10-29 09:08:
+49'),(9654,NULL,42,229,'46.155.94.184','2025-10-29 09:08:57'),(9655,NULL,42,231,'46.155.94.184','2025-10-29 09:08:59'),
+(9656,NULL,42,233,'46.155.94.184','2025-10-29 09:09:25'),(9657,NULL,42,235,'46.155.94.184','2025-10-29 09:09:59'),(9658
+,NULL,42,237,'46.155.94.184','2025-10-29 09:10:23'),(9659,NULL,42,239,'46.155.94.184','2025-10-29 09:11:04'),(9660,NULL
+,42,241,'46.155.94.184','2025-10-29 09:11:47'),(9661,NULL,42,243,'46.155.94.184','2025-10-29 09:11:50'),(9662,NULL,42,2
+45,'46.155.94.184','2025-10-29 09:11:53'),(9663,NULL,42,247,'46.155.94.184','2025-10-29 09:12:26'),(9664,NULL,42,249,'4
+6.155.94.184','2025-10-29 09:12:54'),(9665,NULL,42,251,'46.155.94.184','2025-10-29 09:12:57'),(9666,NULL,42,253,'46.155
+.94.184','2025-10-29 09:13:15'),(9667,NULL,42,255,'46.155.94.184','2025-10-29 09:13:18'),(9668,NULL,42,257,'46.155.94.1
+84','2025-10-29 09:13:36'),(9669,NULL,42,259,'46.155.94.184','2025-10-29 09:14:16'),(9670,NULL,42,261,'46.155.94.184','
+2025-10-29 09:14:18'),(9671,NULL,42,263,'46.155.94.184','2025-10-29 09:14:22'),(9672,NULL,42,265,'46.155.94.184','2025-
+10-29 09:14:24'),(9673,NULL,42,267,'46.155.94.184','2025-10-29 09:14:37'),(9674,NULL,42,269,'46.155.94.184','2025-10-29
+ 09:14:41'),(9675,38,NULL,NULL,'178.247.55.78','2025-10-29 09:23:18'),(9676,38,NULL,NULL,'178.247.55.78','2025-10-29 10
+:35:18'),(9679,38,NULL,NULL,'178.247.55.78','2025-10-29 13:45:19'),(9680,NULL,19,NULL,'178.247.55.78','2025-10-29 13:45
+:21'),(9681,NULL,18,NULL,'178.247.55.78','2025-10-29 13:45:21'),(9682,NULL,21,NULL,'178.247.55.78','2025-10-29 13:45:22
+'),(9683,NULL,20,NULL,'178.247.55.78','2025-10-29 13:45:23'),(9684,38,NULL,NULL,'178.247.55.78','2025-10-29 14:59:05'),
+(9685,NULL,38,NULL,'178.247.55.78','2025-10-29 14:59:23'),(9686,NULL,37,NULL,'178.247.55.78','2025-10-29 14:59:24'),(96
+87,2,NULL,NULL,'178.247.55.78','2025-10-29 14:59:27'),(9688,NULL,42,271,'46.155.94.184','2025-10-29 15:06:32'),(9689,NU
+LL,42,273,'46.155.94.184','2025-10-29 15:06:55'),(9690,NULL,42,275,'46.155.94.184','2025-10-29 15:07:24'),(9691,NULL,42
+,277,'46.155.94.184','2025-10-29 15:07:49'),(9692,NULL,42,279,'46.155.94.184','2025-10-29 15:07:51'),(9693,NULL,42,281,
+'46.155.94.184','2025-10-29 15:08:02'),(9694,NULL,42,283,'46.155.94.184','2025-10-29 15:08:08'),(9695,NULL,42,285,'46.1
+55.94.184','2025-10-29 15:08:10'),(9696,NULL,42,287,'46.155.94.184','2025-10-29 15:08:18'),(9697,NULL,42,289,'46.155.94
+.184','2025-10-29 15:08:21'),(9698,NULL,42,291,'46.155.94.184','2025-10-29 15:08:27'),(9699,NULL,42,293,'46.155.94.184'
+,'2025-10-29 15:08:29'),(9700,NULL,42,295,'46.155.94.184','2025-10-29 15:08:38'),(9701,NULL,42,297,'46.155.94.184','202
+5-10-29 15:08:47'),(9702,NULL,42,299,'46.155.94.184','2025-10-29 15:08:55'),(9703,NULL,42,301,'46.155.94.184','2025-10-
+29 15:09:02'),(9704,NULL,42,303,'46.155.94.184','2025-10-29 15:09:09'),(9705,NULL,42,307,'46.155.94.184','2025-10-29 15
+:09:14'),(9706,NULL,42,305,'46.155.94.184','2025-10-29 15:09:15'),(9707,NULL,42,309,'46.155.94.184','2025-10-29 15:09:1
+8'),(9708,NULL,42,311,'46.155.94.184','2025-10-29 15:09:22'),(9709,NULL,42,313,'46.155.94.184','2025-10-29 15:09:24'),(
+9710,NULL,42,315,'46.155.94.184','2025-10-29 15:09:30'),(9711,NULL,42,317,'46.155.94.184','2025-10-29 15:09:46'),(9712,
+NULL,42,319,'46.155.94.184','2025-10-29 15:09:57'),(9713,NULL,42,321,'46.155.94.184','2025-10-29 15:10:11'),(9714,NULL,
+42,323,'46.155.94.184','2025-10-29 15:10:35'),(9715,NULL,42,325,'46.155.94.184','2025-10-29 15:10:36'),(9716,NULL,42,32
+7,'46.155.94.184','2025-10-29 15:10:47'),(9717,NULL,42,329,'46.155.94.184','2025-10-29 15:10:48'),(9718,NULL,42,331,'46
+.155.94.184','2025-10-29 15:10:54'),(9719,NULL,42,333,'46.155.94.184','2025-10-29 15:11:08'),(9720,NULL,42,335,'46.155.
+94.184','2025-10-29 15:11:21'),(9721,NULL,42,337,'46.155.94.184','2025-10-29 15:11:34'),(9722,NULL,42,339,'46.155.94.18
+4','2025-10-29 15:12:18'),(9723,NULL,42,341,'46.155.94.184','2025-10-29 15:12:26'),(9724,NULL,42,343,'46.155.94.184','2
+025-10-29 15:12:28'),(9725,NULL,42,345,'46.155.94.184','2025-10-29 15:13:00'),(9726,NULL,42,347,'46.155.94.184','2025-1
+0-29 15:13:02'),(9727,NULL,42,349,'46.155.94.184','2025-10-29 15:13:07'),(9728,NULL,42,351,'46.155.94.184','2025-10-29 
+15:13:23'),(9729,NULL,42,353,'46.155.94.184','2025-10-29 15:13:29'),(9730,NULL,42,355,'46.155.94.184','2025-10-29 15:14
+:00'),(9731,NULL,42,357,'46.155.94.184','2025-10-29 15:14:03'),(9732,NULL,42,359,'46.155.94.184','2025-10-29 15:14:21')
+,(9733,NULL,42,361,'46.155.94.184','2025-10-29 15:14:25'),(9734,NULL,42,363,'46.155.94.184','2025-10-29 15:14:42'),(973
+5,NULL,42,365,'46.155.94.184','2025-10-29 15:15:17'),(9736,NULL,42,367,'46.155.94.184','2025-10-29 15:15:37'),(9737,NUL
+L,42,369,'46.155.94.184','2025-10-29 15:15:38'),(9738,NULL,42,371,'46.155.94.184','2025-10-29 15:15:41'),(9739,NULL,42,
+373,'46.155.94.184','2025-10-29 15:16:03'),(9740,NULL,42,375,'46.155.94.184','2025-10-29 15:16:26'),(9741,NULL,42,377,'
+46.155.94.184','2025-10-29 15:16:41'),(9742,NULL,42,379,'46.155.94.184','2025-10-29 15:17:02'),(9743,NULL,42,381,'46.15
+5.94.184','2025-10-29 15:17:27'),(9744,NULL,42,383,'46.155.94.184','2025-10-29 15:17:46'),(9745,NULL,42,385,'46.155.94.
+184','2025-10-29 15:18:29'),(9747,NULL,42,387,'46.155.94.184','2025-10-29 15:19:12'),(9748,NULL,42,389,'46.155.94.184',
+'2025-10-29 15:19:42'),(9749,NULL,42,391,'46.155.94.184','2025-10-29 15:20:04'),(9750,NULL,42,393,'46.155.94.184','2025
+-10-29 15:20:05'),(9751,NULL,42,395,'46.155.94.184','2025-10-29 15:20:08'),(9752,NULL,42,397,'46.155.94.184','2025-10-2
+9 15:21:00'),(9753,NULL,42,399,'46.155.94.184','2025-10-29 15:21:03'),(9754,NULL,42,401,'46.155.94.184','2025-10-29 15:
+21:47'),(9755,NULL,42,403,'46.155.94.184','2025-10-29 15:22:12'),(9756,NULL,42,405,'46.155.94.184','2025-10-29 15:22:55
+'),(9757,NULL,42,407,'46.155.94.184','2025-10-29 15:23:43'),(9758,NULL,42,409,'46.155.94.184','2025-10-29 15:23:59'),(9
+759,NULL,42,411,'46.155.94.184','2025-10-29 15:24:21'),(9760,NULL,42,413,'46.155.94.184','2025-10-29 15:24:39'),(9761,N
+ULL,42,415,'46.155.94.184','2025-10-29 15:25:30'),(9762,NULL,42,417,'46.155.94.184','2025-10-29 15:25:40'),(9763,NULL,4
+2,419,'46.155.94.184','2025-10-29 15:25:54'),(9764,NULL,42,421,'46.155.94.184','2025-10-29 15:26:25'),(9765,NULL,42,423
+,'46.155.94.184','2025-10-29 15:26:37'),(9766,NULL,42,425,'46.155.94.184','2025-10-29 15:27:02'),(9767,NULL,42,427,'46.
+155.94.184','2025-10-29 15:27:16'),(9768,NULL,42,429,'46.155.94.184','2025-10-29 15:27:22'),(9769,NULL,42,431,'46.155.9
+4.184','2025-10-29 15:27:42'),(9770,NULL,42,433,'46.155.94.184','2025-10-29 15:27:57'),(9771,NULL,42,435,'46.155.94.184
+','2025-10-29 15:28:11'),(9772,NULL,42,437,'46.155.94.184','2025-10-29 15:28:31'),(9773,NULL,42,439,'46.155.94.184','20
+25-10-29 15:28:53'),(9774,NULL,42,441,'46.155.94.184','2025-10-29 15:29:15'),(9775,NULL,42,443,'46.155.94.184','2025-10
+-29 15:29:21'),(9776,NULL,42,445,'46.155.94.184','2025-10-29 15:29:34'),(9777,NULL,42,447,'46.155.94.184','2025-10-29 1
+5:29:59'),(9778,NULL,42,449,'46.155.94.184','2025-10-29 15:30:12'),(9779,NULL,42,451,'46.155.94.184','2025-10-29 15:30:
+31'),(9780,NULL,42,453,'46.155.94.184','2025-10-29 15:30:34'),(9781,NULL,42,455,'46.155.94.184','2025-10-29 15:30:36'),
+(9782,NULL,42,457,'46.155.94.184','2025-10-29 15:31:01'),(9783,NULL,42,459,'46.155.94.184','2025-10-29 15:31:14'),(9784
+,NULL,42,461,'46.155.94.184','2025-10-29 15:31:17'),(9785,NULL,42,463,'46.155.94.184','2025-10-29 15:31:44'),(9786,NULL
+,42,465,'46.155.94.184','2025-10-29 15:31:55'),(9787,NULL,42,467,'46.155.94.184','2025-10-29 15:32:01'),(9788,NULL,42,4
+69,'46.155.94.184','2025-10-29 15:32:04'),(9789,NULL,42,471,'46.155.94.184','2025-10-29 15:32:38'),(9790,NULL,42,473,'4
+6.155.94.184','2025-10-29 15:32:56'),(9791,NULL,42,475,'46.155.94.184','2025-10-29 15:34:25'),(9792,NULL,42,477,'46.155
+.94.184','2025-10-29 15:34:41'),(9793,NULL,42,479,'46.155.94.184','2025-10-29 15:34:54'),(9794,NULL,42,481,'46.155.94.1
+84','2025-10-29 15:34:55'),(9795,NULL,42,483,'46.155.94.184','2025-10-29 15:34:59'),(9796,NULL,42,485,'46.155.94.184','
+2025-10-29 15:35:17'),(9797,NULL,42,487,'46.155.94.184','2025-10-29 15:35:21'),(9798,NULL,42,489,'46.155.94.184','2025-
+10-29 15:35:26'),(9799,NULL,42,491,'46.155.94.184','2025-10-29 15:35:54'),(9800,NULL,42,493,'46.155.94.184','2025-10-29
+ 15:36:01'),(9801,NULL,42,495,'46.155.94.184','2025-10-29 15:36:50'),(9802,NULL,42,497,'46.155.94.184','2025-10-29 15:3
+7:17'),(9803,NULL,42,499,'46.155.94.184','2025-10-29 15:37:36'),(9804,NULL,42,501,'46.155.94.184','2025-10-29 15:37:50'
+),(9805,NULL,42,503,'46.155.94.184','2025-10-29 15:37:54'),(9806,NULL,42,505,'46.155.94.184','2025-10-29 15:37:55'),(98
+07,NULL,42,507,'46.155.94.184','2025-10-29 15:37:57'),(9808,NULL,42,509,'46.155.94.184','2025-10-29 15:37:59'),(9809,NU
+LL,42,511,'46.155.94.184','2025-10-29 15:38:14'),(9810,NULL,42,513,'46.155.94.184','2025-10-29 15:38:35'),(9811,NULL,42
+,515,'46.155.94.184','2025-10-29 15:39:23'),(9812,NULL,42,517,'46.155.94.184','2025-10-29 15:39:29'),(9813,NULL,42,519,
+'46.155.94.184','2025-10-29 15:39:35'),(9814,NULL,42,521,'46.155.94.184','2025-10-29 15:39:41'),(9815,NULL,42,523,'46.1
+55.94.184','2025-10-29 15:39:48'),(9816,NULL,42,525,'46.155.94.184','2025-10-29 15:39:52'),(9817,NULL,42,527,'46.155.94
+.184','2025-10-29 15:39:56'),(9818,NULL,42,529,'46.155.94.184','2025-10-29 15:40:14'),(9819,NULL,42,531,'46.155.94.184'
+,'2025-10-29 15:40:37'),(9820,NULL,42,533,'46.155.94.184','2025-10-29 15:40:40'),(9821,NULL,42,535,'46.155.94.184','202
+5-10-29 15:40:53'),(9822,NULL,42,537,'46.155.94.184','2025-10-29 15:41:10'),(9823,NULL,42,539,'46.155.94.184','2025-10-
+29 15:41:24'),(9824,NULL,42,541,'46.155.94.184','2025-10-29 15:41:36'),(9825,NULL,42,543,'46.155.94.184','2025-10-29 15
+:41:52'),(9826,NULL,42,545,'46.155.94.184','2025-10-29 15:41:55'),(9827,NULL,42,547,'46.155.94.184','2025-10-29 15:42:0
+5'),(9828,NULL,42,549,'46.155.94.184','2025-10-29 15:42:07'),(9829,NULL,42,551,'46.155.94.184','2025-10-29 15:42:08'),(
+9830,2,NULL,NULL,'178.244.106.0','2025-10-29 15:43:08'),(9831,NULL,17,NULL,'178.244.106.0','2025-10-29 15:43:11'),(9832
+,NULL,34,NULL,'178.244.106.0','2025-10-29 15:43:12'),(9833,NULL,35,NULL,'178.244.106.0','2025-10-29 15:43:13'),(9834,NU
+LL,36,NULL,'178.244.106.0','2025-10-29 15:43:14'),(9835,NULL,37,NULL,'178.244.106.0','2025-10-29 15:43:16'),(9836,NULL,
+38,NULL,'178.244.106.0','2025-10-29 15:43:17'),(9839,NULL,42,553,'46.155.94.184','2025-10-29 17:40:02'),(9840,NULL,42,5
+55,'46.155.94.184','2025-10-29 17:40:51'),(9841,NULL,42,557,'46.155.94.184','2025-10-29 17:41:13'),(9842,NULL,42,559,'4
+6.155.94.184','2025-10-29 17:41:37'),(9843,NULL,42,561,'46.155.94.184','2025-10-29 17:42:01'),(9844,NULL,42,563,'46.155
+.94.184','2025-10-29 17:42:38'),(9845,NULL,42,565,'46.155.94.184','2025-10-29 17:42:44'),(9846,NULL,42,567,'46.155.94.1
+84','2025-10-29 17:43:05'),(9847,NULL,42,569,'46.155.94.184','2025-10-29 17:43:21'),(9848,NULL,42,571,'46.155.94.184','
+2025-10-29 17:43:44'),(9849,NULL,42,573,'46.155.94.184','2025-10-29 17:44:21'),(9850,NULL,42,575,'46.155.94.184','2025-
+10-29 17:44:43'),(9851,NULL,42,577,'46.155.94.184','2025-10-29 17:45:24'),(9852,NULL,42,579,'46.155.94.184','2025-10-29
+ 17:45:43'),(9853,NULL,42,581,'46.155.94.184','2025-10-29 17:45:56'),(9854,NULL,42,583,'46.155.94.184','2025-10-29 17:4
+6:11'),(9855,NULL,42,585,'46.155.94.184','2025-10-29 17:46:31'),(9856,NULL,42,587,'46.155.94.184','2025-10-29 17:46:58'
+),(9857,NULL,42,589,'46.155.94.184','2025-10-29 17:47:19'),(9858,NULL,42,591,'46.155.94.184','2025-10-29 17:47:42'),(98
+59,NULL,42,593,'46.155.94.184','2025-10-29 17:47:53'),(9860,NULL,42,595,'46.155.94.184','2025-10-29 17:48:00'),(9861,NU
+LL,42,597,'46.155.94.184','2025-10-29 17:48:23'),(9862,NULL,42,599,'46.155.94.184','2025-10-29 17:48:57'),(9863,NULL,42
+,601,'46.155.94.184','2025-10-29 17:48:59'),(9864,NULL,42,603,'46.155.94.184','2025-10-29 17:49:06'),(9865,NULL,42,605,
+'46.155.94.184','2025-10-29 17:49:47'),(9866,NULL,42,607,'46.155.94.184','2025-10-29 17:50:08'),(9867,NULL,42,609,'46.1
+55.94.184','2025-10-29 17:50:42'),(9868,NULL,42,611,'46.155.94.184','2025-10-29 17:50:55'),(9869,NULL,42,613,'46.155.94
+.184','2025-10-29 17:51:16'),(9870,NULL,42,615,'46.155.94.184','2025-10-29 17:51:33'),(9871,NULL,42,617,'46.155.94.184'
+,'2025-10-29 17:51:35'),(9872,NULL,42,619,'46.155.94.184','2025-10-29 17:51:44'),(9873,NULL,42,621,'46.155.94.184','202
+5-10-29 17:52:01'),(9874,NULL,42,623,'46.155.94.184','2025-10-29 17:52:07'),(9875,NULL,42,625,'46.155.94.184','2025-10-
+29 17:52:23'),(9876,NULL,42,627,'46.155.94.184','2025-10-29 17:52:25'),(9877,NULL,42,629,'46.155.94.184','2025-10-29 17
+:52:27'),(9878,NULL,42,633,'46.155.94.184','2025-10-29 17:52:33'),(9879,NULL,42,637,'46.155.94.184','2025-10-29 17:52:5
+8'),(9880,NULL,42,635,'46.155.94.184','2025-10-29 17:52:59'),(9881,NULL,42,639,'46.155.94.184','2025-10-29 17:53:01'),(
+9882,NULL,42,641,'46.155.94.184','2025-10-29 17:53:41'),(9883,NULL,42,643,'46.155.94.184','2025-10-29 17:54:11'),(9884,
+NULL,42,645,'46.155.94.184','2025-10-29 17:54:16'),(9885,NULL,42,647,'46.155.94.184','2025-10-29 17:54:42'),(9886,NULL,
+42,649,'46.155.94.184','2025-10-29 17:55:00'),(9887,NULL,42,651,'46.155.94.184','2025-10-29 17:55:22'),(9888,NULL,42,65
+3,'46.155.94.184','2025-10-29 17:55:39'),(9889,NULL,42,655,'46.155.94.184','2025-10-29 17:55:46'),(9890,NULL,42,657,'46
+.155.94.184','2025-10-29 17:55:51'),(9891,NULL,42,659,'46.155.94.184','2025-10-29 17:55:53'),(9892,NULL,42,661,'46.155.
+94.184','2025-10-29 17:56:22'),(9893,NULL,42,663,'46.155.94.184','2025-10-29 17:56:44'),(9894,NULL,42,665,'46.155.94.18
+4','2025-10-29 17:56:58'),(9895,NULL,42,667,'46.155.94.184','2025-10-29 17:57:16'),(9896,NULL,42,669,'46.155.94.184','2
+025-10-29 17:57:40'),(9897,NULL,42,671,'46.155.94.184','2025-10-29 17:57:55'),(9898,NULL,42,673,'46.155.94.184','2025-1
+0-29 17:58:15'),(9899,NULL,42,675,'46.155.94.184','2025-10-29 17:58:31'),(9900,NULL,42,677,'46.155.94.184','2025-10-29 
+17:58:36'),(9901,NULL,42,679,'46.155.94.184','2025-10-29 17:58:53'),(9902,NULL,42,681,'46.155.94.184','2025-10-29 17:59
+:01'),(9903,NULL,42,683,'46.155.94.184','2025-10-29 17:59:07'),(9904,NULL,42,685,'46.155.94.184','2025-10-29 17:59:13')
+,(9905,NULL,42,687,'46.155.94.184','2025-10-29 17:59:17'),(9906,NULL,42,689,'46.155.94.184','2025-10-29 17:59:35'),(990
+7,NULL,42,691,'46.155.94.184','2025-10-29 17:59:51'),(9908,NULL,42,693,'46.155.94.184','2025-10-29 17:59:57'),(9909,NUL
+L,42,695,'46.155.94.184','2025-10-29 18:00:29'),(9910,NULL,42,697,'46.155.94.184','2025-10-29 18:00:59'),(9911,NULL,42,
+699,'46.155.94.184','2025-10-29 18:01:32'),(9912,NULL,42,701,'46.155.94.184','2025-10-29 18:01:58'),(9913,NULL,42,703,'
+46.155.94.184','2025-10-29 18:02:10'),(9914,NULL,42,705,'46.155.94.184','2025-10-29 18:02:43'),(9915,NULL,42,707,'46.15
+5.94.184','2025-10-29 18:03:00'),(9916,NULL,42,709,'46.155.94.184','2025-10-29 18:03:35'),(9917,NULL,42,711,'46.155.94.
+184','2025-10-29 18:03:49'),(9918,NULL,42,713,'46.155.94.184','2025-10-29 18:03:59'),(9919,NULL,42,715,'46.155.94.184',
+'2025-10-29 18:04:10'),(9920,NULL,42,717,'46.155.94.184','2025-10-29 18:04:20'),(9921,NULL,42,719,'46.155.94.184','2025
+-10-29 18:04:42'),(9922,NULL,42,721,'46.155.94.184','2025-10-29 18:04:44'),(9923,NULL,42,723,'46.155.94.184','2025-10-2
+9 18:05:06'),(9924,NULL,42,725,'46.155.94.184','2025-10-29 18:05:15'),(9925,NULL,42,727,'46.155.94.184','2025-10-29 18:
+05:19'),(9926,NULL,42,729,'46.155.94.184','2025-10-29 18:05:48'),(9927,NULL,42,731,'46.155.94.184','2025-10-29 18:05:57
+'),(9928,NULL,42,733,'46.155.94.184','2025-10-29 18:06:10'),(9929,NULL,42,735,'46.155.94.184','2025-10-29 18:06:19'),(9
+930,NULL,42,737,'46.155.94.184','2025-10-29 18:06:28'),(9931,NULL,42,739,'46.155.94.184','2025-10-29 18:06:41'),(9932,N
+ULL,42,741,'46.155.94.184','2025-10-29 18:06:46'),(9933,NULL,42,743,'46.155.94.184','2025-10-29 18:06:58'),(9934,NULL,4
+2,745,'46.155.94.184','2025-10-29 18:07:13'),(9935,NULL,42,747,'46.155.94.184','2025-10-29 18:07:28'),(9936,NULL,42,749
+,'46.155.94.184','2025-10-29 18:07:38'),(9937,NULL,42,751,'46.155.94.184','2025-10-29 18:07:53'),(9938,NULL,42,753,'46.
+155.94.184','2025-10-29 18:07:56'),(9939,NULL,42,755,'46.155.94.184','2025-10-29 18:08:00'),(9940,NULL,42,757,'46.155.9
+4.184','2025-10-29 18:08:05'),(9941,NULL,42,759,'46.155.94.184','2025-10-29 18:08:34'),(9942,NULL,42,761,'46.155.94.184
+','2025-10-29 18:08:56'),(9943,NULL,42,763,'46.155.94.184','2025-10-29 18:09:08'),(9944,NULL,42,765,'46.155.94.184','20
+25-10-29 18:09:46'),(9945,NULL,42,767,'46.155.94.184','2025-10-29 18:10:14'),(9946,NULL,42,769,'46.155.94.184','2025-10
+-29 18:10:26'),(9947,NULL,42,771,'46.155.94.184','2025-10-29 18:10:37'),(9948,NULL,42,773,'46.155.94.184','2025-10-29 1
+8:11:02'),(9949,NULL,42,775,'46.155.94.184','2025-10-29 18:11:25'),(9950,NULL,42,777,'46.155.94.184','2025-10-29 18:11:
+28'),(9951,NULL,42,779,'46.155.94.184','2025-10-29 18:11:46'),(9952,NULL,42,781,'46.155.94.184','2025-10-29 18:12:49'),
+(9953,NULL,42,783,'46.155.94.184','2025-10-29 18:12:54'),(9954,NULL,42,785,'46.155.94.184','2025-10-29 18:13:21'),(9955
+,NULL,42,787,'46.155.94.184','2025-10-29 18:13:31'),(9956,NULL,42,789,'46.155.94.184','2025-10-29 18:13:39'),(9957,NULL
+,42,791,'46.155.94.184','2025-10-29 18:14:07'),(9958,NULL,42,793,'46.155.94.184','2025-10-29 18:14:21'),(9959,NULL,42,7
+95,'46.155.94.184','2025-10-29 18:14:47'),(9960,NULL,42,797,'46.155.94.184','2025-10-29 18:14:51'),(9961,NULL,42,799,'4
+6.155.94.184','2025-10-29 18:14:52'),(9962,NULL,42,801,'46.155.94.184','2025-10-29 18:15:01'),(9963,NULL,42,803,'46.155
+.94.184','2025-10-29 18:15:03'),(9964,NULL,42,805,'46.155.94.184','2025-10-29 18:15:26'),(9965,NULL,42,807,'46.155.94.1
+84','2025-10-29 18:15:54'),(9966,NULL,42,809,'46.155.94.184','2025-10-29 18:16:29'),(9967,NULL,42,811,'46.155.94.184','
+2025-10-29 18:16:55'),(9968,NULL,42,813,'46.155.94.184','2025-10-29 18:17:19'),(9969,NULL,42,815,'46.155.94.184','2025-
+10-29 18:17:41'),(9970,NULL,42,817,'46.155.94.184','2025-10-29 18:17:47'),(9971,NULL,42,819,'46.155.94.184','2025-10-29
+ 18:17:56'),(9972,NULL,42,821,'46.155.94.184','2025-10-29 18:18:18'),(9973,NULL,42,823,'46.155.94.184','2025-10-29 18:1
+8:44'),(9974,NULL,42,825,'46.155.94.184','2025-10-29 18:19:26'),(9975,NULL,42,827,'46.155.94.184','2025-10-29 18:19:36'
+),(9976,NULL,42,829,'46.155.94.184','2025-10-29 18:19:43'),(9977,NULL,42,831,'46.155.94.184','2025-10-29 18:20:06'),(99
+78,NULL,42,833,'46.155.94.184','2025-10-29 18:21:38'),(9979,NULL,42,835,'46.155.94.184','2025-10-29 18:22:00'),(9980,NU
+LL,42,837,'46.155.94.184','2025-10-29 18:22:32'),(9981,NULL,42,839,'46.155.94.184','2025-10-29 18:22:54'),(9982,NULL,42
+,841,'46.155.94.184','2025-10-29 18:23:17'),(9983,NULL,42,843,'46.155.94.184','2025-10-29 18:23:46'),(9984,NULL,42,845,
+'46.155.94.184','2025-10-29 18:24:11'),(9985,NULL,42,847,'46.155.94.184','2025-10-29 18:24:24'),(9986,NULL,42,849,'46.1
+55.94.184','2025-10-29 18:24:31'),(9987,NULL,42,851,'46.155.94.184','2025-10-29 18:24:34'),(9988,NULL,42,853,'46.155.94
+.184','2025-10-29 18:24:37'),(9989,NULL,42,855,'46.155.94.184','2025-10-29 18:24:39'),(9990,NULL,42,857,'46.155.94.184'
+,'2025-10-29 18:24:41'),(9991,NULL,42,859,'46.155.94.184','2025-10-29 18:24:44'),(9992,NULL,42,861,'46.155.94.184','202
+5-10-29 18:24:46'),(9993,NULL,42,863,'46.155.94.184','2025-10-29 18:24:50'),(9994,NULL,42,865,'46.155.94.184','2025-10-
+29 18:24:52'),(9995,NULL,42,867,'46.155.94.184','2025-10-29 18:24:54'),(9996,NULL,42,869,'46.155.94.184','2025-10-29 18
+:24:57'),(9997,NULL,42,871,'46.155.94.184','2025-10-29 18:25:01'),(9998,NULL,42,873,'46.155.94.184','2025-10-29 18:25:0
+4'),(9999,NULL,42,875,'46.155.94.184','2025-10-29 18:25:06'),(10000,NULL,42,877,'46.155.94.184','2025-10-29 18:25:08'),
+(10001,NULL,42,879,'46.155.94.184','2025-10-29 18:25:13'),(10002,NULL,42,881,'46.155.94.184','2025-10-29 18:25:16'),(10
+003,NULL,42,883,'46.155.94.184','2025-10-29 18:25:18'),(10004,NULL,42,885,'46.155.94.184','2025-10-29 18:25:20'),(10005
+,NULL,42,887,'46.155.94.184','2025-10-29 18:25:21'),(10006,NULL,42,889,'46.155.94.184','2025-10-29 18:25:28'),(10007,NU
+LL,42,891,'46.155.94.184','2025-10-29 18:25:29'),(10008,NULL,42,893,'46.155.94.184','2025-10-29 18:25:37'),(10009,NULL,
+42,895,'46.155.94.184','2025-10-29 18:25:45'),(10010,NULL,42,897,'46.155.94.184','2025-10-29 18:25:48'),(10011,NULL,42,
+899,'46.155.94.184','2025-10-29 18:25:52'),(10012,NULL,42,901,'46.155.94.184','2025-10-29 18:25:55'),(10013,NULL,42,903
+,'46.155.94.184','2025-10-29 18:26:03'),(10014,NULL,42,905,'46.155.94.184','2025-10-29 18:26:14'),(10015,NULL,42,907,'4
+6.155.94.184','2025-10-29 18:26:20'),(10016,NULL,42,909,'46.155.94.184','2025-10-29 18:26:28'),(10017,NULL,42,911,'46.1
+55.94.184','2025-10-29 18:26:34'),(10018,NULL,42,913,'46.155.94.184','2025-10-29 18:26:36'),(10019,NULL,42,915,'46.155.
+94.184','2025-10-29 18:26:39'),(10020,NULL,42,917,'46.155.94.184','2025-10-29 18:26:57'),(10021,NULL,42,919,'46.155.94.
+184','2025-10-29 18:27:16'),(10022,NULL,42,921,'46.155.94.184','2025-10-29 18:27:59'),(10023,NULL,42,923,'46.155.94.184
+','2025-10-29 18:28:07'),(10024,NULL,42,925,'46.155.94.184','2025-10-29 18:28:28'),(10025,NULL,42,927,'46.155.94.184','
+2025-10-29 18:29:01'),(10026,NULL,42,929,'46.155.94.184','2025-10-29 18:29:25'),(10027,NULL,42,931,'46.155.94.184','202
+5-10-29 18:29:52'),(10028,NULL,42,933,'46.155.94.184','2025-10-29 18:30:02'),(10029,NULL,42,935,'46.155.94.184','2025-1
+0-29 18:30:26'),(10030,NULL,42,937,'46.155.94.184','2025-10-29 18:30:45'),(10031,NULL,42,939,'46.155.94.184','2025-10-2
+9 18:31:02'),(10032,NULL,42,941,'46.155.94.184','2025-10-29 18:31:39'),(10033,NULL,42,943,'46.155.94.184','2025-10-29 1
+8:32:02'),(10034,NULL,42,945,'46.155.94.184','2025-10-29 18:32:11'),(10035,NULL,42,947,'46.155.94.184','2025-10-29 18:3
+2:35'),(10036,NULL,42,949,'46.155.94.184','2025-10-29 18:33:01'),(10037,NULL,42,951,'46.155.94.184','2025-10-29 18:33:2
+4'),(10038,NULL,42,953,'46.155.94.184','2025-10-29 18:35:35'),(10039,NULL,42,955,'46.155.94.184','2025-10-29 18:35:50')
+,(10040,NULL,42,957,'46.155.94.184','2025-10-29 18:36:09'),(10041,NULL,42,959,'46.155.94.184','2025-10-29 18:36:35'),(1
+0042,NULL,42,961,'46.155.94.184','2025-10-29 18:36:59'),(10043,NULL,42,963,'46.155.94.184','2025-10-29 18:37:37'),(1004
+4,NULL,42,965,'46.155.94.184','2025-10-29 18:38:04'),(10045,NULL,42,967,'46.155.94.184','2025-10-29 18:38:25'),(10046,N
+ULL,42,969,'46.155.94.184','2025-10-29 18:38:57'),(10047,NULL,42,971,'46.155.94.184','2025-10-29 18:39:08'),(10048,NULL
+,42,973,'46.155.94.184','2025-10-29 18:39:44'),(10049,NULL,42,975,'46.155.94.184','2025-10-29 18:40:03'),(10050,NULL,42
+,977,'46.155.94.184','2025-10-29 18:40:26'),(10051,NULL,42,979,'46.155.94.184','2025-10-29 18:40:46'),(10052,NULL,42,98
+1,'46.155.94.184','2025-10-29 18:41:10'),(10053,NULL,42,983,'46.155.94.184','2025-10-29 18:41:14'),(10054,NULL,42,985,'
+46.155.94.184','2025-10-29 18:41:34'),(10055,NULL,42,987,'46.155.94.184','2025-10-29 18:41:54'),(10056,NULL,42,989,'46.
+155.94.184','2025-10-29 18:42:47'),(10057,NULL,42,991,'46.155.94.184','2025-10-29 18:43:26'),(10058,NULL,42,993,'46.155
+.94.184','2025-10-29 18:43:44'),(10059,NULL,42,995,'46.155.94.184','2025-10-29 18:43:53'),(10060,NULL,42,997,'46.155.94
+.184','2025-10-29 18:44:09'),(10061,NULL,42,999,'46.155.94.184','2025-10-29 18:44:30'),(10062,NULL,42,1001,'46.155.94.1
+84','2025-10-29 18:44:55'),(10063,NULL,42,1003,'46.155.94.184','2025-10-29 18:44:58'),(10064,NULL,42,1005,'46.155.94.18
+4','2025-10-29 18:45:37'),(10065,NULL,42,1007,'46.155.94.184','2025-10-29 18:46:01'),(10066,NULL,42,1009,'46.155.94.184
+','2025-10-29 18:46:27'),(10067,NULL,42,1011,'46.155.94.184','2025-10-29 18:46:30'),(10068,NULL,43,NULL,'46.155.94.184'
+,'2025-10-29 18:46:50'),(10069,NULL,43,1,'46.155.94.184','2025-10-29 18:46:54'),(10070,NULL,43,3,'46.155.94.184','2025-
+10-29 18:46:55'),(10071,NULL,43,5,'46.155.94.184','2025-10-29 18:46:59'),(10072,NULL,43,7,'46.155.94.184','2025-10-29 1
+8:47:01'),(10073,NULL,43,9,'46.155.94.184','2025-10-29 18:47:03'),(10074,NULL,43,11,'46.155.94.184','2025-10-29 18:47:0
+5'),(10075,NULL,43,13,'46.155.94.184','2025-10-29 18:47:07'),(10076,NULL,43,15,'46.155.94.184','2025-10-29 18:47:09'),(
+10077,NULL,43,17,'46.155.94.184','2025-10-29 18:47:11'),(10078,NULL,43,19,'46.155.94.184','2025-10-29 18:47:13'),(10079
+,NULL,43,21,'46.155.94.184','2025-10-29 18:47:15'),(10080,NULL,43,23,'46.155.94.184','2025-10-29 18:47:17'),(10081,NULL
+,43,25,'46.155.94.184','2025-10-29 18:47:19'),(10082,NULL,43,27,'46.155.94.184','2025-10-29 18:47:21'),(10083,NULL,43,2
+9,'46.155.94.184','2025-10-29 18:47:23'),(10084,NULL,43,31,'46.155.94.184','2025-10-29 18:47:25'),(10085,NULL,43,33,'46
+.155.94.184','2025-10-29 18:47:27'),(10086,NULL,43,35,'46.155.94.184','2025-10-29 18:47:33'),(10087,NULL,43,37,'46.155.
+94.184','2025-10-29 18:47:35'),(10088,NULL,43,39,'46.155.94.184','2025-10-29 18:47:37'),(10089,NULL,43,41,'46.155.94.18
+4','2025-10-29 18:47:39'),(10090,NULL,43,43,'46.155.94.184','2025-10-29 18:47:41'),(10091,NULL,43,45,'46.155.94.184','2
+025-10-29 18:47:43'),(10092,NULL,43,47,'46.155.94.184','2025-10-29 18:47:45'),(10093,NULL,43,49,'46.155.94.184','2025-1
+0-29 18:47:47'),(10094,NULL,43,51,'46.155.94.184','2025-10-29 18:47:49'),(10095,NULL,43,53,'46.155.94.184','2025-10-29 
+18:47:51'),(10096,NULL,43,55,'46.155.94.184','2025-10-29 18:47:53'),(10097,NULL,43,57,'46.155.94.184','2025-10-29 18:47
+:55'),(10098,NULL,43,59,'46.155.94.184','2025-10-29 18:47:57'),(10099,NULL,43,61,'46.155.94.184','2025-10-29 18:47:59')
+,(10100,NULL,43,63,'46.155.94.184','2025-10-29 18:48:02'),(10101,NULL,43,65,'46.155.94.184','2025-10-29 18:48:03'),(101
+02,NULL,43,67,'46.155.94.184','2025-10-29 18:48:05'),(10103,NULL,43,69,'46.155.94.184','2025-10-29 18:48:07'),(10104,NU
+LL,43,71,'46.155.94.184','2025-10-29 18:48:09'),(10105,NULL,43,73,'46.155.94.184','2025-10-29 18:48:11'),(10106,NULL,43
+,75,'46.155.94.184','2025-10-29 18:48:13'),(10107,NULL,43,77,'46.155.94.184','2025-10-29 18:48:15'),(10108,NULL,43,79,'
+46.155.94.184','2025-10-29 18:48:15'),(10109,NULL,43,81,'46.155.94.184','2025-10-29 18:48:17'),(10110,NULL,43,83,'46.15
+5.94.184','2025-10-29 18:48:19'),(10111,NULL,43,85,'46.155.94.184','2025-10-29 18:48:20'),(10112,NULL,43,87,'46.155.94.
+184','2025-10-29 18:48:22'),(10113,NULL,43,89,'46.155.94.184','2025-10-29 18:48:24'),(10114,NULL,43,91,'46.155.94.184',
+'2025-10-29 18:48:26'),(10115,NULL,43,93,'46.155.94.184','2025-10-29 18:48:28'),(10116,NULL,43,95,'46.155.94.184','2025
+-10-29 18:48:32'),(10117,NULL,43,97,'46.155.94.184','2025-10-29 18:48:34'),(10118,NULL,43,99,'46.155.94.184','2025-10-2
+9 18:48:36'),(10119,NULL,43,101,'46.155.94.184','2025-10-29 18:48:38'),(10120,NULL,43,103,'46.155.94.184','2025-10-29 1
+8:48:40'),(10121,NULL,43,105,'46.155.94.184','2025-10-29 18:48:42'),(10122,NULL,43,107,'46.155.94.184','2025-10-29 18:4
+8:44'),(10123,NULL,43,109,'46.155.94.184','2025-10-29 18:48:47'),(10124,NULL,43,111,'46.155.94.184','2025-10-29 18:48:4
+8'),(10125,NULL,43,113,'46.155.94.184','2025-10-29 18:48:50'),(10126,NULL,43,115,'46.155.94.184','2025-10-29 18:48:52')
+,(10127,NULL,43,117,'46.155.94.184','2025-10-29 18:48:54'),(10128,NULL,43,119,'46.155.94.184','2025-10-29 18:48:57'),(1
+0129,NULL,43,121,'46.155.94.184','2025-10-29 18:48:58'),(10130,NULL,43,123,'46.155.94.184','2025-10-29 18:49:00'),(1013
+1,NULL,43,125,'46.155.94.184','2025-10-29 18:49:02'),(10132,NULL,43,127,'46.155.94.184','2025-10-29 18:49:03'),(10133,N
+ULL,43,129,'46.155.94.184','2025-10-29 18:49:05'),(10134,NULL,43,131,'46.155.94.184','2025-10-29 18:49:07'),(10135,NULL
+,43,133,'46.155.94.184','2025-10-29 18:49:09'),(10136,NULL,43,135,'46.155.94.184','2025-10-29 18:49:11'),(10137,NULL,43
+,137,'46.155.94.184','2025-10-29 18:49:13'),(10138,NULL,43,139,'46.155.94.184','2025-10-29 18:49:16'),(10139,NULL,43,14
+1,'46.155.94.184','2025-10-29 18:49:18'),(10140,NULL,43,143,'46.155.94.184','2025-10-29 18:49:20'),(10141,NULL,43,145,'
+46.155.94.184','2025-10-29 18:49:22'),(10142,NULL,43,147,'46.155.94.184','2025-10-29 18:49:24'),(10143,NULL,43,149,'46.
+155.94.184','2025-10-29 18:49:26'),(10144,NULL,43,151,'46.155.94.184','2025-10-29 18:49:28'),(10145,NULL,43,153,'46.155
+.94.184','2025-10-29 18:49:30'),(10146,NULL,43,155,'46.155.94.184','2025-10-29 18:49:32'),(10147,NULL,43,157,'46.155.94
+.184','2025-10-29 18:49:36'),(10148,NULL,43,159,'46.155.94.184','2025-10-29 18:49:37'),(10149,NULL,43,161,'46.155.94.18
+4','2025-10-29 18:49:40'),(10150,NULL,43,163,'46.155.94.184','2025-10-29 18:49:42'),(10151,NULL,43,165,'46.155.94.184',
+'2025-10-29 18:49:44'),(10152,NULL,43,167,'46.155.94.184','2025-10-29 18:49:47'),(10153,NULL,43,169,'46.155.94.184','20
+25-10-29 18:49:49'),(10154,NULL,43,171,'46.155.94.184','2025-10-29 18:49:51'),(10155,NULL,43,173,'46.155.94.184','2025-
+10-29 18:49:55'),(10156,NULL,43,175,'46.155.94.184','2025-10-29 18:49:57'),(10157,NULL,43,177,'46.155.94.184','2025-10-
+29 18:49:58'),(10158,NULL,43,179,'46.155.94.184','2025-10-29 18:49:59'),(10159,NULL,43,181,'46.155.94.184','2025-10-29 
+18:50:23'),(10160,NULL,43,183,'46.155.94.184','2025-10-29 18:50:50'),(10161,NULL,43,185,'46.155.94.184','2025-10-29 18:
+51:17'),(10162,NULL,43,187,'46.155.94.184','2025-10-29 18:51:47'),(10163,NULL,43,189,'46.155.94.184','2025-10-29 18:52:
+30'),(10164,NULL,43,191,'46.155.94.184','2025-10-29 18:52:44'),(10165,NULL,43,193,'46.155.94.184','2025-10-29 18:53:07'
+),(10166,NULL,43,195,'46.155.94.184','2025-10-29 18:53:09'),(10167,NULL,43,197,'46.155.94.184','2025-10-29 18:53:21'),(
+10168,NULL,43,199,'46.155.94.184','2025-10-29 18:53:22'),(10169,NULL,43,201,'46.155.94.184','2025-10-29 18:53:50'),(101
+70,NULL,43,203,'46.155.94.184','2025-10-29 18:54:02'),(10171,NULL,43,205,'46.155.94.184','2025-10-29 18:54:13'),(10172,
+NULL,43,207,'46.155.94.184','2025-10-29 18:54:37'),(10173,NULL,43,209,'46.155.94.184','2025-10-29 18:54:40'),(10174,NUL
+L,43,211,'46.155.94.184','2025-10-29 18:54:48'),(10175,NULL,43,213,'46.155.94.184','2025-10-29 18:54:52'),(10176,NULL,4
+3,215,'46.155.94.184','2025-10-29 18:55:00'),(10177,NULL,43,217,'46.155.94.184','2025-10-29 18:55:07'),(10178,NULL,43,2
+19,'46.155.94.184','2025-10-29 18:55:12'),(10179,NULL,43,221,'46.155.94.184','2025-10-29 18:57:42'),(10180,NULL,43,223,
+'46.155.94.184','2025-10-29 18:57:46'),(10181,NULL,43,225,'46.155.94.184','2025-10-29 18:58:04'),(10182,NULL,43,227,'46
+.155.94.184','2025-10-29 18:58:07'),(10183,NULL,43,229,'46.155.94.184','2025-10-29 18:58:10'),(10184,NULL,43,231,'46.15
+5.94.184','2025-10-29 18:58:23'),(10185,NULL,43,233,'46.155.94.184','2025-10-29 18:58:44'),(10186,NULL,43,235,'46.155.9
+4.184','2025-10-29 18:59:04'),(10187,NULL,43,237,'46.155.94.184','2025-10-29 18:59:15'),(10188,NULL,43,239,'46.155.94.1
+84','2025-10-29 18:59:40'),(10189,NULL,43,241,'46.155.94.184','2025-10-29 18:59:59'),(10190,NULL,43,243,'46.155.94.184'
+,'2025-10-29 19:00:32'),(10191,NULL,43,245,'46.155.94.184','2025-10-29 19:03:10'),(10192,NULL,43,247,'46.155.94.184','2
+025-10-29 19:05:06'),(10193,NULL,43,249,'46.155.94.184','2025-10-29 19:05:21'),(10194,NULL,43,251,'46.155.94.184','2025
+-10-29 19:07:07'),(10195,NULL,43,253,'46.155.94.184','2025-10-29 19:07:45'),(10196,NULL,43,255,'46.155.94.184','2025-10
+-29 19:08:27'),(10197,NULL,43,257,'46.155.94.184','2025-10-29 19:08:39'),(10198,NULL,43,259,'46.155.94.184','2025-10-29
+ 19:08:50'),(10199,NULL,43,261,'46.155.94.184','2025-10-29 19:09:05'),(10200,NULL,43,263,'46.155.94.184','2025-10-29 19
+:10:01'),(10201,NULL,43,265,'46.155.94.184','2025-10-29 19:10:38'),(10202,NULL,43,267,'46.155.94.184','2025-10-29 19:11
+:06'),(10203,NULL,43,269,'46.155.94.184','2025-10-29 19:12:21'),(10204,NULL,43,271,'46.155.94.184','2025-10-29 19:12:49
+'),(10205,NULL,43,273,'46.155.94.184','2025-10-29 19:13:22'),(10206,NULL,43,275,'46.155.94.184','2025-10-29 19:13:57'),
+(10207,NULL,43,277,'46.155.94.184','2025-10-29 19:14:03'),(10208,NULL,43,279,'46.155.94.184','2025-10-29 19:16:00'),(10
+209,NULL,43,281,'46.155.94.184','2025-10-29 19:17:14'),(10210,NULL,43,283,'46.155.94.184','2025-10-29 19:22:29'),(10211
+,NULL,43,285,'46.155.94.184','2025-10-29 19:27:22'),(10212,NULL,43,287,'46.155.94.184','2025-10-29 19:27:24'),(10213,NU
+LL,43,289,'46.155.94.184','2025-10-29 19:27:25'),(10214,NULL,43,291,'46.155.94.184','2025-10-29 19:27:28'),(10215,NULL,
+43,293,'46.155.94.184','2025-10-29 19:27:36'),(10216,NULL,43,295,'46.155.94.184','2025-10-29 19:27:47'),(10217,NULL,43,
+297,'46.155.94.184','2025-10-29 19:28:06'),(10218,NULL,43,299,'46.155.94.184','2025-10-29 19:28:20'),(10219,NULL,43,301
+,'46.155.94.184','2025-10-29 19:28:35'),(10220,NULL,43,303,'46.155.94.184','2025-10-29 19:28:39'),(10221,NULL,43,305,'4
+6.155.94.184','2025-10-29 19:29:35'),(10222,NULL,43,307,'46.155.94.184','2025-10-29 19:29:37'),(10223,NULL,43,309,'46.1
+55.94.184','2025-10-29 19:29:47'),(10224,NULL,43,311,'46.155.94.184','2025-10-29 19:31:18'),(10225,NULL,43,313,'46.155.
+94.184','2025-10-29 19:35:46'),(10226,NULL,43,315,'46.155.94.184','2025-10-29 19:39:52'),(10227,NULL,43,317,'46.155.94.
+184','2025-10-29 19:41:29'),(10228,NULL,43,319,'46.155.94.184','2025-10-29 19:45:24'),(10229,NULL,43,321,'46.155.94.184
+','2025-10-29 19:45:50'),(10230,NULL,43,323,'46.155.94.184','2025-10-29 19:49:16'),(10231,NULL,43,325,'46.155.94.184','
+2025-10-29 19:49:50'),(10232,NULL,43,327,'46.155.94.184','2025-10-29 19:50:12'),(10233,NULL,43,329,'46.155.94.184','202
+5-10-29 19:50:32'),(10234,NULL,43,331,'46.155.94.184','2025-10-29 19:50:33'),(10236,NULL,53,103,'88.242.211.16','2025-1
+0-29 20:02:09'),(10237,NULL,53,101,'88.242.211.16','2025-10-29 20:02:10'),(10238,NULL,53,105,'88.242.211.16','2025-10-2
+9 20:02:17'),(10239,NULL,53,109,'88.242.211.16','2025-10-29 20:02:28'),(10240,NULL,53,111,'88.242.211.16','2025-10-29 2
+0:02:30'),(10241,NULL,53,115,'88.242.211.16','2025-10-29 20:02:32'),(10242,NULL,53,113,'88.242.211.16','2025-10-29 20:0
+2:33'),(10243,NULL,53,117,'88.242.211.16','2025-10-29 20:02:34'),(10244,NULL,53,119,'88.242.211.16','2025-10-29 20:02:3
+7'),(10245,NULL,53,121,'88.242.211.16','2025-10-29 20:02:39'),(10246,NULL,53,123,'88.242.211.16','2025-10-29 20:02:47')
+,(10247,NULL,53,125,'88.242.211.16','2025-10-29 20:02:50'),(10248,NULL,53,127,'88.242.211.16','2025-10-29 20:02:51'),(1
+0249,NULL,53,129,'88.242.211.16','2025-10-29 20:02:53'),(10250,NULL,53,131,'88.242.211.16','2025-10-29 20:02:54'),(1025
+1,NULL,53,133,'88.242.211.16','2025-10-29 20:02:56'),(10252,NULL,53,135,'88.242.211.16','2025-10-29 20:02:56'),(10253,N
+ULL,53,137,'88.242.211.16','2025-10-29 20:02:58'),(10254,NULL,53,139,'88.242.211.16','2025-10-29 20:03:00'),(10255,NULL
+,53,141,'88.242.211.16','2025-10-29 20:03:01'),(10256,NULL,53,143,'88.242.211.16','2025-10-29 20:03:08'),(10257,NULL,53
+,145,'88.242.211.16','2025-10-29 20:03:09'),(10261,NULL,53,155,'88.242.211.16','2025-10-29 20:03:30'),(10262,NULL,53,15
+7,'88.242.211.16','2025-10-29 20:03:32'),(10263,NULL,53,159,'88.242.211.16','2025-10-29 20:03:37'),(10264,NULL,53,161,'
+88.242.211.16','2025-10-29 20:03:39'),(10265,NULL,53,163,'88.242.211.16','2025-10-29 20:03:44'),(10266,NULL,53,165,'88.
+242.211.16','2025-10-29 20:03:46'),(10267,NULL,53,167,'88.242.211.16','2025-10-29 20:03:47'),(10268,NULL,53,169,'88.242
+.211.16','2025-10-29 20:03:48'),(10269,NULL,53,171,'88.242.211.16','2025-10-29 20:03:50'),(10270,NULL,53,173,'88.242.21
+1.16','2025-10-29 20:03:54'),(10271,NULL,53,179,'88.242.211.16','2025-10-29 20:04:15'),(10272,NULL,53,177,'88.242.211.1
+6','2025-10-29 20:04:17'),(10273,NULL,53,181,'88.242.211.16','2025-10-29 20:04:20'),(10274,NULL,53,183,'88.242.211.16',
+'2025-10-29 20:04:23'),(10275,NULL,53,185,'88.242.211.16','2025-10-29 20:04:25'),(10276,NULL,53,195,'88.242.211.16','20
+25-10-29 20:05:14'),(10277,NULL,53,197,'88.242.211.16','2025-10-29 20:05:15'),(10278,NULL,53,199,'88.242.211.16','2025-
+10-29 20:05:16'),(10279,NULL,53,201,'88.242.211.16','2025-10-29 20:05:17'),(10280,NULL,53,203,'88.242.211.16','2025-10-
+29 20:05:24'),(10281,NULL,53,205,'88.242.211.16','2025-10-29 20:05:36'),(10282,NULL,53,223,'88.242.211.16','2025-10-29 
+20:06:03'),(10283,NULL,53,225,'88.242.211.16','2025-10-29 20:06:06'),(10284,NULL,53,227,'88.242.211.16','2025-10-29 20:
+06:08'),(10285,NULL,53,243,'88.242.211.16','2025-10-29 20:06:54'),(10286,NULL,53,245,'88.242.211.16','2025-10-29 20:06:
+56'),(10287,NULL,53,247,'88.242.211.16','2025-10-29 20:06:59'),(10288,NULL,53,309,'88.242.211.16','2025-10-29 20:07:29'
+),(10290,NULL,53,321,'88.242.211.16','2025-10-29 20:07:55'),(10291,NULL,53,351,'88.242.211.16','2025-10-29 20:08:40'),(
+10292,NULL,53,353,'88.242.211.16','2025-10-29 20:09:08'),(10293,NULL,53,355,'88.242.211.16','2025-10-29 20:09:11'),(102
+94,NULL,53,359,'88.242.211.16','2025-10-29 20:09:34'),(10295,NULL,53,363,'88.242.211.16','2025-10-29 20:10:09'),(10296,
+NULL,53,365,'88.242.211.16','2025-10-29 20:10:30'),(10297,NULL,53,379,'88.242.211.16','2025-10-29 20:11:00'),(10298,NUL
+L,53,381,'88.242.211.16','2025-10-29 20:11:03'),(10299,NULL,53,383,'88.242.211.16','2025-10-29 20:11:04'),(10300,NULL,5
+3,385,'88.242.211.16','2025-10-29 20:11:06'),(10301,NULL,53,403,'88.242.211.16','2025-10-29 20:11:42'),(10302,NULL,53,4
+15,'88.242.211.16','2025-10-29 20:12:09'),(10303,NULL,53,417,'88.242.211.16','2025-10-29 20:12:10'),(10304,NULL,53,449,
+'88.242.211.16','2025-10-29 20:12:30'),(10305,NULL,53,451,'88.242.211.16','2025-10-29 20:12:31'),(10306,NULL,53,457,'88
+.242.211.16','2025-10-29 20:12:36'),(10307,NULL,53,469,'88.242.211.16','2025-10-29 20:13:00'),(10308,NULL,53,471,'88.24
+2.211.16','2025-10-29 20:13:01'),(10309,NULL,53,473,'88.242.211.16','2025-10-29 20:13:02'),(10310,NULL,53,475,'88.242.2
+11.16','2025-10-29 20:13:05'),(10311,NULL,53,477,'88.242.211.16','2025-10-29 20:13:07'),(10312,NULL,53,479,'88.242.211.
+16','2025-10-29 20:13:09'),(10313,NULL,53,481,'88.242.211.16','2025-10-29 20:13:15'),(10314,NULL,53,483,'88.242.211.16'
+,'2025-10-29 20:13:19'),(10315,NULL,53,485,'88.242.211.16','2025-10-29 20:13:33'),(10316,NULL,53,487,'88.242.211.16','2
+025-10-29 20:13:36'),(10317,NULL,53,491,'88.242.211.16','2025-10-29 20:13:44'),(10318,NULL,53,493,'88.242.211.16','2025
+-10-29 20:14:00'),(10319,NULL,53,499,'88.242.211.16','2025-10-29 20:14:07'),(10320,NULL,53,501,'88.242.211.16','2025-10
+-29 20:14:08'),(10321,NULL,53,503,'88.242.211.16','2025-10-29 20:14:12'),(10322,NULL,53,505,'88.242.211.16','2025-10-29
+ 20:35:22'),(10323,NULL,53,507,'88.242.211.16','2025-10-29 20:35:47'),(10324,NULL,53,515,'88.242.211.16','2025-10-29 20
+:36:42'),(10325,NULL,53,517,'88.242.211.16','2025-10-29 20:36:43'),(10326,NULL,53,527,'88.242.211.16','2025-10-29 20:36
+:59'),(10327,NULL,53,529,'88.242.211.16','2025-10-29 20:37:01'),(10328,NULL,53,531,'88.242.211.16','2025-10-29 20:37:03
+'),(10329,NULL,53,533,'88.242.211.16','2025-10-29 20:37:04'),(10330,NULL,53,535,'88.242.211.16','2025-10-29 20:37:04'),
+(10331,NULL,53,537,'88.242.211.16','2025-10-29 20:37:11'),(10332,NULL,53,539,'88.242.211.16','2025-10-29 20:37:19'),(10
+333,NULL,53,541,'88.242.211.16','2025-10-29 20:37:43'),(10334,NULL,53,543,'88.242.211.16','2025-10-29 20:37:44'),(10335
+,NULL,53,547,'88.242.211.16','2025-10-29 20:38:01'),(10336,NULL,53,549,'88.242.211.16','2025-10-29 20:38:03'),(10337,NU
+LL,53,551,'88.242.211.16','2025-10-29 20:38:06'),(10338,NULL,53,553,'88.242.211.16','2025-10-29 20:38:14'),(10339,NULL,
+53,555,'88.242.211.16','2025-10-29 20:38:42'),(10340,NULL,53,557,'88.242.211.16','2025-10-29 20:38:49'),(10341,NULL,53,
+559,'88.242.211.16','2025-10-29 20:38:54'),(10342,NULL,53,561,'88.242.211.16','2025-10-29 20:40:02'),(10343,NULL,53,563
+,'88.242.211.16','2025-10-29 20:40:06'),(10344,NULL,53,599,'88.242.211.16','2025-10-29 20:41:13'),(10345,NULL,53,597,'8
+8.242.211.16','2025-10-29 20:41:15'),(10346,NULL,53,609,'88.242.211.16','2025-10-29 20:42:11'),(10347,NULL,53,651,'88.2
+42.211.16','2025-10-29 21:13:11'),(10348,NULL,46,NULL,'178.240.62.229','2025-10-29 22:32:58'),(10349,NULL,53,659,'88.24
+2.211.16','2025-10-30 03:54:47'),(10350,NULL,53,657,'88.242.211.16','2025-10-30 03:54:49'),(10351,NULL,53,661,'88.242.2
+11.16','2025-10-30 03:55:00'),(10352,NULL,53,663,'88.242.211.16','2025-10-30 03:55:03'),(10353,NULL,53,665,'88.242.211.
+16','2025-10-30 03:55:08'),(10354,NULL,53,685,'88.242.211.16','2025-10-30 03:57:20'),(10355,NULL,53,687,'88.242.211.16'
+,'2025-10-30 03:57:22'),(10356,NULL,53,689,'88.242.211.16','2025-10-30 03:57:24'),(10357,NULL,53,691,'88.242.211.16','2
+025-10-30 03:58:00'),(10358,NULL,53,695,'88.242.211.16','2025-10-30 03:58:21'),(10359,NULL,53,697,'88.242.211.16','2025
+-10-30 03:58:37'),(10360,NULL,53,699,'88.242.211.16','2025-10-30 03:58:46'),(10361,NULL,53,707,'88.242.211.16','2025-10
+-30 03:59:46'),(10362,NULL,53,709,'88.242.211.16','2025-10-30 04:00:10'),(10363,NULL,53,711,'88.242.211.16','2025-10-30
+ 04:00:18'),(10364,NULL,53,713,'88.242.211.16','2025-10-30 04:02:11'),(10365,NULL,53,715,'88.242.211.16','2025-10-30 04
+:02:16'),(10366,NULL,53,717,'88.242.211.16','2025-10-30 04:02:18'),(10367,NULL,53,719,'88.242.211.16','2025-10-30 04:02
+:34'),(10368,NULL,53,721,'88.242.211.16','2025-10-30 04:02:45'),(10369,NULL,53,723,'88.242.211.16','2025-10-30 04:03:24
+'),(10370,NULL,53,725,'88.242.211.16','2025-10-30 04:03:37'),(10371,NULL,53,727,'88.242.211.16','2025-10-30 04:03:46'),
+(10372,NULL,53,729,'88.242.211.16','2025-10-30 04:04:06'),(10373,NULL,53,735,'88.242.211.16','2025-10-30 04:04:22'),(10
+374,NULL,53,737,'88.242.211.16','2025-10-30 04:04:25'),(10375,NULL,53,739,'88.242.211.16','2025-10-30 04:04:49'),(10376
+,NULL,53,755,'88.242.211.16','2025-10-30 04:07:10'),(10377,NULL,53,757,'88.242.211.16','2025-10-30 04:07:13'),(10378,NU
+LL,58,NULL,'194.164.224.178','2025-10-30 13:43:54'),(10379,2,NULL,NULL,'5.178.12.44','2025-10-30 13:53:18'),(10380,38,N
+ULL,NULL,'5.178.12.44','2025-10-30 13:53:20'),(10381,NULL,53,765,'88.242.211.16','2025-10-30 13:54:29'),(10382,NULL,53,
+767,'88.242.211.16','2025-10-30 13:54:30'),(10383,NULL,53,769,'88.242.211.16','2025-10-30 13:54:34'),(10384,NULL,53,797
+,'88.242.211.16','2025-10-30 13:56:57'),(10385,NULL,53,799,'88.242.211.16','2025-10-30 13:56:59'),(10386,NULL,53,801,'8
+8.242.211.16','2025-10-30 13:57:00'),(10387,NULL,53,803,'88.242.211.16','2025-10-30 13:57:31'),(10388,NULL,53,809,'88.2
+42.211.16','2025-10-30 13:58:29'),(10389,38,NULL,NULL,'178.247.33.74','2025-10-30 14:04:02'),(10390,2,NULL,NULL,'178.24
+7.33.74','2025-10-30 14:04:05'),(10391,38,NULL,NULL,'178.247.33.74','2025-10-30 14:04:11'),(10392,38,NULL,NULL,'178.247
+.33.74','2025-10-30 16:29:27'),(10395,NULL,46,NULL,'88.240.144.175','2025-10-30 19:53:01'),(10396,2,NULL,NULL,'95.10.20
+1.120','2025-10-31 11:25:56'),(10397,38,NULL,NULL,'95.10.201.120','2025-10-31 11:25:57'),(10398,38,NULL,NULL,'31.143.10
+6.173','2025-10-31 14:43:55'),(10399,38,NULL,NULL,'31.143.106.173','2025-10-31 14:44:15'),(10400,NULL,52,NULL,'5.229.72
+.199','2025-10-31 15:24:15'),(10402,2,NULL,NULL,'31.223.89.112','2025-10-31 17:12:45'),(10403,38,NULL,NULL,'31.223.89.1
+12','2025-10-31 17:12:49'),(10406,NULL,18,NULL,'78.164.17.102','2025-10-31 19:45:15');
+  /*!40000 ALTER TABLE `likes` ENABLE KEYS */;
+  UNLOCK TABLES;
+  
+  --
+  -- Table structure for table `newsletter_notifications`
+  --
+> CREATE TABLE `reading_history` (
+    `id` int NOT NULL AUTO_INCREMENT,
+    `user_id` varchar(255) NOT NULL,
+    `book_id` int NOT NULL,
+    `chapter_id` int DEFAULT NULL,
+    `line_number` int DEFAULT NULL,
+    `progress_percentage` decimal(5,2) DEFAULT '0.00',
+    `last_read_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `unique_user_book` (`user_id`,`book_id`),
+    KEY `book_id` (`book_id`),
+    KEY `chapter_id` (`chapter_id`),
+    KEY `idx_user_id` (`user_id`),
+    KEY `idx_last_read` (`last_read_at`),
+    CONSTRAINT `reading_history_ibfk_1` FOREIGN KEY (`book_id`) REFERENCES `books` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `reading_history_ibfk_2` FOREIGN KEY (`chapter_id`) REFERENCES `chapters` (`id`) ON DELETE CASCADE
+  ) ENGINE=InnoDB AUTO_INCREMENT=14 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+  /*!40101 SET character_set_client = @saved_cs_client */;
+  
+  --
+  -- Dumping data for table `reading_history`
+  --
+  
+  LOCK TABLES `reading_history` WRITE;
+  /*!40000 ALTER TABLE `reading_history` DISABLE KEYS */;
+  INSERT INTO `reading_history` VALUES (1,'user_1759766536166_4o5dgjhhz',38,25,189,31.66,'2025-10-08 01:09:26','2025-10
+-08 00:39:44'),(2,'user_1759873954613_hgv5i2fd7',38,26,499,70.78,'2025-10-08 00:43:45','2025-10-08 00:43:45'),(3,'user_
+1759874610527_o4299qux0',38,22,611,76.76,'2025-10-08 01:03:18','2025-10-08 01:03:18'),(4,'user_1759831595649_wp3rz77m8'
+,38,22,75,9.42,'2025-10-08 01:20:51','2025-10-08 01:03:26'),(5,'user_1759886089531_s2lln0iv5',38,33,379,82.21,'2025-10-
+08 01:32:51','2025-10-08 01:21:02'),(6,'user_1759766536166_4o5dgjhhz',2,17,115,61.50,'2025-10-08 01:26:34','2025-10-08 
+01:26:16'),(7,'user_1759886846590_vyhipzg46',38,19,545,65.90,'2025-10-08 02:10:39','2025-10-08 01:28:26'),(8,'user_1759
+845955536_pv1y682s2',38,31,331,45.97,'2025-10-08 01:34:01','2025-10-08 01:33:44'),(9,'user_1759873932710_c9fxvehl6',38,
+31,331,45.97,'2025-10-08 02:12:14','2025-10-08 01:42:38'),(10,'user_1759887840761_l5elsow5r',2,17,139,74.33,'2025-10-08
+ 01:50:30','2025-10-08 01:50:30'),(11,'user_1759888921003_csd9vhf4f',38,24,103,20.20,'2025-10-08 02:03:53','2025-10-08 
+02:03:53'),(12,'user_1759875545425_d13m6zqju',38,25,364,60.97,'2025-10-08 02:08:30','2025-10-08 02:06:07'),(13,'user_17
+59889785545_lmrkem13a',38,33,5,1.08,'2025-10-08 02:16:51','2025-10-08 02:16:51');
+  /*!40000 ALTER TABLE `reading_history` ENABLE KEYS */;
+  UNLOCK TABLES;
+  
+  --
+
+

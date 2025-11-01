@@ -1,0 +1,33 @@
+# Railway Domain için Optimize Edilmiş Robots.txt
+# https://tolgademir.org
+
+User-agent: *
+Allow: /
+Disallow: /yonetim/
+Disallow: /api/
+Disallow: /_next/
+Disallow: /admin/
+Disallow: /backups/
+
+# Googlebot için özel kurallar
+User-agent: Googlebot
+Allow: /
+Allow: /kitaplar/
+Allow: /hakkimda
+Allow: /iletisim
+Allow: /blog
+Disallow: /yonetim/
+Disallow: /admin/
+
+# Bingbot için özel kurallar
+User-agent: Bingbot
+Allow: /
+Disallow: /yonetim/
+Disallow: /admin/
+Crawl-delay: 1
+
+# Sitemap
+Sitemap: https://tolgademir.org/sitemap.xml
+
+# Host
+Host: https://tolgademir.org
