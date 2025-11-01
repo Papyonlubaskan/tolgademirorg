@@ -89,13 +89,13 @@ export default function Hero() {
               ))
             ) : (
               <>
-                <p className="text-lg text-gray-600 dark:text-gray-300 leading-relaxed">
+                <p className="text-xl font-bold text-gray-800 dark:text-gray-200 leading-relaxed">
                   Sayın Okuyucuma;
                 </p>
-                <p className="text-base text-gray-600 dark:text-gray-300 leading-relaxed mb-4">
+                <p className="text-base font-medium text-gray-700 dark:text-gray-300 leading-relaxed mb-4">
                   Yeni bir olaydan bahsetmeliyim. Sen veya siz mi demeliyim okuyucuma… İçin için mutluyken… Çünkü yıllar sonra; hemen sonra, şimdi, Bugün, kolay ve huzurlu bir gündeyim. Huzurlu, sessiz, sakin; olmak ne güzel...
                 </p>
-                <p className="text-base text-gray-600 dark:text-gray-300 leading-relaxed mb-4">
+                <p className="text-base font-medium text-gray-700 dark:text-gray-300 leading-relaxed mb-4">
                   Hızlı olarak konuya gireyim. İndirimli bir şeyi yakalamış sevinciyle… Garantisi mi? Hala o zor günlerden sonra hayattayım… Öncelikle bilin alışılmadık sese karşı duyarlıyım. En azından bugün bu kanaateyim. İstanbul… Üsküdar'dan Kadıköy'e Taksi Dolmuşla geçerken… Birden çok siren sesi… Metrolpol şehir'e Anadolu'dan gelen biri için alışıldık değil. Başlamak bitirmenin yarısı… O gün Dolmuştan indim. Bir kovalamaca şehirde… Bir köşede Aşk yaşayan gençler, Bir köşede mutlular… Bir köşe para kazanmak isteyenler. Kar, Fırsat, Tasarruf, Sağlık Sonucu bekleyenler… Vapur seslerine geçiyor. Sonuç mu… Bir Kadıköy turu… Kanıtlanmış bir şey ki orası başka bir İstanbul… Sanki vaha… Ama ona rağmen Kadıköy Boğa'nın oradan girdin mi? Ekstra olarak, Mülteciler Üst kat dükkanlarda… Kazandıran, Kazançlı yazıları arasında, Tüyo sırlarını verenlerin olduğu bir At yarışı bayisi… Geç oradan… Yürü boğa boyunca… Duyuru yapan anutçular… İstiklal' Caddesi'ndeki kadar olmasa da bir güruh üzerine üzerine geliyor insanın… Dikkat… Et… Yürürken… Cüzdan kapılmasın… Omuz ata ata yardır. Öğlenin en civcivli saati… Kimse çarpıştığına aldırmıyor. Özel… Bir yer gibi geliyor. Sahile ulaşabilmek. Tiyatrolara gel. Kafeler sokağına bir selam çak. Uyarı… Zihninden sana: O kadar Tiyatrocun Adamsın. El broşürü al bari… gir içeri al broşür. Çık. Çabuk yap. Nefes almak için sahile çıkmalısın. Uyarı havuza dikket et düşme yazısını oku… Acele Acele yürüyen insanların arasından… Yardım istemek için, birisi durduruyor. Sınırlı zamanı var. Sorup teşekkür etmeden gidiyor. Sen ona ne dediğin bilmiyorsun. İlk… Sağ… Girme… Son sokağı geç… Artık yokuş aşağı… Sadece Denizi görebilmek için… Kısa Süreli… Bitiyor yazan milyonculardan aşağıya… Yürü… Katıl katıla gülenler… Sokakta bağış toplayanlar dergiye üye yapmaya çalışıyor. Onlar gibi olsan da bir zamanlar aldırma… Üyelere Özel demelerine aldırma… Geç gitsin… Davetlerini geri çevirip, yürü… Ve iskele göründü… Artık daha az kalabalık… Evleri geç… Satılık evleri geç… Almaya gücün yok. Biraz nefes almaya geldin. Zula'dan termosu çıkar. Karşınızda Deniz… otur duvara kalça üstü…. İzle Denizi… Bir temiz nefes… Keşfet yatları; benimde olur mu diyerek iç çek. Karşılaştır Şans oyunlarından çıksa şunu alırım şunu lama para de… İnanılmaz zorlu biraz zorlu bir sürecin ardından nefes al… İnanılmaz bir huzur… Huzur mu, dediniz. Etkileyici çiftler geçerken, gözün dalmasın… Senin de bir gün gönlüne göresi olur de… Arka fonda Biri radyo açmış. Güneşimi kaybettim çalıyor. Müthiş o koşuşturmaca Yorgunluğuna iyi geliyor. Harika dalıyorsun gözün… Mükemmel/ Şaşırtıcı bir klip çekiyor zihin… Efsane sevgili kızı hatırla… Mucizevi tanışmıştın… Klişeydi her şey... Seni olduğundan farklı düşünmüştü. Sen Tiyatro okumak istiyordu. Onunda kocaman sertifikası vardı. Sertifikalı aşk… Risksizdi başlangıçta… Her şey… Fonda dokunulmazımsın benim… Yüreğime hükmedemem… Güneşimi kaybettim…. Bla Bla… Resmi unvanı yok. Koruması ise, uzak dur demek. Güvenli mi? Bu şehre rağmen nasıl yaptığı belirsiz kaliteli koruma da işte… Benim çiçeğim de içinden… Bisikletler çekiyor. Tıkırdayan boncukları var tellerinde… Öğreneli yıllar olsa da bisiklet kullanmayı yıllar gibi… En uygun aşktı o de iç çek. Eksiksiz ve tam. Ama onunun için öyle miydin? İşte sırf bu yüzden işte… Yaşamadan çok yakın oldukları çalıyor radyoda… Toparlanırken, bak telefona… Sivri burnun, kırkına gelmiş saçların… işte deki kendine kendi… İstanbulsuz, aşksız Yazar… Gözün tekrar geriye aynı yolu yürümeye kesiyor mu? İşte Ben Tolga Demir…
                 </p>
               </>
@@ -118,11 +118,11 @@ export default function Hero() {
           </div>
           
           <div className="flex justify-center lg:justify-end">
-            <div className="relative">
+            <div className="sticky top-24 self-start">
               <img
                 src={heroData.hero_image || '/hero-profile.jpg'}
                 alt={heroData.hero_title || 'Tolga Demir'}
-                className="w-80 h-96 object-cover rounded-2xl shadow-2xl"
+                className="w-80 h-96 object-cover rounded-2xl shadow-2xl transition-all duration-300"
                 onError={(e) => {
                   (e.target as HTMLImageElement).src = '/hero-profile.jpg';
                 }}

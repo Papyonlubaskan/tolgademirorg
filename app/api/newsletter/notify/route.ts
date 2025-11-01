@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { executeQuery } from '@/lib/database/mysql';
 import { requireAdmin } from '@/lib/middleware/admin-auth';
 import { successResponse, errorResponse } from '@/lib/api-response';
+import { sendEmail, getUpdateNotificationTemplate } from '@/lib/email';
 
 /**
  * POST /api/newsletter/notify
@@ -32,21 +33,37 @@ export async function POST(request: NextRequest) {
     let sentCount = 0;
     let failedCount = 0;
 
-    // Email servisi ile bildirim gönder (opsiyonel)
-    try {
-      const { emailService } = await import('@/lib/email');
+    // Kitap bilgilerini al (eğer bookId varsa)
+    let bookInfo: any = null;
+    if (bookId) {
+      const bookResult = await executeQuery(
+        'SELECT title, cover_image, slug FROM books WHERE id = ?',
+        [bookId]
+      ) as any[];
       
+      if (bookResult.length > 0) {
+        bookInfo = bookResult[0];
+      }
+    }
+
+    // Email servisi ile bildirim gönder
+    try {
       for (const subscriber of subscribers) {
         try {
-          await emailService.sendNewsletterNotification(
-            subscriber.email,
-            subscriber.name,
-            type,
-            title,
-            message,
-            bookId,
-            chapterId
-          );
+          const emailHtml = getUpdateNotificationTemplate({
+            title: title,
+            description: message,
+            bookTitle: bookInfo?.title,
+            bookCoverUrl: bookInfo?.cover_image,
+            bookUrl: bookInfo ? `https://tolgademir.org/kitaplar/${bookInfo.slug}` : undefined,
+          });
+
+          await sendEmail({
+            to: subscriber.email,
+            subject: title,
+            html: emailHtml,
+          });
+          
           sentCount++;
         } catch (emailError) {
           console.error(`Email gönderilemedi: ${subscriber.email}`, emailError);
@@ -56,9 +73,8 @@ export async function POST(request: NextRequest) {
 
       console.log(`✅ Newsletter bildirim gönderildi: ${sentCount}/${subscribers.length}`);
     } catch (emailServiceError) {
-      console.log('⚠️ Email servisi çalışmıyor (opsiyonel)');
-      // Email servisi yoksa da bildirim sistemi çalışmalı
-      sentCount = subscribers.length;
+      console.error('⚠️ Email servisi hatası:', emailServiceError);
+      return errorResponse('E-posta gönderimi sırasında hata oluştu', 500);
     }
 
     return successResponse({

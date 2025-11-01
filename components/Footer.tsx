@@ -8,6 +8,7 @@ export default function Footer() {
   const [email, setEmail] = useState('');
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [showMessage, setShowMessage] = useState(false);
+  const [popularBooks, setPopularBooks] = useState<any[]>([]);
   const [footerSettings, setFooterSettings] = useState({
     site_name: 'Tolga Demir',
     copyright_text: '2025 Tolga Demir. Tüm hakları saklıdır.',
@@ -41,7 +42,22 @@ export default function Footer() {
   useEffect(() => {
     loadFooterSettings();
     loadHeaderSettings();
+    loadPopularBooks();
   }, []);
+
+  const loadPopularBooks = async () => {
+    try {
+      const response = await fetch('/api/books?sortBy=views&sortOrder=desc&limit=5&status=published');
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success && result.data) {
+          setPopularBooks(result.data);
+        }
+      }
+    } catch (error) {
+      console.error('Popular books load error:', error);
+    }
+  };
 
   const loadFooterSettings = async () => {
     try {
@@ -161,7 +177,23 @@ export default function Footer() {
               {footerSettings.popular_books_title || 'Popüler Kitaplar'}
             </h4>
             <ul className="space-y-2">
-              <li><span className="text-gray-600 dark:text-gray-400">Kitaplar yakında...</span></li>
+              {popularBooks.length > 0 ? (
+                popularBooks.map((book) => (
+                  <li key={book.id}>
+                    <Link 
+                      href={`/kitaplar/${book.slug}`} 
+                      className="text-gray-600 dark:text-gray-400 hover:text-orange-600 dark:hover:text-orange-400 transition-colors cursor-pointer text-sm flex items-center justify-between"
+                    >
+                      <span className="line-clamp-1">{book.title}</span>
+                      <span className="text-xs ml-2 flex-shrink-0">
+                        <i className="ri-eye-line"></i> {book.views || 0}
+                      </span>
+                    </Link>
+                  </li>
+                ))
+              ) : (
+                <li><span className="text-gray-600 dark:text-gray-400 text-sm">Yakında...</span></li>
+              )}
             </ul>
           </div>
 

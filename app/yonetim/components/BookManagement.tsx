@@ -338,10 +338,30 @@ export default function BookManagement() {
                   onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                 >
+                  <option value="Genel">Genel</option>
                   <option value="Roman">Roman</option>
                   <option value="Hikaye">Hikaye</option>
                   <option value="Deneme">Deneme</option>
                   <option value="Şiir">Şiir</option>
+                  <option value="Öykü">Öykü</option>
+                  <option value="Makale">Makale</option>
+                  <option value="Eleştiri">Eleştiri</option>
+                  <option value="Senaryo">Senaryo</option>
+                  <option value="Arkası Yarın">Arkası Yarın</option>
+                  <option value="Dizi">Dizi</option>
+                  <option value="Animasyon">Animasyon</option>
+                  <option value="Komedi">Komedi</option>
+                  <option value="Trajedi">Trajedi</option>
+                  <option value="Trajikomik">Trajikomik</option>
+                  <option value="Kısa Film">Kısa Film</option>
+                  <option value="Kukla Tiyatroları">Kukla Tiyatroları</option>
+                  <option value="Oyun Metinleri">Oyun Metinleri</option>
+                  <option value="Skeçler">Skeçler</option>
+                  <option value="Dram">Dram</option>
+                  <option value="Drama">Drama</option>
+                  <option value="Tanıtım Filmi & Reklam">Tanıtım Filmi & Reklam</option>
+                  <option value="Tez">Tez</option>
+                  <option value="Mektup">Mektup</option>
                 </select>
               </div>
 

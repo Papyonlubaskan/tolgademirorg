@@ -1,271 +1,212 @@
 ﻿import nodemailer from 'nodemailer';
 
-interface EmailConfig {
-  host: string;
-  port: number;
-  secure: boolean;
+// E-posta yapılandırması
+const transporter = nodemailer.createTransport({
+  host: process.env.EMAIL_HOST || 'okandemir.org',
+  port: parseInt(process.env.EMAIL_PORT || '465'),
+  secure: process.env.EMAIL_SECURE === 'true', // true for 465, false for other ports
   auth: {
-    user: string;
-    pass: string;
-  };
-  // Timeout ayarları
-  connectionTimeout?: number;
-  greetingTimeout?: number;
-  socketTimeout?: number;
-  // Pool ayarları
-  pool?: boolean;
-  maxConnections?: number;
-  maxMessages?: number;
-  rateLimit?: number;
-  // Nodemailer için ek ayarlar
-  [key: string]: any;
-}
+    user: process.env.EMAIL_USER || 'tolgademir@okandemir.org',
+    pass: process.env.EMAIL_PASS || 'Okan-1234-5678',
+  },
+});
 
-interface EmailData {
-  to: string;
+// E-posta gönderme fonksiyonu
+export async function sendEmail({
+  to,
+  subject,
+  html,
+  text,
+  from,
+  replyTo,
+}: {
+  to: string | string[];
   subject: string;
-  html: string;
+  html?: string;
   text?: string;
-}
-
-class EmailService {
-  private transporter: nodemailer.Transporter;
-
-  constructor() {
-    const config: any = {
-      host: process.env.EMAIL_HOST || 'smtp.gmail.com',
-      port: parseInt(process.env.EMAIL_PORT || '587'),
-      secure: process.env.EMAIL_SECURE === 'true',
-      auth: {
-        user: process.env.EMAIL_USER || '',
-        pass: process.env.EMAIL_PASS || ''
-      },
-      // Timeout ayarları
-      connectionTimeout: 10000, // 10 saniye
-      greetingTimeout: 5000,    // 5 saniye
-      socketTimeout: 10000,     // 10 saniye
-      // Pool ayarları
-      pool: true,
-      maxConnections: 5,
-      maxMessages: 100,
-      rateLimit: 10
+  from?: string;
+  replyTo?: string;
+}) {
+  try {
+    const mailOptions = {
+      from: from || process.env.EMAIL_FROM || 'tolgademir@okandemir.org',
+      to: Array.isArray(to) ? to.join(', ') : to,
+      subject,
+      html,
+      text,
+      replyTo: replyTo || process.env.REPLY_TO_EMAIL || 'tolgademir@okandemir.org',
     };
 
-    this.transporter = nodemailer.createTransport(config);
-  }
-
-  async sendEmail(emailData: EmailData): Promise<boolean> {
-    try {
-      // Email yapılandırılmamışsa sessizce geç
-      if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-        console.log('⚠️ Email yapılandırılmamış - mesaj veritabanına kaydedildi');
-        return true;
-      }
-
-      await this.transporter.sendMail({
-        from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
-        to: emailData.to,
-        subject: emailData.subject,
-        html: emailData.html,
-        text: emailData.text
-      });
-      return true;
-    } catch (error: any) {
-      // Email hatalarını yakala ve sessizce geç
-      if (error.code === 'EAUTH' || error.code === 'ESOCKET' || error.code === 'ETIMEDOUT' || error.code === 'ECONNREFUSED') {
-        console.log('⚠️ Email servisi kullanılamıyor - mesaj veritabanına kaydedildi:', error.code);
-        return true;
-      }
-      console.error('Email gönderme hatası:', error);
-      return false;
-    }
-  }
-
-  async sendContactEmail(data: {
-    name: string;
-    email: string;
-    subject: string;
-    message: string;
-  }): Promise<boolean> {
-    const html = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h2 style="color: #ea580c;">Yeni İletişim Formu Mesajı</h2>
-        <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
-          <p><strong>Ad Soyad:</strong> ${data.name}</p>
-          <p><strong>E-posta:</strong> ${data.email}</p>
-          <p><strong>Konu:</strong> ${data.subject}</p>
-        </div>
-        <div style="background-color: #ffffff; padding: 20px; border: 1px solid #dee2e6; border-radius: 8px;">
-          <h3 style="color: #495057;">Mesaj:</h3>
-          <p style="line-height: 1.6;">${data.message}</p>
-        </div>
-        <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #dee2e6; color: #6c757d; font-size: 12px;">
-          <p>Bu mesaj tolgademir.org web sitesinden gönderilmiştir.</p>
-          <p>Gönderilme Tarihi: ${new Date().toLocaleString('tr-TR')}</p>
-        </div>
-      </div>
-    `;
-
-    const text = `
-      Yeni İletişim Formu Mesajı
-      
-      Ad Soyad: ${data.name}
-      E-posta: ${data.email}
-      Konu: ${data.subject}
-      
-      Mesaj:
-      ${data.message}
-      
-      Bu mesaj tolgademir.org web sitesinden gönderilmiştir.
-      Gönderilme Tarihi: ${new Date().toLocaleString('tr-TR')}
-    `;
-
-    return await this.sendEmail({
-      to: process.env.CONTACT_EMAIL || process.env.EMAIL_USER || '',
-      subject: `İletişim Formu: ${data.subject}`,
-      html,
-      text
-    });
-  }
-
-  async sendContactReply(email: string, name: string, subject: string, reply: string): Promise<boolean> {
-    try {
-      // Email config kontrolü
-      if (!process.env.EMAIL_PASS) {
-        console.log('🔄 EMAIL DEV MODE - Gerçek email gönderilmedi, sadece log:');
-        console.log(`📧 Alıcı: ${email}`);
-        console.log(`📝 Konu: Cevap: ${subject}`);
-        console.log(`💬 Mesaj: ${reply}`);
-        console.log("🔧 Email göndermek için env.local'de EMAIL_PASS ayarlayın");
-        return true; // Development modunda true döner
-      }
-
-      const mailOptions = {
-        from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
-        to: email,
-        subject: `Cevap: ${subject}`,
-        html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h2 style="color: #f97316;">Merhaba ${name},</h2>
-            <p>Mesajınıza cevap verildi:</p>
-            <div style="background: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
-              <p style="color: #374151; white-space: pre-wrap;">${reply}</p>
-            </div>
-            <p style="color: #6b7280; font-size: 14px;">
-              Saygılarımızla,<br>
-              Tolga Demir
-            </p>
-          </div>
-        `
-      };
-
-      await this.transporter.sendMail(mailOptions);
-      console.log('✅ Mesaj cevabı email ile gönderildi:', email);
-      return true;
-    } catch (error) {
-      console.error('❌ Mesaj cevabı email hatası:', error);
-      return false;
-    }
-  }
-
-  async sendNewsletterNotification(email: string, name: string, type: string, title: string, message: string, bookId?: number, chapterId?: number): Promise<boolean> {
-    try {
-      const bookLink = bookId ? `http://localhost:3001/kitaplar/${bookId}` : '';
-      const typeText = type === 'new-book' ? '📚 Yeni Kitap' : '📖 Yeni Bölüm';
-      
-      const mailOptions = {
-        from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
-        to: email,
-        subject: `${typeText}: ${title}`,
-        html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <div style="background: linear-gradient(to right, #f97316, #fb923c); padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
-              <h1 style="color: white; margin: 0;">${typeText}</h1>
-            </div>
-            <div style="padding: 30px; background: white;">
-              <h2 style="color: #f97316; margin-bottom: 10px;">${title}</h2>
-              <p style="color: #374151; font-size: 16px; line-height: 1.6;">${message}</p>
-              ${bookLink ? `
-                <a href="${bookLink}" style="
-                  display: inline-block;
-                  background: linear-gradient(to right, #f97316, #fb923c);
-                  color: white;
-                  padding: 12px 30px;
-                  border-radius: 25px;
-                  text-decoration: none;
-                  font-weight: bold;
-                  margin-top: 20px;
-                ">Şimdi Oku</a>
-              ` : ''}
-            </div>
-            <div style="padding: 20px; background: #f3f4f6; text-align: center; border-radius: 0 0 8px 8px;">
-              <p style="color: #6b7280; font-size: 12px; margin: 0;">
-                Bu email'i aldınız çünkü Tolga Demir haber bültenine abone oldunuz.
-              </p>
-            </div>
-          </div>
-        `
-      };
-
-      await this.transporter.sendMail(mailOptions);
-      console.log('✅ Newsletter bildirimi gönderildi:', email);
-      return true;
-    } catch (error) {
-      console.error('❌ Newsletter bildirim hatası:', error);
-      return false;
-    }
-  }
-
-  async sendNewsletterConfirmation(email: string, name?: string): Promise<boolean> {
-    const html = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h2 style="color: #ea580c; text-align: center;">Tolga Demir Newsletter</h2>
-        <div style="background-color: #f8f9fa; padding: 30px; border-radius: 8px; margin: 20px 0; text-align: center;">
-          <h3 style="color: #495057;">Hoş Geldiniz!</h3>
-          <p style="font-size: 16px; line-height: 1.6;">
-            ${name ? `Merhaba ${name},` : 'Merhaba,'}
-          </p>
-          <p style="font-size: 16px; line-height: 1.6;">
-            Newsletter listemize başarıyla kaydoldunuz. Yeni kitap duyuruları ve 
-            özel içeriklerden haberdar olmak için bizi takip edin.
-          </p>
-        </div>
-        <div style="text-align: center; margin: 30px 0;">
-          <a href="https://tolgademir.org" 
-             style="background-color: #ea580c; color: white; padding: 12px 24px; 
-                    text-decoration: none; border-radius: 6px; display: inline-block;">
-            Web Sitemi Ziyaret Et
-          </a>
-        </div>
-        <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #dee2e6; 
-                    color: #6c757d; font-size: 12px; text-align: center;">
-          <p>Bu e-postayı almak istemiyorsanız, bu linke tıklayarak abonelikten çıkabilirsiniz.</p>
-          <p>© ${new Date().getFullYear()} Tolga Demir. Tüm hakları saklıdır.</p>
-        </div>
-      </div>
-    `;
-
-    const text = `
-      Tolga Demir Newsletter
-      
-      ${name ? `Merhaba ${name},` : 'Merhaba,'}
-      
-      Newsletter listemize başarıyla kaydoldunuz. Yeni kitap duyuruları ve 
-      özel içeriklerden haberdar olmak için bizi takip edin.
-      
-      Web Sitemi Ziyaret Et: https://tolgademir.org
-      
-      Bu e-postayı almak istemiyorsanız, abonelikten çıkabilirsiniz.
-      © ${new Date().getFullYear()} Tolga Demir. Tüm hakları saklıdır.
-    `;
-
-    return await this.sendEmail({
-      to: email,
-      subject: 'Tolga Demir Newsletter - Hoş Geldiniz!',
-      html,
-      text
-    });
+    const info = await transporter.sendMail(mailOptions);
+    console.log('✅ Email sent:', info.messageId);
+    return { success: true, messageId: info.messageId };
+  } catch (error) {
+    console.error('❌ Email send error:', error);
+    return { success: false, error };
   }
 }
 
-export const emailService = new EmailService();
+// Toplu e-posta gönderme (abonelere)
+export async function sendBulkEmail({
+  subscribers,
+  subject,
+  html,
+  text,
+}: {
+  subscribers: string[];
+  subject: string;
+  html?: string;
+  text?: string;
+}) {
+  const results = [];
+  
+  // Batch olarak gönder (her seferinde 50 kişi)
+  const batchSize = 50;
+  for (let i = 0; i < subscribers.length; i += batchSize) {
+    const batch = subscribers.slice(i, i + batchSize);
+    
+    try {
+      const result = await sendEmail({
+        to: batch,
+        subject,
+        html,
+        text,
+      });
+      results.push({ batch: i / batchSize + 1, ...result });
+    } catch (error) {
+      console.error(`Batch ${i / batchSize + 1} failed:`, error);
+      results.push({ batch: i / batchSize + 1, success: false, error });
+    }
+  }
+  
+  return results;
+}
+
+// İletişim formu yanıt şablonu
+export function getContactReplyTemplate({
+  userName,
+  userMessage,
+  replyMessage,
+}: {
+  userName: string;
+  userMessage: string;
+  replyMessage: string;
+}) {
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+    .header { background: linear-gradient(135deg, #f97316 0%, #ec4899 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+    .content { background: #f9fafb; padding: 30px; border-radius: 0 0 10px 10px; }
+    .original-message { background: #e5e7eb; padding: 15px; border-left: 4px solid #f97316; margin: 20px 0; border-radius: 5px; }
+    .footer { text-align: center; margin-top: 20px; color: #6b7280; font-size: 0.875rem; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1 style="margin: 0; font-style: italic; font-family: 'Times New Roman', serif;">Tolga Demir</h1>
+      <p style="margin: 10px 0 0 0;">Yazar & Hikaye Anlatıcı</p>
+    </div>
+    <div class="content">
+      <h2>Merhaba ${userName},</h2>
+      
+      <p>${replyMessage}</p>
+      
+      <div class="original-message">
+        <p style="margin: 0 0 10px 0;"><strong>Gönderdiğiniz Mesaj:</strong></p>
+        <p style="margin: 0;">${userMessage}</p>
+      </div>
+      
+      <p>Saygılarımla,<br><strong>Tolga Demir</strong></p>
+      
+      <div class="footer">
+        <p>Bu e-posta tolgademir.org'dan gönderilmiştir.</p>
+        <p>© 2025 Tolga Demir - Tüm hakları saklıdır.</p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
+  `;
+}
+
+// Yeni kitap/güncelleme bildirimi şablonu
+export function getUpdateNotificationTemplate({
+  title,
+  description,
+  bookTitle,
+  bookCoverUrl,
+  bookUrl,
+}: {
+  title: string;
+  description: string;
+  bookTitle?: string;
+  bookCoverUrl?: string;
+  bookUrl?: string;
+}) {
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+    .header { background: linear-gradient(135deg, #f97316 0%, #ec4899 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+    .content { background: #f9fafb; padding: 30px; border-radius: 0 0 10px 10px; }
+    .book-card { background: white; padding: 20px; border-radius: 10px; margin: 20px 0; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    .book-cover { max-width: 200px; border-radius: 10px; margin-bottom: 15px; }
+    .cta-button { display: inline-block; background: #f97316; color: white; padding: 12px 30px; text-decoration: none; border-radius: 25px; margin-top: 20px; font-weight: bold; }
+    .footer { text-align: center; margin-top: 20px; color: #6b7280; font-size: 0.875rem; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1 style="margin: 0; font-style: italic; font-family: 'Times New Roman', serif;">Tolga Demir</h1>
+      <p style="margin: 10px 0 0 0;">${title}</p>
+    </div>
+    <div class="content">
+      <p>${description}</p>
+      
+      ${
+        bookTitle
+          ? `
+      <div class="book-card">
+        ${bookCoverUrl ? `<img src="${bookCoverUrl}" alt="${bookTitle}" class="book-cover" />` : ''}
+        <h2 style="margin: 10px 0;">${bookTitle}</h2>
+        ${bookUrl ? `<a href="${bookUrl}" class="cta-button">Hemen Oku</a>` : ''}
+      </div>
+      `
+          : ''
+      }
+      
+      <p>Saygılarımla,<br><strong>Tolga Demir</strong></p>
+      
+      <div class="footer">
+        <p>Bu e-posta tolgademir.org aboneliğiniz nedeniyle gönderilmiştir.</p>
+        <p><a href="https://tolgademir.org/newsletter/unsubscribe" style="color: #f97316;">Abonelikten çık</a></p>
+        <p>© 2025 Tolga Demir - Tüm hakları saklıdır.</p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
+  `;
+}
+
+// Test e-postası gönder
+export async function sendTestEmail(to: string) {
+  return sendEmail({
+    to,
+    subject: 'Test E-postası - Tolga Demir',
+    html: `
+      <h1>E-posta Sistemi Başarıyla Kuruldu!</h1>
+      <p>Bu bir test e-postasıdır. E-posta sisteminiz çalışıyor.</p>
+      <p>Saygılarımla,<br>Tolga Demir</p>
+    `,
+  });
+}

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { executeQuery } from '@/lib/database/mysql';
-import { emailService } from '@/lib/email';
+import { sendEmail } from '@/lib/email';
 import { Validator } from '@/lib/validations';
 import { apiRateLimiter } from '@/lib/rateLimiter';
 import { requireAdmin } from '@/lib/middleware/admin-auth';
@@ -103,7 +103,32 @@ export async function POST(request: NextRequest) {
     );
 
     // Send confirmation email
-    await emailService.sendNewsletterConfirmation(sanitizedEmail, sanitizedName || undefined);
+    try {
+      await sendEmail({
+        to: sanitizedEmail,
+        subject: 'Tolga Demir - Newsletter Aboneliğiniz Onaylandı',
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <div style="background: linear-gradient(135deg, #f97316 0%, #ec4899 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+              <h1 style="margin: 0; font-style: italic; font-family: 'Times New Roman', serif;">Tolga Demir</h1>
+              <p style="margin: 10px 0 0 0;">Hoş Geldiniz!</p>
+            </div>
+            <div style="background: #f9fafb; padding: 30px; border-radius: 0 0 10px 10px;">
+              <h2>Merhaba${sanitizedName ? ` ${sanitizedName}` : ''},</h2>
+              <p>Newsletter aboneliğiniz başarıyla tamamlandı. Artık yeni kitaplar, bölüm güncellemeleri ve özel içeriklerden ilk siz haberdar olacaksınız!</p>
+              <p>Saygılarımla,<br><strong>Tolga Demir</strong></p>
+              <div style="text-align: center; margin-top: 20px; color: #6b7280; font-size: 0.875rem;">
+                <p>© 2025 Tolga Demir - Tüm hakları saklıdır.</p>
+                <p><a href="https://tolgademir.org/newsletter/unsubscribe?email=${encodeURIComponent(sanitizedEmail)}" style="color: #f97316;">Abonelikten çık</a></p>
+              </div>
+            </div>
+          </div>
+        `,
+      });
+    } catch (emailError) {
+      console.error('Confirmation email error:', emailError);
+      // E-posta hatası kritik değil, kayıt başarılı
+    }
 
     return successResponse(
       { message: 'Newsletter\'a başarıyla kaydoldunuz!' },

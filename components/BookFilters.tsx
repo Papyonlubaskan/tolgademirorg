@@ -32,12 +32,30 @@ export default function BookFilters({ onFiltersChange }: BookFiltersProps) {
   // Kategoriler
   const categories = [
     { value: '', label: 'Tüm Kategoriler' },
-    { value: 'roman', label: 'Roman' },
-    { value: 'hikaye', label: 'Hikaye' },
-    { value: 'deneme', label: 'Deneme' },
-    { value: 'siir', label: 'Şiir' },
-    { value: 'biyografi', label: 'Biyografi' },
-    { value: 'otobiyografi', label: 'Otobiyografi' }
+    { value: 'Genel', label: 'Genel' },
+    { value: 'Roman', label: 'Roman' },
+    { value: 'Hikaye', label: 'Hikaye' },
+    { value: 'Deneme', label: 'Deneme' },
+    { value: 'Şiir', label: 'Şiir' },
+    { value: 'Öykü', label: 'Öykü' },
+    { value: 'Makale', label: 'Makale' },
+    { value: 'Eleştiri', label: 'Eleştiri' },
+    { value: 'Senaryo', label: 'Senaryo' },
+    { value: 'Arkası Yarın', label: 'Arkası Yarın' },
+    { value: 'Dizi', label: 'Dizi' },
+    { value: 'Animasyon', label: 'Animasyon' },
+    { value: 'Komedi', label: 'Komedi' },
+    { value: 'Trajedi', label: 'Trajedi' },
+    { value: 'Trajikomik', label: 'Trajikomik' },
+    { value: 'Kısa Film', label: 'Kısa Film' },
+    { value: 'Kukla Tiyatroları', label: 'Kukla Tiyatroları' },
+    { value: 'Oyun Metinleri', label: 'Oyun Metinleri' },
+    { value: 'Skeçler', label: 'Skeçler' },
+    { value: 'Dram', label: 'Dram' },
+    { value: 'Drama', label: 'Drama' },
+    { value: 'Tanıtım Filmi & Reklam', label: 'Tanıtım Filmi & Reklam' },
+    { value: 'Tez', label: 'Tez' },
+    { value: 'Mektup', label: 'Mektup' }
   ];
 
   // Durumlar

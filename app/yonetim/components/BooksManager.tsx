@@ -84,6 +84,7 @@ export default function BooksManager() {
       cover_image: '',
       publish_date: '',
       status: 'published' as string,
+      category: 'Roman',
       amazon_link: '',
       dr_link: '',
       idefix_link: '',
@@ -1291,4 +1292,3 @@ export default function BooksManager() {
     </div>
   );
 }
-1.11.2025 21:16:07

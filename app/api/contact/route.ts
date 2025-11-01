@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { emailService } from '@/lib/email';
+import { sendEmail } from '@/lib/email';
 import { Validator } from '@/lib/validations';
 import { apiRateLimiter } from '@/lib/rateLimiter';
 import { successResponse, errorResponse } from '@/lib/api-response';
@@ -94,16 +94,30 @@ export async function POST(request: NextRequest) {
       return errorResponse('Mesaj kaydedilemedi. Lütfen tekrar deneyin.', 500);
     }
 
-    // Send email (optional - may fail if not configured)
+    // Send email notification to admin
     try {
-      const emailSent = await emailService.sendContactEmail(sanitizedData);
-      if (emailSent) {
-        console.log('✅ Email başarıyla gönderildi');
-      } else {
-        console.log('⚠️ Email gönderilemedi, mesaj veritabanına kaydedildi');
-      }
+      await sendEmail({
+        to: process.env.CONTACT_EMAIL || 'tolgademir@okandemir.org',
+        subject: `Yeni İletişim Mesajı: ${sanitizedData.subject}`,
+        html: `
+          <h2>Yeni İletişim Formu Mesajı</h2>
+          <p><strong>Gönderen:</strong> ${sanitizedData.name}</p>
+          <p><strong>E-posta:</strong> ${sanitizedData.email}</p>
+          <p><strong>Konu:</strong> ${sanitizedData.subject}</p>
+          <p><strong>Mesaj:</strong></p>
+          <div style="background: #f5f5f5; padding: 15px; border-left: 4px solid #f97316;">
+            ${sanitizedData.message.replace(/\n/g, '<br>')}
+          </div>
+          <p style="margin-top: 20px; color: #666; font-size: 0.9em;">
+            Bu mesajı yanıtlamak için admin panelinden veya doğrudan ${sanitizedData.email} adresine e-posta gönderebilirsiniz.
+          </p>
+        `,
+        replyTo: sanitizedData.email,
+      });
+      console.log('✅ Admin bilgilendirme e-postası gönderildi');
     } catch (emailError) {
-      console.log('⚠️ Email service hatası, mesaj veritabanına kaydedildi:', emailError);
+      console.log('⚠️ Admin e-postası gönderilemedi:', emailError);
+      // Mesaj veritabanında, e-posta hatası kritik değil
     }
 
     // Always return success if database save succeeded
