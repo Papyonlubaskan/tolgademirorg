@@ -116,7 +116,7 @@ export default function Hero() {
           </div>
           
           <div className="flex justify-center lg:justify-end">
-            <div className="sticky top-24 self-start -mt-64">
+            <div className="sticky top-24 self-start mt-32">
               <img
                 src={heroData.hero_image || '/hero-profile.jpg'}
                 alt={heroData.hero_title || 'Tolga Demir'}
