@@ -220,54 +220,54 @@ export default function CommentSystem({ bookId, chapterId }: CommentSystemProps)
                   <div className="flex items-center gap-2 mb-2">
                     <span className="font-semibold text-gray-900 dark:text-white">{comment.user_name}</span>
                     <span className="text-sm text-gray-500">
-                      {new Date(comment.created_at).toLocaleDateString('tr-TR')}
-                    </span>
-                  </div>
-                  
-                  {editingComment === comment.id ? (
-                    <div className="space-y-2">
-                      <textarea
-                        value={editText}
-                        onChange={(e) => setEditText(e.target.value)}
+                  {new Date(comment.created_at).toLocaleDateString('tr-TR')}
+                </span>
+              </div>
+              
+              {editingComment === comment.id ? (
+                <div className="space-y-2">
+                  <textarea
+                    value={editText}
+                    onChange={(e) => setEditText(e.target.value)}
                         className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"
-                        rows={3}
-                      />
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => handleEditComment(comment.id)}
+                    rows={3}
+                  />
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleEditComment(comment.id)}
                           className="px-3 py-1 bg-orange-500 text-white rounded hover:bg-orange-600 text-sm"
-                        >
-                          Kaydet
-                        </button>
-                        <button
-                          onClick={cancelEditing}
+                    >
+                      Kaydet
+                    </button>
+                    <button
+                      onClick={cancelEditing}
                           className="px-3 py-1 bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-white rounded hover:bg-gray-400 dark:hover:bg-gray-500 text-sm"
-                        >
+                    >
                           Iptal
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <p className="text-gray-700 dark:text-gray-300">{comment.content}</p>
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                  <p className="text-gray-700 dark:text-gray-300">{comment.content}</p>
                   )}
                 </div>
-                
+                  
                 {comment.user_id === currentUserId && editingComment !== comment.id && (
                   <div className="flex gap-2 ml-4">
-                    <button
-                      onClick={() => startEditing(comment)}
+                      <button
+                        onClick={() => startEditing(comment)}
                       className="text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400"
-                    >
+                      >
                       Duzenle
-                    </button>
-                    <button
-                      onClick={() => handleDeleteComment(comment.id)}
+                      </button>
+                      <button
+                        onClick={() => handleDeleteComment(comment.id)}
                       className="text-sm text-red-600 hover:text-red-700 dark:text-red-400"
-                    >
-                      Sil
-                    </button>
-                  </div>
-                )}
+                      >
+                        Sil
+                      </button>
+                    </div>
+                  )}
               </div>
             </div>
           ))}
