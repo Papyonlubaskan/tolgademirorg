@@ -1,7 +1,0 @@
-{
-  "headers": {
-    "x-nextjs-stale-time": "300",
-    "x-nextjs-prerender": "1",
-    "x-next-cache-tags": "_N_T_/layout,_N_T_/books/layout,_N_T_/books/[id]/layout,_N_T_/books/[id]/chapter/layout,_N_T_/books/[id]/chapter/[chapterId]/layout,_N_T_/books/[id]/chapter/[chapterId]/page,_N_T_/books/3/chapter/1"
-  }
-}
