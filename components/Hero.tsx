@@ -1,4 +1,4 @@
-ï»¿
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -20,7 +20,7 @@ export default function Hero() {
     hero_background: '/hero-background.jpg',
     hero_image: '/hero-profile.jpg',
     hero_title: 'Tolga Demir',
-    hero_subtitle: 'Yazar & Hikaye AnlatÄ±cÄ±',
+    hero_subtitle: 'Yazar & Hikaye Anlatıcı',
     sections: []
   });
 
@@ -30,7 +30,7 @@ export default function Hero() {
 
   const loadHeroData = async () => {
     try {
-      // Ana sayfa verilerini settings'ten yÃ¼kle
+      // Ana sayfa verilerini settings'ten yükle
       const response = await fetch('/api/settings?key=page_page_page_home');
       const data = await response.json();
       
@@ -43,11 +43,11 @@ export default function Hero() {
       }
     } catch (error) {
       console.error('Hero data load error:', error);
-      // Hata durumunda varsayÄ±lan deÄŸerler kullanÄ±lacak
+      // Hata durumunda varsayılan değerler kullanılacak
     }
   };
 
-  // Ä°Ã§erik paragraflarÄ±
+  // İçerik paragrafları
   const contentParagraphs = heroData.sections?.filter(s => s.type === 'paragraph') || [];
 
   return (
@@ -77,7 +77,7 @@ export default function Hero() {
               </p>
             )}
 
-            {/* Dinamik Ä°Ã§erik */}
+            {/* Dinamik İçerik */}
             {contentParagraphs.length > 0 ? (
               contentParagraphs.map((para, index) => (
                 <p 
@@ -90,13 +90,13 @@ export default function Hero() {
             ) : (
               <>
                 <p className="text-xl font-bold text-gray-800 dark:text-gray-200 leading-relaxed">
-                  SayÄ±n Okuyucuma;
+                  Sayın Okuyucuma;
                 </p>
                 <p className="text-base font-medium text-gray-700 dark:text-gray-300 leading-relaxed mb-4">
-                  Yeni bir olaydan bahsetmeliyim. Sen veya siz mi demeliyim okuyucumaâ€¦ Ä°Ã§in iÃ§in mutluykenâ€¦ Ã‡Ã¼nkÃ¼ yÄ±llar sonra; hemen sonra, ÅŸimdi, BugÃ¼n, kolay ve huzurlu bir gÃ¼ndeyim. Huzurlu, sessiz, sakin; olmak ne gÃ¼zel...
+                  Yeni bir olaydan bahsetmeliyim. Sen veya siz mi demeliyim okuyucuma… İçin için mutluyken… Çünkü yıllar sonra; hemen sonra, şimdi, Bugün, kolay ve huzurlu bir gündeyim. Huzurlu, sessiz, sakin; olmak ne güzel...
                 </p>
                 <p className="text-base font-medium text-gray-700 dark:text-gray-300 leading-relaxed mb-4">
-                  HÄ±zlÄ± olarak konuya gireyim. Ä°ndirimli bir ÅŸeyi yakalamÄ±ÅŸ sevinciyleâ€¦ Garantisi mi? Hala o zor gÃ¼nlerden sonra hayattayÄ±mâ€¦ Ã–ncelikle bilin alÄ±ÅŸÄ±lmadÄ±k sese karÅŸÄ± duyarlÄ±yÄ±m. En azÄ±ndan bugÃ¼n bu kanaateyim. Ä°stanbulâ€¦ ÃœskÃ¼dar'dan KadÄ±kÃ¶y'e Taksi DolmuÅŸla geÃ§erkenâ€¦ Birden Ã§ok siren sesiâ€¦ Metrolpol ÅŸehir'e Anadolu'dan gelen biri iÃ§in alÄ±ÅŸÄ±ldÄ±k deÄŸil. BaÅŸlamak bitirmenin yarÄ±sÄ±â€¦ O gÃ¼n DolmuÅŸtan indim. Bir kovalamaca ÅŸehirdeâ€¦ Bir kÃ¶ÅŸede AÅŸk yaÅŸayan genÃ§ler, Bir kÃ¶ÅŸede mutlularâ€¦ Bir kÃ¶ÅŸe para kazanmak isteyenler. Kar, FÄ±rsat, Tasarruf, SaÄŸlÄ±k Sonucu bekleyenlerâ€¦ Vapur seslerine geÃ§iyor. SonuÃ§ muâ€¦ Bir KadÄ±kÃ¶y turuâ€¦ KanÄ±tlanmÄ±ÅŸ bir ÅŸey ki orasÄ± baÅŸka bir Ä°stanbulâ€¦ Sanki vahaâ€¦ Ama ona raÄŸmen KadÄ±kÃ¶y BoÄŸa'nÄ±n oradan girdin mi? Ekstra olarak, MÃ¼lteciler Ãœst kat dÃ¼kkanlardaâ€¦ KazandÄ±ran, KazanÃ§lÄ± yazÄ±larÄ± arasÄ±nda, TÃ¼yo sÄ±rlarÄ±nÄ± verenlerin olduÄŸu bir At yarÄ±ÅŸÄ± bayisiâ€¦ GeÃ§ oradanâ€¦ YÃ¼rÃ¼ boÄŸa boyuncaâ€¦ Duyuru yapan anutÃ§ularâ€¦ Ä°stiklal' Caddesi'ndeki kadar olmasa da bir gÃ¼ruh Ã¼zerine Ã¼zerine geliyor insanÄ±nâ€¦ Dikkatâ€¦ Etâ€¦ YÃ¼rÃ¼rkenâ€¦ CÃ¼zdan kapÄ±lmasÄ±nâ€¦ Omuz ata ata yardÄ±r. Ã–ÄŸlenin en civcivli saatiâ€¦ Kimse Ã§arpÄ±ÅŸtÄ±ÄŸÄ±na aldÄ±rmÄ±yor. Ã–zelâ€¦ Bir yer gibi geliyor. Sahile ulaÅŸabilmek. Tiyatrolara gel. Kafeler sokaÄŸÄ±na bir selam Ã§ak. UyarÄ±â€¦ Zihninden sana: O kadar Tiyatrocun AdamsÄ±n. El broÅŸÃ¼rÃ¼ al bariâ€¦ gir iÃ§eri al broÅŸÃ¼r. Ã‡Ä±k. Ã‡abuk yap. Nefes almak iÃ§in sahile Ã§Ä±kmalÄ±sÄ±n. UyarÄ± havuza dikket et dÃ¼ÅŸme yazÄ±sÄ±nÄ± okuâ€¦ Acele Acele yÃ¼rÃ¼yen insanlarÄ±n arasÄ±ndanâ€¦ YardÄ±m istemek iÃ§in, birisi durduruyor. SÄ±nÄ±rlÄ± zamanÄ± var. Sorup teÅŸekkÃ¼r etmeden gidiyor. Sen ona ne dediÄŸin bilmiyorsun. Ä°lkâ€¦ SaÄŸâ€¦ Girmeâ€¦ Son sokaÄŸÄ± geÃ§â€¦ ArtÄ±k yokuÅŸ aÅŸaÄŸÄ±â€¦ Sadece Denizi gÃ¶rebilmek iÃ§inâ€¦ KÄ±sa SÃ¼reliâ€¦ Bitiyor yazan milyonculardan aÅŸaÄŸÄ±yaâ€¦ YÃ¼rÃ¼â€¦ KatÄ±l katÄ±la gÃ¼lenlerâ€¦ Sokakta baÄŸÄ±ÅŸ toplayanlar dergiye Ã¼ye yapmaya Ã§alÄ±ÅŸÄ±yor. Onlar gibi olsan da bir zamanlar aldÄ±rmaâ€¦ Ãœyelere Ã–zel demelerine aldÄ±rmaâ€¦ GeÃ§ gitsinâ€¦ Davetlerini geri Ã§evirip, yÃ¼rÃ¼â€¦ Ve iskele gÃ¶rÃ¼ndÃ¼â€¦ ArtÄ±k daha az kalabalÄ±kâ€¦ Evleri geÃ§â€¦ SatÄ±lÄ±k evleri geÃ§â€¦ Almaya gÃ¼cÃ¼n yok. Biraz nefes almaya geldin. Zula'dan termosu Ã§Ä±kar. KarÅŸÄ±nÄ±zda Denizâ€¦ otur duvara kalÃ§a Ã¼stÃ¼â€¦. Ä°zle Deniziâ€¦ Bir temiz nefesâ€¦ KeÅŸfet yatlarÄ±; benimde olur mu diyerek iÃ§ Ã§ek. KarÅŸÄ±laÅŸtÄ±r Åans oyunlarÄ±ndan Ã§Ä±ksa ÅŸunu alÄ±rÄ±m ÅŸunu lama para deâ€¦ Ä°nanÄ±lmaz zorlu biraz zorlu bir sÃ¼recin ardÄ±ndan nefes alâ€¦ Ä°nanÄ±lmaz bir huzurâ€¦ Huzur mu, dediniz. Etkileyici Ã§iftler geÃ§erken, gÃ¶zÃ¼n dalmasÄ±nâ€¦ Senin de bir gÃ¼n gÃ¶nlÃ¼ne gÃ¶resi olur deâ€¦ Arka fonda Biri radyo aÃ§mÄ±ÅŸ. GÃ¼neÅŸimi kaybettim Ã§alÄ±yor. MÃ¼thiÅŸ o koÅŸuÅŸturmaca YorgunluÄŸuna iyi geliyor. Harika dalÄ±yorsun gÃ¶zÃ¼nâ€¦ MÃ¼kemmel/ ÅaÅŸÄ±rtÄ±cÄ± bir klip Ã§ekiyor zihinâ€¦ Efsane sevgili kÄ±zÄ± hatÄ±rlaâ€¦ Mucizevi tanÄ±ÅŸmÄ±ÅŸtÄ±nâ€¦ KliÅŸeydi her ÅŸey... Seni olduÄŸundan farklÄ± dÃ¼ÅŸÃ¼nmÃ¼ÅŸtÃ¼. Sen Tiyatro okumak istiyordu. Onunda kocaman sertifikasÄ± vardÄ±. SertifikalÄ± aÅŸkâ€¦ Risksizdi baÅŸlangÄ±Ã§taâ€¦ Her ÅŸeyâ€¦ Fonda dokunulmazÄ±msÄ±n benimâ€¦ YÃ¼reÄŸime hÃ¼kmedememâ€¦ GÃ¼neÅŸimi kaybettimâ€¦. Bla Blaâ€¦ Resmi unvanÄ± yok. KorumasÄ± ise, uzak dur demek. GÃ¼venli mi? Bu ÅŸehre raÄŸmen nasÄ±l yaptÄ±ÄŸÄ± belirsiz kaliteli koruma da iÅŸteâ€¦ Benim Ã§iÃ§eÄŸim de iÃ§indenâ€¦ Bisikletler Ã§ekiyor. TÄ±kÄ±rdayan boncuklarÄ± var tellerindeâ€¦ Ã–ÄŸreneli yÄ±llar olsa da bisiklet kullanmayÄ± yÄ±llar gibiâ€¦ En uygun aÅŸktÄ± o de iÃ§ Ã§ek. Eksiksiz ve tam. Ama onunun iÃ§in Ã¶yle miydin? Ä°ÅŸte sÄ±rf bu yÃ¼zden iÅŸteâ€¦ YaÅŸamadan Ã§ok yakÄ±n olduklarÄ± Ã§alÄ±yor radyodaâ€¦ ToparlanÄ±rken, bak telefonaâ€¦ Sivri burnun, kÄ±rkÄ±na gelmiÅŸ saÃ§larÄ±nâ€¦ iÅŸte deki kendine kendiâ€¦ Ä°stanbulsuz, aÅŸksÄ±z Yazarâ€¦ GÃ¶zÃ¼n tekrar geriye aynÄ± yolu yÃ¼rÃ¼meye kesiyor mu? Ä°ÅŸte Ben Tolga Demirâ€¦
+                  Hızlı olarak konuya gireyim. İndirimli bir şeyi yakalamış sevinciyle… Garantisi mi? Hala o zor günlerden sonra hayattayım… Öncelikle bilin alışılmadık sese karşı duyarlıyım. En azından bugün bu kanaateyim. İstanbul… Üsküdar'dan Kadıköy'e Taksi Dolmuşla geçerken… Birden çok siren sesi… Metrolpol şehir'e Anadolu'dan gelen biri için alışıldık değil. Başlamak bitirmenin yarısı… O gün Dolmuştan indim. Bir kovalamaca şehirde… Bir köşede Aşk yaşayan gençler, Bir köşede mutlular… Bir köşe para kazanmak isteyenler. Kar, Fırsat, Tasarruf, Sağlık Sonucu bekleyenler… Vapur seslerine geçiyor. Sonuç mu… Bir Kadıköy turu… Kanıtlanmış bir şey ki orası başka bir İstanbul… Sanki vaha… Ama ona rağmen Kadıköy Boğa'nın oradan girdin mi? Ekstra olarak, Mülteciler Üst kat dükkanlarda… Kazandıran, Kazançlı yazıları arasında, Tüyo sırlarını verenlerin olduğu bir At yarışı bayisi… Geç oradan… Yürü boğa boyunca… Duyuru yapan anutçular… İstiklal' Caddesi'ndeki kadar olmasa da bir güruh üzerine üzerine geliyor insanın… Dikkat… Et… Yürürken… Cüzdan kapılmasın… Omuz ata ata yardır. Öğlenin en civcivli saati… Kimse çarpıştığına aldırmıyor. Özel… Bir yer gibi geliyor. Sahile ulaşabilmek. Tiyatrolara gel. Kafeler sokağına bir selam çak. Uyarı… Zihninden sana: O kadar Tiyatrocun Adamsın. El broşürü al bari… gir içeri al broşür. Çık. Çabuk yap. Nefes almak için sahile çıkmalısın. Uyarı havuza dikket et düşme yazısını oku… Acele Acele yürüyen insanların arasından… Yardım istemek için, birisi durduruyor. Sınırlı zamanı var. Sorup teşekkür etmeden gidiyor. Sen ona ne dediğin bilmiyorsun. İlk… Sağ… Girme… Son sokağı geç… Artık yokuş aşağı… Sadece Denizi görebilmek için… Kısa Süreli… Bitiyor yazan milyonculardan aşağıya… Yürü… Katıl katıla gülenler… Sokakta bağış toplayanlar dergiye üye yapmaya çalışıyor. Onlar gibi olsan da bir zamanlar aldırma… Üyelere Özel demelerine aldırma… Geç gitsin… Davetlerini geri çevirip, yürü… Ve iskele göründü… Artık daha az kalabalık… Evleri geç… Satılık evleri geç… Almaya gücün yok. Biraz nefes almaya geldin. Zula'dan termosu çıkar. Karşınızda Deniz… otur duvara kalça üstü…. İzle Denizi… Bir temiz nefes… Keşfet yatları; benimde olur mu diyerek iç çek. Karşılaştır Şans oyunlarından çıksa şunu alırım şunu lama para de… İnanılmaz zorlu biraz zorlu bir sürecin ardından nefes al… İnanılmaz bir huzur… Huzur mu, dediniz. Etkileyici çiftler geçerken, gözün dalmasın… Senin de bir gün gönlüne göresi olur de… Arka fonda Biri radyo açmış. Güneşimi kaybettim çalıyor. Müthiş o koşuşturmaca Yorgunluğuna iyi geliyor. Harika dalıyorsun gözün… Mükemmel/ Şaşırtıcı bir klip çekiyor zihin… Efsane sevgili kızı hatırla… Mucizevi tanışmıştın… Klişeydi her şey... Seni olduğundan farklı düşünmüştü. Sen Tiyatro okumak istiyordu. Onunda kocaman sertifikası vardı. Sertifikalı aşk… Risksizdi başlangıçta… Her şey… Fonda dokunulmazımsın benim… Yüreğime hükmedemem… Güneşimi kaybettim…. Bla Bla… Resmi unvanı yok. Koruması ise, uzak dur demek. Güvenli mi? Bu şehre rağmen nasıl yaptığı belirsiz kaliteli koruma da işte… Benim çiçeğim de içinden… Bisikletler çekiyor. Tıkırdayan boncukları var tellerinde… Öğreneli yıllar olsa da bisiklet kullanmayı yıllar gibi… En uygun aşktı o de iç çek. Eksiksiz ve tam. Ama onunun için öyle miydin? İşte sırf bu yüzden işte… Yaşamadan çok yakın oldukları çalıyor radyoda… Toparlanırken, bak telefona… Sivri burnun, kırkına gelmiş saçların… işte deki kendine kendi… İstanbulsuz, aşksız Yazar… Gözün tekrar geriye aynı yolu yürümeye kesiyor mu? İşte Ben Tolga Demir…
                 </p>
               </>
             )}
@@ -106,7 +106,7 @@ export default function Hero() {
                 href="/kitaplar" 
                 className="bg-orange-600 dark:bg-orange-700 text-white px-8 py-4 rounded-full font-semibold hover:bg-orange-700 dark:hover:bg-orange-600 transition-colors cursor-pointer text-center whitespace-nowrap"
               >
-                KitaplarÄ±mÄ± KeÅŸfet
+                Kitaplarımı Keşfet
               </Link>
               <Link 
                 href="/hakkimda" 
