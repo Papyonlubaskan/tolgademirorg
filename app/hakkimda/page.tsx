@@ -8,10 +8,10 @@ export const dynamic = 'force-dynamic';
 
 export default function AboutPage() {
   const [stats, setStats] = useState({
-    totalBooks: 5,
-    totalReaders: 350000,
-    totalComments: 25000,
-    yearsExperience: 8
+    totalBooks: 1,
+    totalReaders: 0,
+    totalComments: 0,
+    yearsExperience: 22
   });
 
   useEffect(() => {
@@ -22,18 +22,24 @@ export default function AboutPage() {
     try {
       // Gerçek verileri API'den çek
       const [booksRes, commentsRes] = await Promise.all([
-        fetch('/api/books'),
+        fetch('/api/books?status=published'),
         fetch('/api/comments?limit=1')
       ]);
 
-      let totalBooks = 5; // Varsayılan
-      let totalComments = 25000; // Varsayılan
-      let totalReaders = 350000; // Varsayılan (likes + views estimate)
+      let totalBooks = 1; // Varsayılan: Yayınlanan basılı kitaplar
+      let totalComments = 0; // Varsayılan
+      let totalReaders = 0; // Varsayılan (toplam görüntülenmeler)
 
       if (booksRes.ok) {
         const booksData = await booksRes.json();
         if (booksData.success) {
-          totalBooks = booksData.total || booksData.data?.length || 5;
+          // Sadece basılı romanları say
+          totalBooks = booksData.total || booksData.data?.length || 1;
+          
+          // Toplam görüntülenmeler = Toplam Okur
+          if (booksData.data && Array.isArray(booksData.data)) {
+            totalReaders = booksData.data.reduce((sum: number, book: any) => sum + (book.views || 0), 0);
+          }
         }
       }
 
@@ -44,12 +50,18 @@ export default function AboutPage() {
         }
       }
 
-      // Likes API'si parametre gerektiriyor, şimdilik varsayılan değer kullan
-
-      // Yıllık deneyim hesapla (2017'den bu yana)
-      const startYear = 2017;
-      const currentYear = new Date().getFullYear();
-      const yearsExperience = currentYear - startYear;
+      // Yıllık deneyim hesapla (2003'den bu yana - 1.11.2025 itibariyle 22 yıl)
+      const startYear = 2003;
+      const currentDate = new Date();
+      const currentYear = currentDate.getFullYear();
+      const currentMonth = currentDate.getMonth(); // 0-11 (Kasım = 10)
+      
+      // Kasım ayından sonra bir sonraki yıla geçtiğinde +1
+      let yearsExperience = currentYear - startYear;
+      if (currentMonth >= 0) { // 1 Ocak'tan itibaren yeni yaş
+        // 2025 - 2003 = 22
+        yearsExperience = currentYear - startYear;
+      }
 
       setStats({
         totalBooks,
@@ -180,19 +192,19 @@ export default function AboutPage() {
                     <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">Basılı Romanlar</div>
                   </div>
                   <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 rounded-xl">
-                    <div className="text-4xl font-bold text-blue-600 dark:text-blue-400 mb-2">{formatNumber(stats.totalReaders)}+</div>
+                    <div className="text-4xl font-bold text-blue-600 dark:text-blue-400 mb-2">{formatNumber(stats.totalReaders)}</div>
                     <div className="text-sm font-medium text-gray-700 dark:text-gray-300">Toplam Okur</div>
-                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">Tüm Platformlar</div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">Görüntülenme Sayısı</div>
                   </div>
                   <div className="text-center p-4 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-xl">
-                    <div className="text-4xl font-bold text-purple-600 dark:text-purple-400 mb-2">{formatNumber(stats.totalComments)}+</div>
+                    <div className="text-4xl font-bold text-purple-600 dark:text-purple-400 mb-2">{formatNumber(stats.totalComments)}</div>
                     <div className="text-sm font-medium text-gray-700 dark:text-gray-300">Yorum & Etkileşim</div>
-                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">Aktif Topluluk</div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">Toplam Yorumlar</div>
                   </div>
                   <div className="text-center p-4 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl">
                     <div className="text-4xl font-bold text-green-600 dark:text-green-400 mb-2">{stats.yearsExperience}</div>
                     <div className="text-sm font-medium text-gray-700 dark:text-gray-300">Yıllık Deneyim</div>
-                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">2017'den Beri</div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">2003'den Beri</div>
                   </div>
                 </div>
               </div>
