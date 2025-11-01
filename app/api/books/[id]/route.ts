@@ -140,6 +140,13 @@ export async function PUT(
       WHERE id = ?
     `;
     
+    // Tarihi MySQL formatına çevir (YYYY-MM-DD)
+    let formattedDate = null;
+    if (updateData.publish_date && updateData.publish_date.trim() !== '') {
+      const dateObj = new Date(updateData.publish_date);
+      formattedDate = dateObj.toISOString().split('T')[0]; // YYYY-MM-DD
+    }
+    
     await executeQuery(updateQuery, [
       updateData.title,
       slug,
@@ -149,7 +156,7 @@ export async function PUT(
       updateData.category ?? null,
       updateData.cover_image ?? updateData.cover_image_url ?? null,
       updateData.status ?? 'draft',
-      updateData.publish_date && updateData.publish_date.trim() !== '' ? updateData.publish_date : null,
+      formattedDate,
       updateData.amazon_link ?? null,
       updateData.dr_link ?? null,
       updateData.idefix_link ?? null,

@@ -195,6 +195,13 @@ export async function POST(request: NextRequest) {
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
     `;
     
+    // Tarihi MySQL formatına çevir (YYYY-MM-DD)
+    let formattedDate = null;
+    if (bookData.publish_date && bookData.publish_date.trim() !== '') {
+      const dateObj = new Date(bookData.publish_date);
+      formattedDate = dateObj.toISOString().split('T')[0]; // YYYY-MM-DD
+    }
+    
     const result = await executeQuery(insertQuery, [
       bookData.title,
       slug,
@@ -204,7 +211,7 @@ export async function POST(request: NextRequest) {
       bookData.category || null,
       bookData.cover_image || bookData.cover_image_url || null,
       bookData.status || 'draft',
-      bookData.publish_date || null,
+      formattedDate,
       bookData.amazon_link || null,
       bookData.dr_link || null,
       bookData.idefix_link || null

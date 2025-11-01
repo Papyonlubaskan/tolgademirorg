@@ -61,19 +61,18 @@ export default function ImageWithFallback({
         console.log('ImageWithFallback - Added /uploads/ prefix:', imageSrc);
       }
       
-      // Railway production için absolute URL oluştur
-      if (typeof window !== 'undefined' && window.location.hostname.includes('railway.app')) {
+      // Production için absolute URL oluştur
+      if (typeof window !== 'undefined' && (window.location.hostname.includes('railway.app') || window.location.hostname.includes('tolgademir.org'))) {
         if (imageSrc && !imageSrc.startsWith('http')) {
-          imageSrc = `https://tolgademir-production.up.railway.app${imageSrc}`;
-          console.log('ImageWithFallback - Railway absolute URL:', imageSrc);
+          imageSrc = `https://tolgademir.org${imageSrc}`;
+          console.log('ImageWithFallback - Production absolute URL:', imageSrc);
         }
       }
       
       // Server-side rendering için de absolute URL oluştur
       if (typeof window === 'undefined') {
         if (imageSrc && !imageSrc.startsWith('http')) {
-          // Railway production için hardcoded URL
-          imageSrc = `https://tolgademir-production.up.railway.app${imageSrc}`;
+          imageSrc = `https://tolgademir.org${imageSrc}`;
           console.log('ImageWithFallback - SSR absolute URL:', imageSrc);
         }
       }
