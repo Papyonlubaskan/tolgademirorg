@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '20');
     const unreadOnly = searchParams.get('unreadOnly') === 'true';
 
-    // Son yorumları bildirim olarak göster
+    // Son yorumlarÄ± bildirim olarak gÃ¶ster
     const commentsQuery = `
       SELECT 
         c.id,
@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
     `;
     const comments = await executeQuery(commentsQuery, [limit]);
 
-    // Son beğenileri bildirim olarak göster
+    // Son beÄŸenileri bildirim olarak gÃ¶ster
     const likesQuery = `
       SELECT 
         l.id,
@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
     `;
     const likes = await executeQuery(likesQuery, [limit]);
 
-    // Bildirimleri birleştir ve formatla
+    // Bildirimleri birleÅŸtir ve formatla
     const notifications = [
       ...comments.map((c: any) => ({
         id: `comment_${c.id}`,
@@ -63,8 +63,8 @@ export async function GET(request: NextRequest) {
       ...likes.map((l: any) => ({
         id: `like_${l.id}`,
         type: 'like',
-        title: 'Yeni Beğeni',
-        message: `"${l.book_title || 'Bir içerik'}" beğenildi`,
+        title: 'Yeni BeÄŸeni',
+        message: `"${l.book_title || 'Bir iÃ§erik'}" beÄŸenildi`,
         time: l.created_at,
         isRead: false,
         data: {
@@ -76,13 +76,13 @@ export async function GET(request: NextRequest) {
       }))
     ];
 
-    // Zamana göre sırala
+    // Zamana gÃ¶re sÄ±rala
     notifications.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
 
     // Limit uygula
     const limitedNotifications = notifications.slice(0, limit);
 
-    // Okunmamış sayısını hesapla
+    // OkunmamÄ±ÅŸ sayÄ±sÄ±nÄ± hesapla
     const unreadCount = limitedNotifications.filter(n => !n.isRead).length;
 
     return successResponse({
@@ -97,7 +97,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// PUT: Bildirimi okundu olarak işaretle
+// PUT: Bildirimi okundu olarak iÅŸaretle
 export async function PUT(request: NextRequest) {
   try {
     const authError = await requireAdmin(request);
@@ -106,7 +106,7 @@ export async function PUT(request: NextRequest) {
     const { notificationId, markAllAsRead } = await request.json();
 
     if (markAllAsRead) {
-      // Tüm bildirimleri okundu işaretle (şimdilik sadece frontend'de state güncelleniyor)
+      // TÃ¼m bildirimleri okundu iÅŸaretle (ÅŸimdilik sadece frontend'de state gÃ¼ncelleniyor)
       return successResponse({ 
         message: 'All notifications marked as read',
         success: true 
@@ -114,7 +114,7 @@ export async function PUT(request: NextRequest) {
     }
 
     if (notificationId) {
-      // Belirli bildirimi okundu işaretle
+      // Belirli bildirimi okundu iÅŸaretle
       return successResponse({ 
         message: 'Notification marked as read',
         success: true,
@@ -139,7 +139,7 @@ export async function DELETE(request: NextRequest) {
     const { notificationIds, deleteAll } = await request.json();
 
     if (deleteAll) {
-      // Tüm bildirimleri sil (şimdilik sadece frontend'de state güncellenecek)
+      // TÃ¼m bildirimleri sil (ÅŸimdilik sadece frontend'de state gÃ¼ncellenecek)
       return successResponse({ 
         message: 'All notifications deleted',
         success: true,
@@ -151,7 +151,7 @@ export async function DELETE(request: NextRequest) {
       return errorResponse('Invalid notification IDs', 400);
     }
 
-    // Bildirimleri sil (şimdilik sadece frontend'de state güncellenecek)
+    // Bildirimleri sil (ÅŸimdilik sadece frontend'de state gÃ¼ncellenecek)
     return successResponse({ 
       message: `${notificationIds.length} notification(s) deleted`,
       success: true,
