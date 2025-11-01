@@ -207,7 +207,76 @@ export default function CommentSystem({ bookId, chapterId }: CommentSystemProps)
       {/* Comments list */}
       {loading ? (
         <div className="text-center py-8">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 dark:border-orange-400 mx-auto"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600 mx-auto"></div>
+        </div>
+      ) : comments.length === 0 ? (
+        <div className="text-center py-8 text-gray-500">Henüz yorum yapılmamış. İlk yorumu siz yapın!</div>
+      ) : (
+        <div className="space-y-4">
+          {comments.map((comment) => (
+            <div key={comment.id} className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="font-semibold text-gray-900 dark:text-white">{comment.user_name}</span>
+                    <span className="text-sm text-gray-500">
+                      {new Date(comment.created_at).toLocaleDateString('tr-TR')}
+                    </span>
+                  </div>
+                  
+                  {editingComment === comment.id ? (
+                    <div className="space-y-2">
+                      <textarea
+                        value={editText}
+                        onChange={(e) => setEditText(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"
+                        rows={3}
+                      />
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleEditComment(comment.id)}
+                          className="px-3 py-1 bg-orange-500 text-white rounded hover:bg-orange-600 text-sm"
+                        >
+                          Kaydet
+                        </button>
+                        <button
+                          onClick={cancelEditing}
+                          className="px-3 py-1 bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-white rounded hover:bg-gray-400 dark:hover:bg-gray-500 text-sm"
+                        >
+                          İptal
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-gray-700 dark:text-gray-300">{comment.content}</p>
+                  )}
+                </div>
+                
+                {comment.user_id === currentUserId && editingComment !== comment.id && (
+                  <div className="flex gap-2 ml-4">
+                    <button
+                      onClick={() => startEditing(comment)}
+                      className="text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400"
+                    >
+                      Düzenle
+                    </button>
+                    <button
+                      onClick={() => handleDeleteComment(comment.id)}
+                      className="text-sm text-red-600 hover:text-red-700 dark:text-red-400"
+                    >
+                      Sil
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+<div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 dark:border-orange-400 mx-auto"></div>
         </div>
       ) : comments.length === 0 ? (
         <p className="text-gray-500 dark:text-gray-400 text-center py-8">
