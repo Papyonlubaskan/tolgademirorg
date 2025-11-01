@@ -26,24 +26,29 @@ export default function CommentSystem({ bookId, chapterId }: CommentSystemProps)
   const [editText, setEditText] = useState('');
 
   useEffect(() => {
+    // Kullanici ID'sini olustur veya al
     let userId = localStorage.getItem('user_id');
     if (!userId) {
       userId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
       localStorage.setItem('user_id', userId);
     }
     setCurrentUserId(userId);
+
     loadComments();
   }, [bookId, chapterId]);
 
   const loadComments = async () => {
     if (!bookId && !chapterId) return;
+    
     try {
       setLoading(true);
       const params = new URLSearchParams();
       if (bookId) params.set('bookId', bookId);
       if (chapterId) params.set('chapterId', chapterId);
+      
       const response = await fetch(`/api/comments?${params.toString()}`);
       const data = await response.json();
+      
       if (data.success) {
         setComments(data.data || []);
       }
@@ -56,7 +61,9 @@ export default function CommentSystem({ bookId, chapterId }: CommentSystemProps)
 
   const submitComment = async (e: React.FormEvent) => {
     e.preventDefault();
+    
     if (!newComment.trim() || !userName.trim()) return;
+
     try {
       setSubmitting(true);
       const body: any = {
@@ -66,14 +73,20 @@ export default function CommentSystem({ bookId, chapterId }: CommentSystemProps)
       };
       if (bookId) body.bookId = bookId;
       if (chapterId) body.chapterId = chapterId;
+      
       const response = await fetch('/api/comments', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify(body),
       });
+
       const data = await response.json();
+      
       if (data.success) {
         setNewComment('');
+        // Kullanici adini hatirla
         localStorage.setItem('user_name', userName.trim());
         loadComments();
       }
@@ -86,13 +99,21 @@ export default function CommentSystem({ bookId, chapterId }: CommentSystemProps)
 
   const handleEditComment = async (commentId: number) => {
     if (!editText.trim()) return;
+
     try {
       const response = await fetch(`/api/comments/${commentId}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: currentUserId, content: editText.trim() }),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: currentUserId,
+          content: editText.trim(),
+        }),
       });
+
       const data = await response.json();
+      
       if (data.success) {
         setEditingComment(null);
         setEditText('');
@@ -105,13 +126,20 @@ export default function CommentSystem({ bookId, chapterId }: CommentSystemProps)
 
   const handleDeleteComment = async (commentId: number) => {
     if (!confirm('Bu yorumu silmek istediginizden emin misiniz?')) return;
+
     try {
       const response = await fetch(`/api/comments/${commentId}`, {
         method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: currentUserId }),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: currentUserId,
+        }),
       });
+
       const data = await response.json();
+      
       if (data.success) {
         loadComments();
       }
@@ -130,6 +158,7 @@ export default function CommentSystem({ bookId, chapterId }: CommentSystemProps)
     setEditText('');
   };
 
+  // Kullanici adini otomatik doldur
   useEffect(() => {
     const savedName = localStorage.getItem('user_name');
     if (savedName) {
@@ -142,6 +171,8 @@ export default function CommentSystem({ bookId, chapterId }: CommentSystemProps)
       <h3 className="text-2xl font-bold text-gray-900 dark:text-white">
         Yorumlar ({comments.length})
       </h3>
+
+      {/* Comment form */}
       <form onSubmit={submitComment} className="space-y-4">
         <div>
           <input
@@ -172,6 +203,8 @@ export default function CommentSystem({ bookId, chapterId }: CommentSystemProps)
           {submitting ? 'Gonderiliyor...' : 'Yorum Yap'}
         </button>
       </form>
+
+      {/* Comments list */}
       {loading ? (
         <div className="text-center py-8">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600 mx-auto"></div>
@@ -190,6 +223,7 @@ export default function CommentSystem({ bookId, chapterId }: CommentSystemProps)
                       {new Date(comment.created_at).toLocaleDateString('tr-TR')}
                     </span>
                   </div>
+                  
                   {editingComment === comment.id ? (
                     <div className="space-y-2">
                       <textarea
@@ -217,6 +251,7 @@ export default function CommentSystem({ bookId, chapterId }: CommentSystemProps)
                     <p className="text-gray-700 dark:text-gray-300">{comment.content}</p>
                   )}
                 </div>
+                
                 {comment.user_id === currentUserId && editingComment !== comment.id && (
                   <div className="flex gap-2 ml-4">
                     <button

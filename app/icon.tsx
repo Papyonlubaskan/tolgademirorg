@@ -21,16 +21,25 @@ export default function Icon() {
           position: 'relative',
         }}
       >
-        {/* Open Book Icon */}
-        <svg width="32" height="32" viewBox="0 0 100 100" style={{ position: 'absolute', top: '2px' }}>
-          {/* Book Pages */}
-          <path d="M 30 35 Q 30 40 28 45 Q 30 50 30 55 L 45 55 L 45 35 Z" 
-                fill="none" stroke="#FF8C00" strokeWidth="2"/>
-          <path d="M 70 35 Q 70 40 72 45 Q 70 50 70 55 L 55 55 L 55 35 Z" 
-                fill="none" stroke="#FF8C00" strokeWidth="2"/>
-          {/* Quill */}
-          <line x1="50" y1="50" x2="50" y2="25" stroke="#FF8C00" strokeWidth="2"/>
-          <path d="M 50 25 L 47 28 M 50 25 L 53 28" stroke="#FF8C00" strokeWidth="1.5"/>
+        {/* Open Book Icon - Simplified for 32x32 */}
+        <svg width="28" height="28" viewBox="0 0 120 120" style={{ position: 'absolute' }}>
+          {/* Left Page */}
+          <path d="M 35 45 Q 32 55 30 65 Q 32 75 35 85 L 55 85 L 55 45 Z" 
+                fill="none" stroke="#FF8C00" strokeWidth="3"/>
+          
+          {/* Right Page */}
+          <path d="M 85 45 Q 88 55 90 65 Q 88 75 85 85 L 65 85 L 65 45 Z" 
+                fill="none" stroke="#FF8C00" strokeWidth="3"/>
+          
+          {/* Spine */}
+          <line x1="55" y1="45" x2="55" y2="85" stroke="#E91E63" strokeWidth="2.5"/>
+          <line x1="65" y1="45" x2="65" y2="85" stroke="#E91E63" strokeWidth="2.5"/>
+          
+          {/* Quill Pen */}
+          <line x1="60" y1="70" x2="60" y2="30" stroke="#FF8C00" strokeWidth="3"/>
+          <line x1="60" y1="35" x2="55" y2="42" stroke="#FF8C00" strokeWidth="2"/>
+          <line x1="60" y1="35" x2="65" y2="42" stroke="#FF8C00" strokeWidth="2"/>
+          <polygon points="60,30 58,28 60,25 62,28" fill="#FF8C00"/>
         </svg>
       </div>
     ),
