@@ -1,4 +1,4 @@
-
+ï»¿
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -59,17 +59,17 @@ export default function BooksManager() {
     setTimeout(() => setMessage(''), 4000);
   };
 
-  // Otomatik slug oluþturma
+  // Otomatik slug oluï¿½turma
   const generateSlug = (title: string) => {
     return title
       .toLowerCase()
-      .replace(/[^a-z0-9\s-ðüþýöçÐÜÞÝÖÇ]/g, '')
-      .replace(/[ðÐ]/g, 'g')
-      .replace(/[üÜ]/g, 'u')
-      .replace(/[þÞ]/g, 's')
-      .replace(/[ýÝ]/g, 'i')
-      .replace(/[öÖ]/g, 'o')
-      .replace(/[çÇ]/g, 'c')
+      .replace(/[^a-z0-9\s-ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½]/g, '')
+      .replace(/[ï¿½ï¿½]/g, 'g')
+      .replace(/[ï¿½ï¿½]/g, 'u')
+      .replace(/[ï¿½ï¿½]/g, 's')
+      .replace(/[ï¿½ï¿½]/g, 'i')
+      .replace(/[ï¿½ï¿½]/g, 'o')
+      .replace(/[ï¿½ï¿½]/g, 'c')
       .replace(/\s+/g, '-')
       .replace(/-+/g, '-')
       .trim();
@@ -104,7 +104,7 @@ export default function BooksManager() {
   };
 
   const handleEdit = async (book: any) => {
-    // Kitabýn güncel bölümlerini yükle
+    // Kitabï¿½n gï¿½ncel bï¿½lï¿½mlerini yï¿½kle
     let bookWithChapters = { ...book };
     try {
       const chaptersResponse = await fetch(`/api/chapters?bookId=${book.id}`, {
@@ -120,7 +120,7 @@ export default function BooksManager() {
         }
       }
     } catch (error) {
-      console.error('Bölümler yüklenirken hata:', error);
+      console.error('Bï¿½lï¿½mler yï¿½klenirken hata:', error);
       bookWithChapters.chapters = [];
     }
 
@@ -219,7 +219,7 @@ export default function BooksManager() {
   const handleSave = async () => {
     // Sadece yeni kitap eklerken title zorunlu
     if (!editingBook && !formData.title.trim()) {
-      showMessage('Kitap baþlýðý gereklidir!', 'error');
+      showMessage('Kitap baï¿½lï¿½ï¿½ï¿½ gereklidir!', 'error');
       return;
     }
 
@@ -241,20 +241,20 @@ export default function BooksManager() {
       });
 
       if (!response.ok) {
-        throw new Error(editingBook ? 'Güncelleme hatasý' : 'Ekleme hatasý');
+        throw new Error(editingBook ? 'Gï¿½ncelleme hatasï¿½' : 'Ekleme hatasï¿½');
       }
 
       const result = await response.json();
       
       if (!editingBook) {
-        // Yeni kitap eklendi - otomatik düzenleme moduna geç
-        showMessage('Kitap baþarýyla eklendi! Þimdi bölüm ekleyebilirsiniz.', 'success');
+        // Yeni kitap eklendi - otomatik dï¿½zenleme moduna geï¿½
+        showMessage('Kitap baï¿½arï¿½yla eklendi! ï¿½imdi bï¿½lï¿½m ekleyebilirsiniz.', 'success');
         await loadBooks();
         
-        // Yeni eklenen kitabý bul ve düzenleme moduna geç
+        // Yeni eklenen kitabï¿½ bul ve dï¿½zenleme moduna geï¿½
         if (result.success && result.data) {
           const newBook = result.data;
-          // Bölümleri yükle
+          // Bï¿½lï¿½mleri yï¿½kle
           try {
             const chaptersResponse = await fetch(`/api/chapters?bookId=${newBook.id}`, {
               headers: { Authorization: `Bearer ${getAuthToken()}` }
@@ -266,7 +266,7 @@ export default function BooksManager() {
               }
             }
           } catch (error) {
-            console.error('Bölümler yüklenirken hata:', error);
+            console.error('Bï¿½lï¿½mler yï¿½klenirken hata:', error);
             newBook.chapters = [];
           }
           
@@ -284,23 +284,23 @@ export default function BooksManager() {
             idefix_link: newBook.idefix_link || '',
             author: newBook.author || 'Tolga Demir'
           });
-          // Form açýk kalsýn
+          // Form aï¿½ï¿½k kalsï¿½n
         }
       } else {
-        showMessage('Kitap baþarýyla güncellendi!', 'success');
+        showMessage('Kitap baï¿½arï¿½yla gï¿½ncellendi!', 'success');
         resetForm();
         await loadBooks();
       }
     } catch (e) {
       console.error('Save error:', e);
-      showMessage('Kaydetme sýrasýnda hata oluþtu!', 'error');
+      showMessage('Kaydetme sï¿½rasï¿½nda hata oluï¿½tu!', 'error');
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Bu kitabý silmek istediðinizden emin misiniz?')) return;
+    if (!confirm('Bu kitabï¿½ silmek istediï¿½inizden emin misiniz?')) return;
 
     try {
       const response = await fetch(`/api/books/${id}`, {
@@ -310,13 +310,13 @@ export default function BooksManager() {
         }
       });
 
-      if (!response.ok) throw new Error('Silme hatasý');
+      if (!response.ok) throw new Error('Silme hatasï¿½');
 
-      showMessage('Kitap baþarýyla silindi!', 'success');
+      showMessage('Kitap baï¿½arï¿½yla silindi!', 'success');
       await loadBooks();
     } catch (e) {
       console.error('Delete error:', e);
-      showMessage('Silme sýrasýnda hata oluþtu!', 'error');
+      showMessage('Silme sï¿½rasï¿½nda hata oluï¿½tu!', 'error');
     }
   };
 
@@ -345,11 +345,11 @@ export default function BooksManager() {
 
   const validateChapterForm = () => {
     if (!chapterFormData.title.trim()) {
-      showMessage('Bölüm baþlýðý gereklidir!', 'error');
+      showMessage('Bï¿½lï¿½m baï¿½lï¿½ï¿½ï¿½ gereklidir!', 'error');
       return false;
     }
     if (!chapterFormData.content.trim()) {
-      showMessage('Bölüm içeriði gereklidir!', 'error');
+      showMessage('Bï¿½lï¿½m iï¿½eriï¿½i gereklidir!', 'error');
       return false;
     }
     return true;
@@ -390,13 +390,13 @@ export default function BooksManager() {
       const result = await response.json();
 
       if (!result.success) {
-        throw new Error(result.error || 'Bölüm iþlemi hatalý');
+        throw new Error(result.error || 'Bï¿½lï¿½m iï¿½lemi hatalï¿½');
       }
 
-      showMessage(chapterId ? 'Bölüm baþarýyla güncellendi!' : `Bölüm "${result.data.title}" eklendi!`, 'success');
+      showMessage(chapterId ? 'Bï¿½lï¿½m baï¿½arï¿½yla gï¿½ncellendi!' : `Bï¿½lï¿½m "${result.data.title}" eklendi!`, 'success');
       resetChapterForm();
 
-      // EditingBook'u güncelle
+      // EditingBook'u gï¿½ncelle
       if (editingBook && editingBook.id === bookId) {
         const chaptersResponse = await fetch(`/api/chapters?bookId=${bookId}`, {
           headers: { Authorization: `Bearer ${getAuthToken()}` }
@@ -409,18 +409,18 @@ export default function BooksManager() {
         }
       }
 
-      // Kitaplar listesini de güncelle
+      // Kitaplar listesini de gï¿½ncelle
       await loadBooks();
     } catch (e: any) {
       console.error('Chapter save error:', e);
-      showMessage('Bölüm kaydedilirken hata oluþtu: ' + e.message, 'error');
+      showMessage('Bï¿½lï¿½m kaydedilirken hata oluï¿½tu: ' + e.message, 'error');
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleDeleteChapter = async (bookId: string, chapterId: string) => {
-    if (!confirm('Bu bölümü silmek istediðinizden emin misiniz?')) return;
+    if (!confirm('Bu bï¿½lï¿½mï¿½ silmek istediï¿½inizden emin misiniz?')) return;
 
     try {
       const response = await fetch(
@@ -435,16 +435,16 @@ export default function BooksManager() {
 
       if (!response.ok) {
         const err = await response.text();
-        throw new Error(`Silme hatasý: ${response.status} - ${err}`);
+        throw new Error(`Silme hatasï¿½: ${response.status} - ${err}`);
       }
 
       const result = await response.json();
 
-      if (!result.success) throw new Error(result.error || 'Silme hatasý');
+      if (!result.success) throw new Error(result.error || 'Silme hatasï¿½');
 
-      showMessage('Bölüm baþarýyla silindi!', 'success');
+      showMessage('Bï¿½lï¿½m baï¿½arï¿½yla silindi!', 'success');
 
-      // EditingBook'u güncelle
+      // EditingBook'u gï¿½ncelle
       if (editingBook && editingBook.id === bookId) {
         const chaptersResponse = await fetch(`/api/chapters?bookId=${bookId}`, {
           headers: { Authorization: `Bearer ${getAuthToken()}` }
@@ -457,11 +457,11 @@ export default function BooksManager() {
         }
       }
 
-      // Kitaplar listesini de güncelle
+      // Kitaplar listesini de gï¿½ncelle
       await loadBooks();
     } catch (e: any) {
       console.error('Chapter delete error:', e);
-      showMessage('Bölüm silinirken hata oluþtu: ' + e.message, 'error');
+      showMessage('Bï¿½lï¿½m silinirken hata oluï¿½tu: ' + e.message, 'error');
     }
   };
 
@@ -473,11 +473,11 @@ export default function BooksManager() {
     if (!file) return;
 
     if (file.size > 5 * 1024 * 1024) {
-      showMessage('Dosya boyutu çok büyük (max 5MB)', 'error');
+      showMessage('Dosya boyutu ï¿½ok bï¿½yï¿½k (max 5MB)', 'error');
       return;
     }
     if (!file.type.startsWith('image/')) {
-      showMessage('Sadece resim dosyalarý yüklenebilir', 'error');
+      showMessage('Sadece resim dosyalarï¿½ yï¿½klenebilir', 'error');
       return;
     }
 
@@ -497,7 +497,7 @@ export default function BooksManager() {
         file_size: file.size,
         file_type: file.type,
         alt_text: formData.title ? `${formData.title} kapak resmi` : 'Kitap kapak resmi',
-        description: 'Kitap kapak görseli'
+        description: 'Kitap kapak gï¿½rseli'
       };
 
       const response = await fetch(`/api/upload`, {
@@ -511,7 +511,7 @@ export default function BooksManager() {
 
       if (!response.ok) {
         const err = await response.text();
-        let errorMsg = 'Kapak resmi yüklenirken hata oluþtu';
+        let errorMsg = 'Kapak resmi yï¿½klenirken hata oluï¿½tu';
         try {
           const parsed = JSON.parse(err);
           errorMsg = parsed.error || errorMsg;
@@ -521,18 +521,18 @@ export default function BooksManager() {
 
       const result = await response.json();
 
-      if (!result.success) throw new Error(result.error || 'Kapak resmi yükleme hatasý');
+      if (!result.success) throw new Error(result.error || 'Kapak resmi yï¿½kleme hatasï¿½');
 
       const imageUrl = result.data.file_path || result.data.url;
       setFormData(prev => ({ ...prev, cover_image: imageUrl }));
-      showMessage('Kapak resmi baþarýyla yüklendi!', 'success');
+      showMessage('Kapak resmi baï¿½arï¿½yla yï¿½klendi!', 'success');
     } catch (e: any) {
       console.error('Cover upload error:', e);
-      let userMsg = 'Kapak resmi yüklenirken hata oluþtu';
+      let userMsg = 'Kapak resmi yï¿½klenirken hata oluï¿½tu';
       if (e.message.includes('Bucket not found')) {
-        userMsg = 'Dosya depolama sistemi henüz hazýr deðil. Lütfen birkaç saniye sonra tekrar deneyin.';
+        userMsg = 'Dosya depolama sistemi henï¿½z hazï¿½r deï¿½il. Lï¿½tfen birkaï¿½ saniye sonra tekrar deneyin.';
       } else if (e.message.includes('too large')) {
-        userMsg = 'Dosya boyutu çok büyük. Lütfen 5MB altýnda bir resim seçin.';
+        userMsg = 'Dosya boyutu ï¿½ok bï¿½yï¿½k. Lï¿½tfen 5MB altï¿½nda bir resim seï¿½in.';
       }
       showMessage(userMsg, 'error');
     } finally {
@@ -579,8 +579,8 @@ export default function BooksManager() {
 
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Kitap Yönetimi</h2>
-          <p className="text-gray-700 dark:text-gray-300">Kitaplarýnýzý ve bölümlerini yönetin</p>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Kitap Yï¿½netimi</h2>
+          <p className="text-gray-700 dark:text-gray-300">Kitaplarï¿½nï¿½zï¿½ ve bï¿½lï¿½mlerini yï¿½netin</p>
         </div>
         <button
           onClick={() => setShowForm(true)}
@@ -597,7 +597,7 @@ export default function BooksManager() {
           <div className="bg-white dark:bg-gray-800 rounded-xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
-                {editingBook ? 'Kitap Düzenle' : 'Yeni Kitap Ekle'}
+                {editingBook ? 'Kitap Dï¿½zenle' : 'Yeni Kitap Ekle'}
               </h3>
               <button
                 onClick={() => {
@@ -620,7 +620,7 @@ export default function BooksManager() {
               {/* Title */}
               <div>
                 <label className="block text-sm font-medium text-gray-800 dark:text-gray-100 mb-2">
-                  Kitap Baþlýðý {!editingBook && '*'}
+                  Kitap Baï¿½lï¿½ï¿½ï¿½ {!editingBook && '*'}
                 </label>
                 <input
                   type="text"
@@ -632,7 +632,7 @@ export default function BooksManager() {
                     setFormData({ ...formData, title: newTitle, slug: newSlug });
                   }}
                   className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                  placeholder="Kitap baþlýðýný girin"
+                  placeholder="Kitap baï¿½lï¿½ï¿½ï¿½nï¿½ girin"
                 />
               </div>
 
@@ -644,14 +644,14 @@ export default function BooksManager() {
                   value={formData.author}
                   onChange={e => setFormData({ ...formData, author: e.target.value })}
                   className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                  placeholder="Yazar adý (varsayýlan: Tolga Demir)"
+                  placeholder="Yazar adï¿½ (varsayï¿½lan: Tolga Demir)"
                 />
               </div>
 
               {/* Slug */}
               <div>
                 <label className="block text-sm font-medium text-gray-800 dark:text-gray-100 mb-2">
-                  URL Slug (otomatik oluþturulur)
+                  URL Slug (otomatik oluï¿½turulur)
                 </label>
                 <input
                   type="text"
@@ -661,31 +661,31 @@ export default function BooksManager() {
                   placeholder="url-slug-otomatik-olusur"
                 />
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  URL'de kullanýlacak slug. Baþlýk yazýldýðýnda otomatik oluþturulur.
+                  URL'de kullanï¿½lacak slug. Baï¿½lï¿½k yazï¿½ldï¿½ï¿½ï¿½nda otomatik oluï¿½turulur.
                 </p>
               </div>
 
               {/* Description */}
               <div>
-                <label className="block text-sm font-medium text-gray-800 dark:text-gray-100 mb-2">Açýklama</label>
+                <label className="block text-sm font-medium text-gray-800 dark:text-gray-100 mb-2">Aï¿½ï¿½klama</label>
                 <textarea
                   value={formData.description}
                   onChange={e => setFormData({ ...formData, description: e.target.value })}
                   rows={3}
                   className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                  placeholder="Kitap açýklamasý"
+                  placeholder="Kitap aï¿½ï¿½klamasï¿½"
                 />
               </div>
 
               {/* Content */}
               <div>
-                <label className="block text-sm font-medium text-gray-800 dark:text-gray-100 mb-2">Ýçerik</label>
+                <label className="block text-sm font-medium text-gray-800 dark:text-gray-100 mb-2">ï¿½ï¿½erik</label>
                 <textarea
                   value={formData.content}
                   onChange={e => setFormData({ ...formData, content: e.target.value })}
                   rows={6}
                   className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                  placeholder="Kitap içeriði veya özeti"
+                  placeholder="Kitap iï¿½eriï¿½i veya ï¿½zeti"
                 />
               </div>
 
@@ -699,7 +699,7 @@ export default function BooksManager() {
               {/* Publish date, category & status */}
               <div className="grid grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-800 dark:text-gray-100 mb-2">Yayýn Tarihi</label>
+                  <label className="block text-sm font-medium text-gray-800 dark:text-gray-100 mb-2">Yayï¿½n Tarihi</label>
                   <input
                     type="date"
                     value={formData.publish_date}
@@ -719,24 +719,24 @@ export default function BooksManager() {
                     <option value="Roman">Roman</option>
                     <option value="Hikaye">Hikaye</option>
                     <option value="Deneme">Deneme</option>
-                    <option value="Þiir">Þiir</option>
-                    <option value="Öykü">Öykü</option>
+                    <option value="ï¿½iir">ï¿½iir</option>
+                    <option value="ï¿½ykï¿½">ï¿½ykï¿½</option>
                     <option value="Makale">Makale</option>
-                    <option value="Eleþtiri">Eleþtiri</option>
+                    <option value="Eleï¿½tiri">Eleï¿½tiri</option>
                     <option value="Senaryo">Senaryo</option>
-                    <option value="Arkasý Yarýn">Arkasý Yarýn</option>
+                    <option value="Arkasï¿½ Yarï¿½n">Arkasï¿½ Yarï¿½n</option>
                     <option value="Dizi">Dizi</option>
                     <option value="Animasyon">Animasyon</option>
                     <option value="Komedi">Komedi</option>
                     <option value="Trajedi">Trajedi</option>
                     <option value="Trajikomik">Trajikomik</option>
-                    <option value="Kýsa Film">Kýsa Film</option>
-                    <option value="Kukla Tiyatrolarý">Kukla Tiyatrolarý</option>
+                    <option value="Kï¿½sa Film">Kï¿½sa Film</option>
+                    <option value="Kukla Tiyatrolarï¿½">Kukla Tiyatrolarï¿½</option>
                     <option value="Oyun Metinleri">Oyun Metinleri</option>
-                    <option value="Skeçler">Skeçler</option>
+                    <option value="Skeï¿½ler">Skeï¿½ler</option>
                     <option value="Dram">Dram</option>
                     <option value="Drama">Drama</option>
-                    <option value="Tanýtým Filmi & Reklam">Tanýtým Filmi & Reklam</option>
+                    <option value="Tanï¿½tï¿½m Filmi & Reklam">Tanï¿½tï¿½m Filmi & Reklam</option>
                     <option value="Tez">Tez</option>
                     <option value="Mektup">Mektup</option>
                   </select>
@@ -750,15 +750,15 @@ export default function BooksManager() {
                     className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent pr-8 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   >
                     <option value="draft">Taslak</option>
-                    <option value="published">Yayýnda</option>
-                    <option value="archived">Arþivlenmiþ</option>
+                    <option value="published">Yayï¿½nda</option>
+                    <option value="archived">Arï¿½ivlenmiï¿½</option>
                   </select>
                 </div>
               </div>
 
               {/* Sales links */}
               <div className="space-y-4">
-                <h4 className="font-medium text-gray-900 dark:text-white">Satýþ Linkleri</h4>
+                <h4 className="font-medium text-gray-900 dark:text-white">Satï¿½ï¿½ Linkleri</h4>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-800 dark:text-gray-100 mb-2">Amazon Link</label>
@@ -794,12 +794,12 @@ export default function BooksManager() {
                 </div>
               </div>
 
-              {/* Bölümler (Sadece düzenleme modunda) */}
+              {/* Bï¿½lï¿½mler (Sadece dï¿½zenleme modunda) */}
               {editingBook && (
                 <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
                   <div className="flex items-center justify-between mb-4">
                     <h4 className="text-lg font-semibold text-gray-900 dark:text-white">
-                      Bölümler ({editingBook.chapters?.length || 0})
+                      Bï¿½lï¿½mler ({editingBook.chapters?.length || 0})
                     </h4>
                     <button
                       type="button"
@@ -807,14 +807,14 @@ export default function BooksManager() {
                       className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg transition-colors cursor-pointer whitespace-nowrap"
                     >
                       <i className="ri-add-line mr-2"></i>
-                      Bölüm Ekle
+                      Bï¿½lï¿½m Ekle
                     </button>
                   </div>
 
                   {!editingBook.chapters || editingBook.chapters.length === 0 ? (
                     <div className="text-center py-8 bg-gray-50 dark:bg-gray-900 rounded-lg">
                       <i className="ri-article-line text-4xl text-gray-300 dark:text-gray-600 mb-3"></i>
-                      <p className="text-gray-600 dark:text-gray-400">Henüz bölüm eklenmemiþ</p>
+                      <p className="text-gray-600 dark:text-gray-400">Henï¿½z bï¿½lï¿½m eklenmemiï¿½</p>
                     </div>
                   ) : (
                     <div className="space-y-3 max-h-64 overflow-y-auto">
@@ -825,7 +825,7 @@ export default function BooksManager() {
                             <div>
                               <h5 className="font-medium text-gray-900 dark:text-white">{chapter.title}</h5>
                               <p className="text-sm text-gray-600 dark:text-gray-400">
-                                Sýra: {chapter.order_number || chapter.order || chapter.chapter_number} • Ýçerik: {chapter.content?.length || 0} karakter
+                                Sï¿½ra: {chapter.order_number || chapter.order || chapter.chapter_number} ï¿½ ï¿½ï¿½erik: {chapter.content?.length || 0} karakter
                               </p>
                             </div>
                             <div className="flex items-center space-x-2">
@@ -835,7 +835,7 @@ export default function BooksManager() {
                                 className="px-3 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded text-sm transition-colors cursor-pointer whitespace-nowrap"
                               >
                                 <i className="ri-edit-line mr-1"></i>
-                                Düzenle
+                                Dï¿½zenle
                               </button>
                               <button
                                 type="button"
@@ -868,12 +868,12 @@ export default function BooksManager() {
                   ) : (
                     <>
                       <i className="ri-save-line mr-2"></i>
-                      {editingBook ? 'Güncelle' : 'Kaydet'}
+                      {editingBook ? 'Gï¿½ncelle' : 'Kaydet'}
                     </>
                   )}
                 </button>
                 <button type="button" onClick={resetForm} className="px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer whitespace-nowrap">
-                  Ýptal
+                  ï¿½ptal
                 </button>
               </div>
             </form>
@@ -887,7 +887,7 @@ export default function BooksManager() {
           <div className="bg-white dark:bg-gray-800 rounded-xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
-                {editingChapter?.chapterId ? 'Bölüm Düzenle' : 'Yeni Bölüm Ekle'}
+                {editingChapter?.chapterId ? 'Bï¿½lï¿½m Dï¿½zenle' : 'Yeni Bï¿½lï¿½m Ekle'}
               </h3>
               <button onClick={resetChapterForm} className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 cursor-pointer">
                 <i className="ri-close-line text-xl"></i>
@@ -903,20 +903,20 @@ export default function BooksManager() {
             >
               {/* Title */}
               <div>
-                <label className="block text-sm font-medium text-gray-800 dark:text-gray-100 mb-2">Bölüm Baþlýðý *</label>
+                <label className="block text-sm font-medium text-gray-800 dark:text-gray-100 mb-2">Bï¿½lï¿½m Baï¿½lï¿½ï¿½ï¿½ *</label>
                 <input
                   type="text"
                   required
                   value={chapterFormData.title}
                   onChange={e => setChapterFormData({ ...chapterFormData, title: e.target.value })}
                   className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                  placeholder="Bölüm baþlýðýný girin"
+                  placeholder="Bï¿½lï¿½m baï¿½lï¿½ï¿½ï¿½nï¿½ girin"
                 />
               </div>
 
               {/* Order */}
               <div>
-                <label className="block text-sm font-medium text-gray-800 dark:text-gray-100 mb-2">Sýra Numarasý</label>
+                <label className="block text-sm font-medium text-gray-800 dark:text-gray-100 mb-2">Sï¿½ra Numarasï¿½</label>
                 <input
                   type="number"
                   min="1"
@@ -929,15 +929,15 @@ export default function BooksManager() {
               {/* Content */}
               <div>
                   <label className="block text-sm font-medium text-gray-800 dark:text-gray-100 mb-2">
-                    Bölüm Ýçeriði *
-                    <span className="text-xs text-gray-500 ml-2">(Tab: girinti ekle, Çift Enter: yeni paragraf)</span>
+                    Bï¿½lï¿½m ï¿½ï¿½eriï¿½i *
+                    <span className="text-xs text-gray-500 ml-2">(Tab: girinti ekle, ï¿½ift Enter: yeni paragraf)</span>
                   </label>
                 <textarea
                   required
                   value={chapterFormData.content}
                   onChange={e => setChapterFormData({ ...chapterFormData, content: e.target.value })}
                     onKeyDown={(e) => {
-                      // Tab tuþu ile paragraf girinti ekle
+                      // Tab tuï¿½u ile paragraf girinti ekle
                       if (e.key === 'Tab') {
                         e.preventDefault();
                         const textarea = e.currentTarget;
@@ -945,11 +945,11 @@ export default function BooksManager() {
                         const end = textarea.selectionEnd;
                         const currentValue = chapterFormData.content;
                         
-                        // 5 boþluk ekle (paragraf girintisi)
+                        // 5 boï¿½luk ekle (paragraf girintisi)
                         const newValue = currentValue.substring(0, start) + '     ' + currentValue.substring(end);
                         setChapterFormData({ ...chapterFormData, content: newValue });
                         
-                        // Cursor'ý girintinin sonuna taþý
+                        // Cursor'ï¿½ girintinin sonuna taï¿½ï¿½
                         setTimeout(() => {
                           textarea.selectionStart = textarea.selectionEnd = start + 5;
                         }, 0);
@@ -962,10 +962,10 @@ export default function BooksManager() {
                       console.log('?? Paste event tetiklendi');
                       console.log('?? Orijinal metin:', text);
                       
-                      // 1. Temel karakter temizliði
+                      // 1. Temel karakter temizliï¿½i
                       let cleanedText = text
-                        .replace(/\r\n/g, '\n')  // Windows satýr sonlarý
-                        .replace(/\r/g, '\n')    // Mac satýr sonlarý
+                        .replace(/\r\n/g, '\n')  // Windows satï¿½r sonlarï¿½
+                        .replace(/\r/g, '\n')    // Mac satï¿½r sonlarï¿½
                         .replace(/\u00A0/g, ' ') // Non-breaking space
                         .replace(/\uFEFF/g, '')  // BOM karakteri
                         .replace(/\u2013/g, '-') // En dash
@@ -975,51 +975,51 @@ export default function BooksManager() {
                         .replace(/\u201C/g, '"') // Left double quote
                         .replace(/\u201D/g, '"'); // Right double quote
                       
-                      console.log('?? Temizlenmiþ metin:', cleanedText);
+                      console.log('?? Temizlenmiï¿½ metin:', cleanedText);
                       
-                      // 2. Geliþmiþ paragraf algýlama ve düzenleme
-                      // PDF'den kopyalanan paragraflarý daha iyi algýla
+                      // 2. Geliï¿½miï¿½ paragraf algï¿½lama ve dï¿½zenleme
+                      // PDF'den kopyalanan paragraflarï¿½ daha iyi algï¿½la
                       
-                      // Önce mevcut çift satýr sonlarýný koru (PDF'den gelen paragraflar)
-                      console.log('?? Orijinal çift satýr sonlarý:', (cleanedText.match(/\n\s*\n/g) || []).length);
+                      // ï¿½nce mevcut ï¿½ift satï¿½r sonlarï¿½nï¿½ koru (PDF'den gelen paragraflar)
+                      console.log('?? Orijinal ï¿½ift satï¿½r sonlarï¿½:', (cleanedText.match(/\n\s*\n/g) || []).length);
                       
-                      // Cümle sonlarý sonrasý satýr sonlarýný iþaretle
+                      // Cï¿½mle sonlarï¿½ sonrasï¿½ satï¿½r sonlarï¿½nï¿½ iï¿½aretle
                       cleanedText = cleanedText.replace(/([.!?])\s*\n/g, '$1\n\n');
                       
-                      // Büyük harfle baþlayan satýrlarý daha agresif þekilde paragraf yap
-                      // Önceki satýr cümle sonu ile bitiyorsa ve yeni satýr büyük harfle baþlýyorsa paragraf
-                      cleanedText = cleanedText.replace(/([.!?])\n([A-ZÐÜÞÝÖÇ])/g, '$1\n\n$2');
+                      // Bï¿½yï¿½k harfle baï¿½layan satï¿½rlarï¿½ daha agresif ï¿½ekilde paragraf yap
+                      // ï¿½nceki satï¿½r cï¿½mle sonu ile bitiyorsa ve yeni satï¿½r bï¿½yï¿½k harfle baï¿½lï¿½yorsa paragraf
+                      cleanedText = cleanedText.replace(/([.!?])\n([A-Zï¿½ï¿½ï¿½ï¿½ï¿½ï¿½])/g, '$1\n\n$2');
                       
-                      // Týrnak iþareti ile baþlayan satýrlarý yeni paragraf olarak iþaretle (diyalog)
+                      // Tï¿½rnak iï¿½areti ile baï¿½layan satï¿½rlarï¿½ yeni paragraf olarak iï¿½aretle (diyalog)
                       cleanedText = cleanedText.replace(/\n(\s*[""''])/g, '\n\n$1');
                       
-                      // Çok kýsa satýrlarý (tek kelime) paragraf baþý yapma - daha az agresif
-                      cleanedText = cleanedText.replace(/\n\n([A-ZÐÜÞÝÖÇ][a-zýðüþöçÐÜÞÝÖÇ]{1,2})\n/g, '\n$1\n');
+                      // ï¿½ok kï¿½sa satï¿½rlarï¿½ (tek kelime) paragraf baï¿½ï¿½ yapma - daha az agresif
+                      cleanedText = cleanedText.replace(/\n\n([A-Zï¿½ï¿½ï¿½ï¿½ï¿½ï¿½][a-zï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½]{1,2})\n/g, '\n$1\n');
                       
-                      console.log('?? Ýþlenmiþ çift satýr sonlarý:', (cleanedText.match(/\n\s*\n/g) || []).length);
+                      console.log('?? ï¿½ï¿½lenmiï¿½ ï¿½ift satï¿½r sonlarï¿½:', (cleanedText.match(/\n\s*\n/g) || []).length);
                       
-                      // 3. Paragraflarý ayýr (çift satýr sonu ile)
+                      // 3. Paragraflarï¿½ ayï¿½r (ï¿½ift satï¿½r sonu ile)
                       const paragraphs = cleanedText.split(/\n\s*\n/);
                       console.log('?? Paragraflar:', paragraphs.length);
                       
-                      // 4. Her paragrafý iþle
+                      // 4. Her paragrafï¿½ iï¿½le
                       const processedParagraphs = paragraphs.map((paragraph, index) => {
                         let cleanParagraph = paragraph.trim();
                         
                         console.log(`?? Paragraf ${index + 1}:`, cleanParagraph.substring(0, 50) + '...');
                         
-                        // 5. Paragraf baþýnda girinti kontrolü
+                        // 5. Paragraf baï¿½ï¿½nda girinti kontrolï¿½
                         const indentMatch = cleanParagraph.match(/^(\s+)/);
                         const hasIndent = indentMatch && indentMatch[1].length > 0;
                         
-                        // 6. Cümle ortasý satýr sonlarýný düzelt (PDF'den gelen)
-                        // Ama cümle sonlarýný koru
-                        cleanParagraph = cleanParagraph.replace(/([a-zýðüþöçÐÜÞÝÖÇ])\n([a-zýðüþöçÐÜÞÝÖÇ])/g, '$1 $2');
+                        // 6. Cï¿½mle ortasï¿½ satï¿½r sonlarï¿½nï¿½ dï¿½zelt (PDF'den gelen)
+                        // Ama cï¿½mle sonlarï¿½nï¿½ koru
+                        cleanParagraph = cleanParagraph.replace(/([a-zï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½])\n([a-zï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½])/g, '$1 $2');
                         
-                        // 7. Birden fazla boþluðu tek boþluða çevir
+                        // 7. Birden fazla boï¿½luï¿½u tek boï¿½luï¿½a ï¿½evir
                         cleanParagraph = cleanParagraph.replace(/\s+/g, ' ');
                         
-                        // 8. Girinti varsa koru (4 boþluk)
+                        // 8. Girinti varsa koru (4 boï¿½luk)
                         if (hasIndent) {
                           cleanParagraph = '    ' + cleanParagraph.trim();
                         }
@@ -1027,17 +1027,17 @@ export default function BooksManager() {
                         return cleanParagraph;
                       });
                       
-                      // 9. Paragraflarý birleþtir (çift satýr sonu ile)
+                      // 9. Paragraflarï¿½ birleï¿½tir (ï¿½ift satï¿½r sonu ile)
                       cleanedText = processedParagraphs
-                        .filter(p => p.length > 0) // Boþ paragraflarý kaldýr
+                        .filter(p => p.length > 0) // Boï¿½ paragraflarï¿½ kaldï¿½r
                         .join('\n\n');
                       
-                      console.log('? Ýþlenmiþ metin:', cleanedText.substring(0, 100) + '...');
+                      console.log('? ï¿½ï¿½lenmiï¿½ metin:', cleanedText.substring(0, 100) + '...');
                       
-                      // 9. Baþýnda ve sonundaki gereksiz boþluklarý temizle
+                      // 9. Baï¿½ï¿½nda ve sonundaki gereksiz boï¿½luklarï¿½ temizle
                       cleanedText = cleanedText.trim();
                       
-                      // 10. Cursor pozisyonuna yapýþtýr
+                      // 10. Cursor pozisyonuna yapï¿½ï¿½tï¿½r
                       const textarea = e.currentTarget;
                       const start = textarea.selectionStart;
                       const end = textarea.selectionEnd;
@@ -1051,14 +1051,14 @@ export default function BooksManager() {
                         const newCursorPos = start + cleanedText.length;
                         textarea.selectionStart = textarea.selectionEnd = newCursorPos;
                         
-                        // Scroll'u en alta kaydýr
+                        // Scroll'u en alta kaydï¿½r
                         textarea.scrollTop = textarea.scrollHeight;
                         textarea.focus();
                       }, 0);
                     }}
                     rows={20}
                     className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-mono"
-                    placeholder="Bölüm içeriðini yazýn veya yapýþtýrýn...&#10;&#10;?? DEBUG MODE: Paste fonksiyonu aktif&#10;?? Geliþmiþ paragraf algýlama&#10;? PDF'den gelen paragraflar korunur&#10;? Console'da debug loglarý görün"
+                    placeholder="Bï¿½lï¿½m iï¿½eriï¿½ini yazï¿½n veya yapï¿½ï¿½tï¿½rï¿½n...&#10;&#10;?? DEBUG MODE: Paste fonksiyonu aktif&#10;?? Geliï¿½miï¿½ paragraf algï¿½lama&#10;? PDF'den gelen paragraflar korunur&#10;? Console'da debug loglarï¿½ gï¿½rï¿½n"
                     style={{
                       whiteSpace: 'pre-wrap',
                       overflowWrap: 'break-word',
@@ -1066,7 +1066,7 @@ export default function BooksManager() {
                     }}
                   />
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                    ?? DEBUG: Paste fonksiyonu aktif. Geliþmiþ paragraf algýlama - PDF'den gelen paragraflar korunur. Console'da debug loglarý görün.
+                    ?? DEBUG: Paste fonksiyonu aktif. Geliï¿½miï¿½ paragraf algï¿½lama - PDF'den gelen paragraflar korunur. Console'da debug loglarï¿½ gï¿½rï¿½n.
                   </p>
               </div>
 
@@ -1085,12 +1085,12 @@ export default function BooksManager() {
                   ) : (
                     <>
                       <i className="ri-save-line mr-2"></i>
-                      {editingChapter?.chapterId ? 'Güncelle' : 'Kaydet'}
+                      {editingChapter?.chapterId ? 'Gï¿½ncelle' : 'Kaydet'}
                     </>
                   )}
                 </button>
                 <button type="button" onClick={resetChapterForm} className="px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer whitespace-nowrap">
-                  Ýptal
+                  ï¿½ptal
                 </button>
               </div>
             </form>
@@ -1103,12 +1103,12 @@ export default function BooksManager() {
         {books.length === 0 ? (
           <div className="text-center py-12">
             <i className="ri-book-line text-6xl text-gray-300 dark:text-gray-600 mb-4"></i>
-            <p className="text-gray-600 dark:text-gray-400 text-lg">Henüz kitap eklenmemiþ</p>
+            <p className="text-gray-600 dark:text-gray-400 text-lg">Henï¿½z kitap eklenmemiï¿½</p>
             <button
               onClick={() => setShowForm(true)}
               className="mt-4 bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-lg transition-colors cursor-pointer whitespace-nowrap"
             >
-              Ýlk Kitabýnýzý Ekleyin
+              ï¿½lk Kitabï¿½nï¿½zï¿½ Ekleyin
             </button>
           </div>
         ) : (
@@ -1141,14 +1141,14 @@ export default function BooksManager() {
                             }`}
                           >
                             {book.status === 'published'
-                              ? 'Yayýnda'
+                              ? 'Yayï¿½nda'
                               : book.status === 'draft'
                               ? 'Taslak'
-                              : 'Arþivlenmiþ'}
+                              : 'Arï¿½ivlenmiï¿½'}
                           </span>
                           <span>
                             <i className="ri-file-text-line mr-1"></i>
-                            {book.chapters?.length || 0} Bölüm
+                            {book.chapters?.length || 0} Bï¿½lï¿½m
                           </span>
                         </div>
                       </div>
@@ -1159,14 +1159,14 @@ export default function BooksManager() {
                           className="px-3 py-2 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-lg transition-colors cursor-pointer whitespace-nowrap"
                         >
                           <i className="ri-list-check-2 mr-1"></i>
-                          {showChapters[book.id] ? 'Bölümleri Gizle' : 'Bölümleri Göster'}
+                          {showChapters[book.id] ? 'Bï¿½lï¿½mleri Gizle' : 'Bï¿½lï¿½mleri Gï¿½ster'}
                         </button>
                         <button
                           onClick={() => handleEdit(book)}
                           className="px-3 py-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 text-gray-700 dark:text-gray-200 rounded-lg transition-colors cursor-pointer whitespace-nowrap"
                         >
                           <i className="ri-edit-line mr-1"></i>
-                          Düzenle
+                          Dï¿½zenle
                         </button>
                         <button
                           onClick={() => handleDelete(book.id)}
@@ -1181,7 +1181,7 @@ export default function BooksManager() {
                     {/* Sales links */}
                     {(book.amazon_link || book.dr_link || book.idefix_link) && (
                       <div className="mt-4 flex items-center space-x-3">
-                        <span className="text-sm text-gray-700 dark:text-gray-300">Satýþ linkleri:</span>
+                        <span className="text-sm text-gray-700 dark:text-gray-300">Satï¿½ï¿½ linkleri:</span>
                         {book.amazon_link && (
                           <a
                             href={book.amazon_link}
@@ -1223,26 +1223,26 @@ export default function BooksManager() {
                 <div className="border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 p-6">
                   <div className="flex items-center justify-between mb-4">
                     <h4 className="text-lg font-medium text-gray-900 dark:text-white">
-                      Bölümler ({book.chapters?.length || 0})
+                      Bï¿½lï¿½mler ({book.chapters?.length || 0})
                     </h4>
                     <button
                       onClick={() => handleAddChapter(book.id)}
                       className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg transition-colors cursor-pointer whitespace-nowrap"
                     >
                       <i className="ri-add-line mr-2"></i>
-                      Yeni Bölüm Ekle
+                      Yeni Bï¿½lï¿½m Ekle
                     </button>
                   </div>
 
                   {!book.chapters || book.chapters.length === 0 ? (
                     <div className="text-center py-8">
                       <i className="ri-article-line text-4xl text-gray-300 mb-3"></i>
-                      <p className="text-gray-600">Bu kitaba henüz bölüm eklenmemiþ</p>
+                      <p className="text-gray-600">Bu kitaba henï¿½z bï¿½lï¿½m eklenmemiï¿½</p>
                       <button
                         onClick={() => handleAddChapter(book.id)}
                         className="mt-3 bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded"
                       >
-                        Bölüm Ekle
+                        Bï¿½lï¿½m Ekle
                       </button>
                     </div>
                   ) : (
@@ -1257,7 +1257,7 @@ export default function BooksManager() {
                             <div>
                               <h5 className="font-medium text-gray-900 dark:text-white">{chapter.title}</h5>
                               <p className="text-sm text-gray-600 dark:text-gray-400">
-                                Sýra: {chapter.order_number || chapter.order || chapter.chapter_number} • Ýçerik:{' '}
+                                Sï¿½ra: {chapter.order_number || chapter.order || chapter.chapter_number} ï¿½ ï¿½ï¿½erik:{' '}
                                 {chapter.content?.length || 0} karakter
                               </p>
                             </div>
@@ -1267,7 +1267,7 @@ export default function BooksManager() {
                                 className="px-3 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded text-sm transition-colors cursor-pointer whitespace-nowrap"
                               >
                                 <i className="ri-edit-line mr-1"></i>
-                                Düzenle
+                                Dï¿½zenle
                               </button>
                               <button
                                 onClick={() => handleDeleteChapter(book.id, chapter.id)}
@@ -1291,6 +1291,6 @@ export default function BooksManager() {
   );
 }
 
-2 Kasým 2025 Pazar 00:00:19
+2 Kasï¿½m 2025 Pazar 00:00:19
 
 
