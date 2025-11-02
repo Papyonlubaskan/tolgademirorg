@@ -19,7 +19,7 @@ export async function GET(
       
       // Dosya bulundu, serve et
       const contentType = getContentType(filename);
-      return new NextResponse(fileBuffer, {
+      return new NextResponse(new Uint8Array(fileBuffer), {
         headers: {
           'Content-Type': contentType,
           'Cache-Control': 'public, max-age=31536000, immutable', // 1 yıl cache
@@ -41,7 +41,9 @@ export async function GET(
     }
 
     const media = result[0];
-    const fileBuffer = media.file_data as Buffer;
+    const fileBuffer = Buffer.isBuffer(media.file_data) 
+      ? media.file_data 
+      : Buffer.from(media.file_data);
 
     // Görseli dosya sistemine de geri yaz (cache amaçlı)
     try {
@@ -54,7 +56,7 @@ export async function GET(
     }
 
     // Görseli serve et
-    return new NextResponse(fileBuffer, {
+    return new NextResponse(new Uint8Array(fileBuffer), {
       headers: {
         'Content-Type': media.file_type,
         'Cache-Control': 'public, max-age=31536000, immutable',
