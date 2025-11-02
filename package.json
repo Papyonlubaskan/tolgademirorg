@@ -11,6 +11,7 @@
     "backup": "node scripts/backup-cron.js",
     "clean": "rm -rf .next || true && rm -rf node_modules/.cache || true",
     "migrate-to-volume": "node scripts/migrate-to-volume.js",
+    "migrate-images": "node scripts/migrate-images-to-db.js",
     "db:export": "node scripts/export-database.js",
     "db:import": "node scripts/import-database.js"
   },
