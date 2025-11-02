@@ -31,11 +31,11 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: 'Tolga Demir - Türk Edebiyatı Yazarı | Kitaplar, Romanlar, Hikayeler',
-    template: '%s | Tolga Demir - Yazar'
+    default: 'Tolga Demir - Türk Edebiyatı Yazarı | Romanlar, Hikayeler, Kitaplar Online Oku',
+    template: '%s | Tolga Demir - Türk Edebiyatı Yazarı'
   },
-  description: 'Tolga Demir, çağdaş Türk edebiyatının önemli yazarlarından biri. Yazarın resmi web sitesi. Kitaplarını ücretsiz okuyun, yazarlık yolculuğunu keşfedin.',
-  keywords: ['Tolga Demir', 'Tolga Demir yazar', 'Tolga Demir kimdir', 'Tolga Demir kitapları', 'Tolga Demir eserleri', 'Tolga Demir biyografi', 'Türk yazar Tolga Demir', 'çağdaş Türk edebiyatı', 'Türk romanları', 'fantastik roman yazarı', 'Türk edebiyatı yazarı', 'roman oku', 'hikaye oku', 'online kitap okuma', 'ücretsiz kitap', 'Türkçe edebiyat', 'kitap yazar', 'çağdaş edebiyat', 'Türk hikaye yazarı', 'yazarlık', 'edebiyat yazarı'],
+  description: 'Tolga Demir - Çağdaş Türk edebiyatının önde gelen yazarı. Yazar Tolga Demir\'in tüm kitaplarını, romanlarını ve hikayelerini ücretsiz online okuyun. Edebiyat ve hikaye severler için resmi web sitesi.',
+  keywords: ['Tolga Demir', 'Tolga Demir kimdir', 'yazar Tolga Demir', 'Tolga Demir kitapları', 'Tolga Demir eserleri', 'Tolga Demir biyografi', 'Tolga Demir romanları', 'Tolga Demir hikayeleri', 'Türk yazar Tolga Demir', 'Türk edebiyatı yazarı', 'çağdaş Türk edebiyatı', 'Türk romanları', 'Türkçe roman', 'Türkçe hikaye', 'online kitap oku', 'ücretsiz kitap oku', 'roman oku', 'hikaye oku', 'edebiyat', 'yazar', 'kitap', 'edebiyatçı', 'Türk edebiyatı', 'çağdaş edebiyat', 'fantastik roman', 'Türk yazarlar', 'ünlü Türk yazarlar', 'Tolga Demir resmi web sitesi', 'online edebiyat', 'dijital kitap'],
   authors: [{ name: 'Tolga Demir', url: 'https://tolgademir.org' }],
   creator: 'Tolga Demir',
   publisher: 'Tolga Demir',
@@ -52,9 +52,9 @@ export const metadata: Metadata = {
     type: 'profile',
     locale: 'tr_TR',
     url: 'https://tolgademir.org',
-    title: 'Tolga Demir - Türk Edebiyatı Yazarı | Romanlar ve Hikayeler',
-    description: 'Yazar Tolga Demir\'nın resmi web sitesi. Çağdaş Türk edebiyatının eserlerini ücretsiz online okuyun.',
-    siteName: 'Tolga Demir - Yazar',
+    title: 'Tolga Demir - Türk Edebiyatı Yazarı | Romanlar, Hikayeler Online Oku',
+    description: 'Tolga Demir - Çağdaş Türk edebiyatının önde gelen yazarı. Tüm kitaplarını, romanlarını ve hikayelerini ücretsiz online okuyun. Resmi web sitesi.',
+    siteName: 'Tolga Demir - Türk Edebiyatı Yazarı',
     images: [
       {
         url: '/images/og-image.jpg',
@@ -66,8 +66,10 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Tolga Demir - Türk Edebiyatı Yazarı',
-    description: 'Yazar Tolga Demir\'nın resmi web sitesi. Çağdaş Türk edebiyatının eserlerini ücretsiz okuyun.',
+    title: 'Tolga Demir - Türk Edebiyatı Yazarı | Romanlar ve Hikayeler',
+    description: 'Tolga Demir - Çağdaş Türk edebiyatının önde gelen yazarı. Tüm kitaplarını, romanlarını ve hikayelerini ücretsiz online okuyun.',
+    creator: '@tolgademir1914',
+    site: '@tolgademir1914',
     images: ['/images/twitter-image.jpg'],
   },
   robots: {
