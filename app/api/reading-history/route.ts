@@ -124,3 +124,43 @@ export async function POST(request: NextRequest) {
     return errorResponse('Failed to update reading history');
   }
 }
+
+// DELETE: Okuma geçmişini temizle
+export async function DELETE(request: NextRequest) {
+  try {
+    const clientIP = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
+    const rateLimit = apiRateLimiter.check(clientIP);
+    
+    if (!rateLimit.allowed) {
+      return rateLimitResponse({
+        'X-RateLimit-Limit': '100',
+        'X-RateLimit-Remaining': rateLimit.remaining.toString(),
+        'X-RateLimit-Reset': rateLimit.resetTime.toString()
+      });
+    }
+
+    const { userId, bookId } = await request.json();
+
+    if (!userId) {
+      return errorResponse('User ID is required', 400);
+    }
+
+    // Belirli kitap için silme veya tüm geçmiş
+    if (bookId) {
+      await executeQuery(
+        'DELETE FROM reading_history WHERE user_id = ? AND book_id = ?',
+        [userId, bookId]
+      );
+      return successResponse({ message: 'Reading history for book deleted' });
+    } else {
+      await executeQuery(
+        'DELETE FROM reading_history WHERE user_id = ?',
+        [userId]
+      );
+      return successResponse({ message: 'All reading history deleted' });
+    }
+  } catch (error) {
+    console.error('Error deleting reading history:', error);
+    return errorResponse('Failed to delete reading history');
+  }
+}

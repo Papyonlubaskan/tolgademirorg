@@ -144,17 +144,12 @@ export default function BooksPage() {
     
     try {
       const method = isCurrentlyLiked ? 'DELETE' : 'POST';
-      const url = isCurrentlyLiked 
-        ? `/api/books`
-        : `/api/books`;
-      
-      const body = isCurrentlyLiked ? undefined : JSON.stringify({
-        type: 'book',
-        targetId: bookId,
-        userId: currentUserId
+      const body = JSON.stringify({
+        action: isCurrentlyLiked ? 'unlike' : 'like',
+        bookId: bookId
       });
       
-      const response = await fetch(url, {
+      const response = await fetch('/api/likes', {
         method,
         headers: {
           'Content-Type': 'application/json',

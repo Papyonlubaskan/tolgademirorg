@@ -320,10 +320,11 @@ export default function BookDetail({ bookId }: BookDetailProps) {
     if (!window.confirm('Bu yorumu silmek istediğinizden emin misiniz?')) return;
     
     try {
-      const response = await fetch(`/api/books`, {
+      const response = await fetch(`/api/comments/${commentId}`, {
         method: 'DELETE',
         headers: {
-          }
+          'Content-Type': 'application/json',
+        }
       });
 
       if (response.ok) {

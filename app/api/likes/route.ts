@@ -238,3 +238,105 @@ export async function POST(request: NextRequest) {
     return errorResponse('Failed to update like', 500);
   }
 }
+
+// DELETE: Beğeniyi kaldır
+export async function DELETE(request: NextRequest) {
+  try {
+    // Rate limiting
+    const clientIP = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
+    const rateLimit = likesRateLimiter.check(clientIP);
+    
+    if (!rateLimit.allowed) {
+      return NextResponse.json({ 
+        success: false, 
+        error: 'Too many requests' 
+      }, { 
+        status: 429,
+        headers: {
+          'X-RateLimit-Limit': '5000',
+          'X-RateLimit-Remaining': rateLimit.remaining.toString(),
+          'X-RateLimit-Reset': rateLimit.resetTime.toString()
+        }
+      });
+    }
+
+    let { bookId, chapterId, lineNumber } = await request.json();
+    
+    if (!bookId && !chapterId) {
+      return errorResponse('Kitap ID veya bölüm ID gerekli', 400);
+    }
+
+    // Slug ise ID'ye çevir
+    if (bookId && !/^\d+$/.test(bookId.toString())) {
+      const books = await executeQuery('SELECT id FROM books WHERE slug = ?', [bookId]) as any[];
+      if (books.length > 0) {
+        bookId = books[0].id;
+      }
+    }
+    
+    if (chapterId && !/^\d+$/.test(chapterId.toString())) {
+      const chapters = await executeQuery('SELECT id FROM chapters WHERE slug = ?', [chapterId]) as any[];
+      if (chapters.length > 0) {
+        chapterId = chapters[0].id;
+      }
+    }
+
+    const userIp = clientIP;
+
+    // Beğeniyi kaldır
+    let deleteQuery = 'DELETE FROM likes WHERE user_ip = ? AND ';
+    let params: any[] = [userIp];
+    
+    if (chapterId) {
+      if (lineNumber !== null && lineNumber !== undefined) {
+        deleteQuery += 'chapter_id = ? AND line_number = ?';
+        params.push(chapterId, lineNumber);
+      } else {
+        deleteQuery += 'chapter_id = ? AND line_number IS NULL';
+        params.push(chapterId);
+      }
+    } else {
+      deleteQuery += 'book_id = ? AND line_number IS NULL';
+      params.push(bookId);
+    }
+    
+    await executeQuery(deleteQuery, params);
+
+    // Güncel beğeni sayısını hesapla
+    let countQuery = 'SELECT COUNT(*) as totalLikes FROM likes WHERE ';
+    let countParams: any[] = [];
+    
+    if (chapterId) {
+      if (lineNumber !== null && lineNumber !== undefined) {
+        countQuery += 'chapter_id = ? AND line_number = ?';
+        countParams.push(chapterId, lineNumber);
+      } else {
+        countQuery += 'chapter_id = ? AND line_number IS NULL';
+        countParams.push(chapterId);
+      }
+    } else {
+      countQuery += 'book_id = ? AND line_number IS NULL';
+      countParams.push(bookId);
+    }
+    
+    const countResult = await executeQuery(countQuery, countParams);
+    const totalLikes = countResult[0]?.totalLikes || 0;
+
+    return NextResponse.json({
+      success: true,
+      data: {
+        totalLikes,
+        isLiked: false
+      }
+    }, {
+      headers: {
+        'X-RateLimit-Limit': '5000',
+        'X-RateLimit-Remaining': rateLimit.remaining.toString(),
+        'X-RateLimit-Reset': rateLimit.resetTime.toString()
+      }
+    });
+  } catch (error) {
+    console.error('Error deleting like:', error);
+    return errorResponse('Failed to delete like', 500);
+  }
+}
