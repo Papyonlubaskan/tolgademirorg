@@ -94,9 +94,9 @@ export async function POST(request: NextRequest) {
       return errorResponse('Mesaj kaydedilemedi. Lütfen tekrar deneyin.', 500);
     }
 
-    // Send email notification to admin
+    // Send email notification to admin (with timeout to prevent hanging)
     try {
-      await sendEmail({
+      const emailPromise = sendEmail({
         to: process.env.CONTACT_EMAIL || 'tolgademir@okandemir.org',
         subject: `Yeni İletişim Mesajı: ${sanitizedData.subject}`,
         html: `
@@ -114,9 +114,15 @@ export async function POST(request: NextRequest) {
         `,
         replyTo: sanitizedData.email,
       });
+      
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Email timeout')), 5000)
+      );
+      
+      await Promise.race([emailPromise, timeoutPromise]);
       console.log('✅ Admin bilgilendirme e-postası gönderildi');
     } catch (emailError) {
-      console.log('⚠️ Admin e-postası gönderilemedi:', emailError);
+      console.log('⚠️ Admin e-postası gönderilemedi (timeout veya hata):', emailError);
       // Mesaj veritabanında, e-posta hatası kritik değil
     }
 

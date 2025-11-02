@@ -48,20 +48,30 @@ export default function ContactPage() {
     setIsSubmitting(true);
 
     try {
-      // İletişim mesajını gönder
-      const response = await fetch(`/api/contact`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
+      // Timeout ile fetch işlemi
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 saniye timeout
+
+      let response;
+      try {
+        // İletişim mesajını gönder
+        response = await fetch(`/api/contact`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
           },
-        body: JSON.stringify({
-          name: formData.name,
-          email: formData.email,
-          subject: formData.subject,
-          message: formData.message,
-          priority: 'normal'
-        })
-      });
+          body: JSON.stringify({
+            name: formData.name,
+            email: formData.email,
+            subject: formData.subject,
+            message: formData.message,
+            priority: 'normal'
+          }),
+          signal: controller.signal
+        });
+      } finally {
+        clearTimeout(timeoutId);
+      }
 
       const result = await response.json();
 
@@ -74,6 +84,9 @@ export default function ContactPage() {
       }
     } catch (error) {
       console.error('Form submission error:', error);
+      if ((error as Error).name === 'AbortError') {
+        console.error('Request timeout - taking too long');
+      }
       setSubmitStatus('error');
     } finally {
       setIsSubmitting(false);
