@@ -28,7 +28,7 @@ export default async function robots(): Promise<MetadataRoute.Robots> {
     };
   }
 
-  // Normal mod - SEO friendly
+  // Normal mod - SEO friendly ve AI bot korumalı
   return {
     rules: [
       {
@@ -48,8 +48,11 @@ export default async function robots(): Promise<MetadataRoute.Robots> {
         allow: [
           '/',
           '/kitaplar/',
+          '/kitaplar/*',
           '/hakkimda',
           '/iletisim',
+          '/blog',
+          '/blog/*',
         ],
         disallow: [
           '/yonetim/',
@@ -58,19 +61,36 @@ export default async function robots(): Promise<MetadataRoute.Robots> {
         crawlDelay: 0,
       },
       {
+        userAgent: 'Googlebot-Image',
+        allow: [
+          '/',
+          '/images/',
+          '/uploads/',
+        ],
+      },
+      {
         userAgent: 'Bingbot',
-        allow: '/',
+        allow: [
+          '/',
+          '/kitaplar/',
+          '/hakkimda',
+        ],
         disallow: [
           '/yonetim/',
           '/admin/',
         ],
         crawlDelay: 1,
       },
+      {
+        userAgent: ['GPTBot', 'ChatGPT-User', 'CCBot', 'anthropic-ai', 'Claude-Web', 'cohere-ai'],
+        disallow: '/',
+      },
+      {
+        userAgent: ['AhrefsBot', 'SemrushBot', 'MJ12bot', 'DotBot'],
+        disallow: '/',
+      },
     ],
-    sitemap: [
-      `${baseUrl}/sitemap.xml`,
-      `${baseUrl}/public/sitemap.xml`
-    ],
+    sitemap: `${baseUrl}/sitemap.xml`,
     host: baseUrl,
   };
 }
