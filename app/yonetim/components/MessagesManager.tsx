@@ -109,14 +109,13 @@ export default function MessagesManager() {
     setIsReplying(true);
     try {
       // Cevabı database'e kaydet
-      const response = await fetch(`/api/messages`, {
+      const response = await fetch(`/api/messages/${selectedMessage.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${getAuthToken()}`
         },
         body: JSON.stringify({ 
-          id: selectedMessage.id, 
           reply: replyText.trim(),
           status: 'replied'
         }),
