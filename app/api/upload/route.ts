@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/middleware/admin-auth';
 import { successResponse, errorResponse } from '@/lib/api-response';
-import { executeQuery } from '@/lib/database/mysql';
 import { promises as fs } from 'fs';
 import path from 'path';
 
@@ -75,41 +74,21 @@ export async function POST(request: NextRequest) {
           }
         }
 
-    // ÇÖZÜM: Görseli hem dosya sistemine hem veritabanına kaydet
-    // Dosya sistemi ephemeral olsa bile, veritabanından geri yüklenebilir
-    
-    // 1. Dosyayı kaydet (geçici)
-    try {
-      await fs.writeFile(filepath, optimizedBuffer);
-    } catch (fsError) {
-      console.warn('⚠️ Dosya sistemine yazılamadı (ephemeral storage):', fsError);
-      // Devam et, veritabanına kaydedilecek
-    }
+    // Dosyayı kaydet
+    await fs.writeFile(filepath, optimizedBuffer);
 
-    // 2. Görseli veritabanına BLOB olarak kaydet (KALICI)
-    try {
-      await executeQuery(
-        `INSERT INTO media_files (filename, original_name, file_data, file_size, file_type, width, height, is_public, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, TRUE, NOW())
-         ON DUPLICATE KEY UPDATE file_data = VALUES(file_data), updated_at = NOW()`,
-        [filename, file.name, optimizedBuffer, optimizedBuffer.length, file.type, width, height]
-      );
-      console.log('✅ Görsel veritabanına kaydedildi (KALICI):', filename);
-    } catch (dbError) {
-      console.error('❌ Veritabanına kaydedilemedi:', dbError);
-      // Tablo yoksa hata verir ama yine de devam et
-    }
-
-    // 3. URL oluştur - API endpoint üzerinden serve edilecek
-    const imageUrl = `/api/media/${filename}`;
+    // URL oluştur - Relative path (Maralatmaca çözümü)
+    const url = `/uploads/images/${filename}`;
     
-    console.log('Generated URL:', imageUrl);
-    console.log('Dosya sistemi + Veritabanı kaydı tamamlandı');
+    console.log('Generated URL:', url);
+    console.log('NODE_ENV:', process.env.NODE_ENV);
+    console.log('NEXT_PUBLIC_SITE_URL:', process.env.NEXT_PUBLIC_SITE_URL);
 
     return successResponse({
       filename: filename,
       originalName: file.name,
-      url: imageUrl, // API endpoint üzerinden serve edilecek
+      url: url,
+      file_path: url, // Backward compatibility
       size: optimizedBuffer.length,
       type: file.type,
       width: width,
