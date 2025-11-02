@@ -7,7 +7,7 @@ export async function GET() {
       hero_background: '/hero-background.jpg',
       hero_image: '/hero-profile.jpg',
       hero_title: 'Tolga Demir',
-      hero_subtitle: 'Yazar & Hikaye Anlatici',
+      hero_subtitle: 'Yazar & Hikaye Anlatıcı',
       sections: []
     }
   });
