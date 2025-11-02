@@ -84,14 +84,14 @@ export default function AdminLogin({ onLogin }: AdminLoginProps) {
               </div>
             )}
 
-            {/* Giriş bilgileri ipucu */}
-            <div className="bg-blue-900/30 border border-blue-700 text-blue-300 px-4 py-3 rounded-lg text-sm">
+            {/* Güvenlik Uyarısı */}
+            <div className="bg-amber-900/30 border border-amber-700 text-amber-300 px-4 py-3 rounded-lg text-sm">
               <div className="flex items-center mb-2">
-                <i className="ri-information-line mr-2"></i>
-                <strong>MySQL Authentication Active</strong>
+                <i className="ri-shield-keyhole-line mr-2"></i>
+                <strong>Güvenli Giriş</strong>
               </div>
               <div className="text-xs">
-                Admin credentials stored in database
+                Kimlik doğrulama veritabanı üzerinden yapılmaktadır
               </div>
             </div>
 
@@ -110,7 +110,7 @@ export default function AdminLogin({ onLogin }: AdminLoginProps) {
                   value={credentials.username}
                   onChange={(e) => setCredentials({ ...credentials, username: e.target.value })}
                   className="w-full pl-10 pr-4 py-3 border border-gray-600 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm"
-                  placeholder="admin@tolgademir.org"
+                  placeholder="E-posta adresinizi girin"
                 />
               </div>
             </div>
